@@ -22,9 +22,7 @@ def convert_permuon_to_perevent(h):
     ).Weight()
     h_new[0] = h[0]
     for i in range(1, 10):
-        h_new[i] = hist.accumulators.WeightedSum(
-            h[i].value / i, h[i].variance / (i**2)
-        )
+        h_new[i] = hist.accumulators.WeightedSum(h[i].value / i, h[i].variance / (i**2))
     return h_new
 
 

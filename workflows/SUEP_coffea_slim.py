@@ -4,6 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
+
 from typing import Optional
 
 import awkward as ak
@@ -346,12 +347,12 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["muon_pt_subleading" + out_label] = muons.pt[
             :, 1
         ].to_list()
-        output[dataset]["vars"][
-            "muon_miniPFRelIso_all_leading" + out_label
-        ] = muons.miniPFRelIso_all[:, 0].to_list()
-        output[dataset]["vars"][
-            "muon_miniPFRelIso_all_subleading" + out_label
-        ] = muons.miniPFRelIso_all[:, 1].to_list()
+        output[dataset]["vars"]["muon_miniPFRelIso_all_leading" + out_label] = (
+            muons.miniPFRelIso_all[:, 0].to_list()
+        )
+        output[dataset]["vars"]["muon_miniPFRelIso_all_subleading" + out_label] = (
+            muons.miniPFRelIso_all[:, 1].to_list()
+        )
         output[dataset]["vars"]["muon_miniPFRelIso_all_mean" + out_label] = ak.mean(
             muons.miniPFRelIso_all, axis=-1
         ).to_list()
@@ -377,32 +378,32 @@ class SUEP_cluster(processor.ProcessorABC):
 
         leptons = ak.concatenate([muonsCollection, electronsCollection], axis=-1)
         leading_muons = leptons[:, 0]
-        output[dataset]["vars"][
-            "muon_interIsolation_0p2" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.2).to_list()
-        output[dataset]["vars"][
-            "muon_interIsolation_0p4" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.4).to_list()
-        output[dataset]["vars"][
-            "muon_interIsolation_0p8" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.8).to_list()
-        output[dataset]["vars"][
-            "muon_interIsolation_1p6" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6).to_list()
+        output[dataset]["vars"]["muon_interIsolation_0p2" + out_label] = (
+            SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.2).to_list()
+        )
+        output[dataset]["vars"]["muon_interIsolation_0p4" + out_label] = (
+            SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.4).to_list()
+        )
+        output[dataset]["vars"]["muon_interIsolation_0p8" + out_label] = (
+            SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.8).to_list()
+        )
+        output[dataset]["vars"]["muon_interIsolation_1p6" + out_label] = (
+            SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6).to_list()
+        )
 
         # Eta ring variables
-        output[dataset]["vars"][
-            "nMuons_eta_ring_0p2" + out_label
-        ] = SUEP_utils.n_eta_ring(muonsCollection, 0.2).to_list()
-        output[dataset]["vars"][
-            "nMuons_eta_ring_0p4" + out_label
-        ] = SUEP_utils.n_eta_ring(muonsCollection, 0.4).to_list()
-        output[dataset]["vars"][
-            "nMuons_eta_ring_0p8" + out_label
-        ] = SUEP_utils.n_eta_ring(muonsCollection, 0.8).to_list()
-        output[dataset]["vars"][
-            "nMuons_eta_ring_1p6" + out_label
-        ] = SUEP_utils.n_eta_ring(muonsCollection, 1.6).to_list()
+        output[dataset]["vars"]["nMuons_eta_ring_0p2" + out_label] = (
+            SUEP_utils.n_eta_ring(muonsCollection, 0.2).to_list()
+        )
+        output[dataset]["vars"]["nMuons_eta_ring_0p4" + out_label] = (
+            SUEP_utils.n_eta_ring(muonsCollection, 0.4).to_list()
+        )
+        output[dataset]["vars"]["nMuons_eta_ring_0p8" + out_label] = (
+            SUEP_utils.n_eta_ring(muonsCollection, 0.8).to_list()
+        )
+        output[dataset]["vars"]["nMuons_eta_ring_1p6" + out_label] = (
+            SUEP_utils.n_eta_ring(muonsCollection, 1.6).to_list()
+        )
 
     def count_events(
         self, events, nMuons=None, pt_limit=None, interiso_cut=None, avpt_cut=None
