@@ -11,4 +11,4 @@ TOKEN=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/random)
 echo "Server url: http://127.0.0.1:${PORT}/?token=${TOKEN}"
 echo ""
 
-jupyter notebook --ip 0.0.0.0 --no-browser --notebook-dir . --port $PORT --NotebookApp.token=$TOKEN
+jupyter notebook --ip 0.0.0.0 --no-browser --notebook-dir . --port "$PORT" --NotebookApp.token="$TOKEN"

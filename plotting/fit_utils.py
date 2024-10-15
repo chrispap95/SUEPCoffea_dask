@@ -196,7 +196,7 @@ def prepare_histograms(plots, processes, nMuon, count_mode=False, blind=False):
     idx_ndf = [1j, 4j, 5j, 15j]
     idx_df = [0, 3j]
 
-    # Initialize the ouput arrays
+    # Initialize the output arrays
     n = []
     templates = []
 
@@ -300,7 +300,7 @@ def get_data(plots, processes, nMuon):
                 # for non-per-muon plots, put them in the ndf part
                 plot_ndf = plots[p][hn][:, nMuon * 1j].copy()
                 plot_df = plot_ndf.copy().reset()
-            # transorm plots to arrays
+            # transform plots to arrays
             if ti_ndf is None:
                 ti_ndf = plot_ndf.values()
                 vti_ndf = plot_ndf.variances()

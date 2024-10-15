@@ -19,9 +19,9 @@ all=1
 signal=0
 background=0
 data=0
-workflow="SUEP_CRprompt"
+workflow=SUEP_CRprompt
 tag="test"
-trigger="TripleMu"
+trigger=TripleMu
 region=""
 extra_commands=0
 
@@ -76,7 +76,7 @@ fi
 
 if [ $extra_commands -eq 1 ]; then
     ./move_files.sh -t "${tag}" -c -h
-    for f in ${tag}*.hdf5; do
-        rm $f
+    for f in "${tag}"*.hdf5; do
+        rm "$f"
     done
 fi

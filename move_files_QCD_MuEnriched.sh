@@ -14,7 +14,6 @@ function mv_files () {
   fi
 
   # BKG section
-  primary=
   datasets=(
     QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8
     QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8
@@ -30,7 +29,7 @@ function mv_files () {
     QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8
   )
 
-  for dataset in ${datasets[@]}; do
+  for dataset in "${datasets[@]}"; do
     name=${dataset}
     filein="${tag}_${name}_${mode}.pkl"
     fileout=${name}_${mode}.pkl

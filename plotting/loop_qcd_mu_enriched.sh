@@ -1,7 +1,5 @@
 #!/bin/bash
 
-xcache=""
-
 ptbins=(
     15To20
     20To30
@@ -17,14 +15,14 @@ ptbins=(
     1000
 )
 
-suffix="MuEnrichedPt5_TuneCP5_13TeV-pythia8"
+suffix=MuEnrichedPt5_TuneCP5_13TeV-pythia8
 
-for ptbin in ${ptbins[@]}; do
+for ptbin in "${ptbins[@]}"; do
     python make_plots.py -o test \
-        --dataset QCD_Pt-${ptbin}_${suffix} \
-        -f ../temp_output/condor_test_QCD_Pt-${ptbin}_${suffix}.hdf5 \
-        --era 2018 -s $(pwd) --isMC --PUreweight --Higgs_pt_reweight
+        --dataset "QCD_Pt-${ptbin}_${suffix}" \
+        -f "../temp_output/condor_test_QCD_Pt-${ptbin}_${suffix}.hdf5" \
+        --era 2018 -s "$(pwd)" --isMC --PUreweight --Higgs_pt_reweight
 done
 
-mv *.pkl temp_output/
-mv *.root temp_output/
+mv ./*.pkl temp_output/
+mv ./*.root temp_output/
