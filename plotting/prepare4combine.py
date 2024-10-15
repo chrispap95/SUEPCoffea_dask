@@ -1,12 +1,13 @@
 import argparse
 import glob
-from rich.pretty import pprint
 from typing import Dict, List, Optional
-from hist import Hist
-import uproot
-import ROOT
-import plot_utils
+
 import fill_utils
+import plot_utils
+import ROOT
+import uproot
+from hist import Hist
+from rich.pretty import pprint
 
 
 def combine_histograms(

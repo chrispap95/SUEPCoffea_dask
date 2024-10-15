@@ -9,20 +9,20 @@ from typing import Optional
 
 import awkward as ak
 import hist
+import numba as nb
 import numpy as np
 import pandas as pd
 import vector
 from coffea import processor
 from rich.pretty import pprint
 
-import numba as nb
+import workflows.SUEP_utils as SUEP_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.pileup_utils import pileup_weight
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.pandas_accumulator import pandas_accumulator
-import workflows.SUEP_utils as SUEP_utils
 
 # Set vector behavior
 vector.register_awkward()

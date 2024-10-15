@@ -14,10 +14,11 @@ import pandas as pd
 import vector
 from coffea import processor
 
+import workflows.SUEP_utils as SUEP_utils
+
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.pandas_accumulator import pandas_accumulator
-import workflows.SUEP_utils as SUEP_utils
 
 # Set vector behavior
 vector.register_awkward()

@@ -1,12 +1,12 @@
-from typing import List, Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import hist
 import hist.intervals
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-from matplotlib.ticker import LogLocator
 import mplhep as hep
 import numpy as np
+from matplotlib.ticker import LogLocator
 
 
 def bin_midpoints(bins):

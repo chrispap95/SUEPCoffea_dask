@@ -1006,7 +1006,7 @@ if __name__ == "__main__":
     # Calculate the gen sum weight for skimmed samples
     # Or load gen sum weight dict
     if args.gen_sum_file:
-        with open(args.gen_sum_file, "r") as f:
+        with open(args.gen_sum_file) as f:
             weights = json.load(f)
         print(
             "You are using skimmed data! I was able to retrieve the following gensum weights:\n"

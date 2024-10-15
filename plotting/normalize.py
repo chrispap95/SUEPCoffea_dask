@@ -1,9 +1,10 @@
 import argparse
 import glob
 import pickle
-from rich.pretty import pprint
-import plot_utils
+
 import fill_utils
+import plot_utils
+from rich.pretty import pprint
 
 
 def normalizer(mode, samples, tag="test"):

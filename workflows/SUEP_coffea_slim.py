@@ -6,9 +6,9 @@ Chad Freer and Luca Lavezzo, 2021
 """
 from typing import Optional
 
-import numpy as np
 import awkward as ak
 import hist
+import numpy as np
 import pandas as pd
 import vector
 from coffea import processor

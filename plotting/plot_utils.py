@@ -1,11 +1,9 @@
 import logging
-from math import inf
 import os
 import pickle
 import shutil
 import subprocess
 from collections import defaultdict
-from typing import List, Dict
 
 import boost_histogram as bh
 import hist

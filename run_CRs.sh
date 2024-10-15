@@ -104,7 +104,7 @@ fi
 
 if [ $extra_commands -eq 1 ]; then
     ./move_files.sh -t "${tag}" -c -h
-    for f in ${tag}*.hdf5; do 
+    for f in ${tag}*.hdf5; do
         rm $f
     done
 fi

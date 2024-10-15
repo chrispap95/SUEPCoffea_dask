@@ -21,7 +21,6 @@ import workflows.ZH_utils as ZH_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-
 from workflows.CMS_corrections.track_killing_utils import track_killing
 from workflows.pandas_accumulator import pandas_accumulator
 

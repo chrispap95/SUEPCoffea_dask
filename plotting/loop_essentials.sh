@@ -13,7 +13,7 @@ for decay in ${decays[@]}; do
         --dataset ${signal}-private+MINIAODSIM \
         -f ../temp_output/condor_test_${signal}.hdf5 \
         -s $(pwd) --isMC --isSignal  --PUreweight \
-        --Higgs_pt_reweight --doABCD --prepare 
+        --Higgs_pt_reweight --doABCD --prepare
 done
 done
 
@@ -69,4 +69,3 @@ done
 # move all to final destination
 mv *.pkl temp_output/
 mv *.root temp_output/
-

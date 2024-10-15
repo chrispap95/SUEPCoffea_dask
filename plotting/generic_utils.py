@@ -1,10 +1,9 @@
 import glob
 import itertools
 
-from rich.progress import Progress
-
-import plot_utils
 import fill_utils
+import plot_utils
+from rich.progress import Progress
 
 
 def subtract_histograms(h1, h2):

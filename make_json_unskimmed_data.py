@@ -1,6 +1,6 @@
-import subprocess
 import json
 import os
+import subprocess
 
 dir_path = (
     "/store/user/lpcsuep/SUEPNano_data/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD"

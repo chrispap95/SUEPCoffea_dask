@@ -166,4 +166,3 @@ else
   echo "Please specify mode with -c and/or -h"
   exit 1
 fi
-

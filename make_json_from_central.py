@@ -1,6 +1,6 @@
 import argparse
-import subprocess
 import json
+import subprocess
 
 from rich.progress import track
 
@@ -10,7 +10,7 @@ args = parser.parse_args()
 
 xrootd_redirector = "root://cmsxrootd.fnal.gov/"
 
-with open(f"{args.tag}.txt", "r") as f:
+with open(f"{args.tag}.txt") as f:
     datasets = f.read().splitlines()
 
 file_dict = {}

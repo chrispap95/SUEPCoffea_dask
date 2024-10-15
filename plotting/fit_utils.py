@@ -1,12 +1,13 @@
 import glob
 import itertools
-import numpy as np
-import hist
-from hist import Hist
-import matplotlib.pyplot as plt
-from rich.pretty import pprint
-import plot_utils
+
 import fill_utils
+import hist
+import matplotlib.pyplot as plt
+import numpy as np
+import plot_utils
+from hist import Hist
+from rich.pretty import pprint
 
 
 def loader(region, verbose=False):

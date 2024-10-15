@@ -7,6 +7,7 @@ import pickle
 import subprocess
 
 import fill_utils
+import hist
 import numpy as np
 import plot_utils
 import uproot
@@ -20,7 +21,6 @@ from CMS_corrections import (
     triggerSF,
 )
 from hist import Hist
-import hist
 from rich.pretty import pprint
 from tqdm import tqdm
 
