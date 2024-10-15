@@ -1,7 +1,11 @@
 import glob
 import itertools
+
+from rich.progress import Progress
+
 import plot_utils
 import fill_utils
+
 
 def subtract_histograms(h1, h2):
     hist_out = h1.copy().reset()
@@ -189,20 +193,23 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
             ]
         plots["QCD_2018"] = plots["QCD_Pt_MuEnriched_2018"]
 
-    # Subtract non-QCD backgrounds from data
-    dataset = "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018"
-    non_qcd_bkgs = [
-        'Other_2018',
-        'VV_2018',
-        'DY_2018',
-        'TT_powheg_2018',
-    ]
-    plots['data_non_qcd_subtracted'] = {}
-    for histogram in plots[dataset]:
-        plots['data_non_qcd_subtracted'][histogram] = plots[dataset][histogram].copy()
-        for bkg in non_qcd_bkgs:
-            plots['data_non_qcd_subtracted'][histogram] = subtract_histograms(
-                plots['data_non_qcd_subtracted'][histogram], plots[bkg][histogram]
-            )
+    # # Subtract non-QCD backgrounds from data
+    # dataset = "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018"
+    # non_qcd_bkgs = [
+    #     'Other_2018',
+    #     'VV_2018',
+    #     'DY_2018',
+    #     'TT_powheg_2018',
+    # ]
+    # plots['data_non_qcd_subtracted'] = {}
+    # with Progress() as progress:
+    #     task = progress.add_task("[red]Subtracting other bkgs from data...", total=len(non_qcd_bkgs)*len(plots[dataset]))
+    #     for histogram in plots[dataset]:
+    #         plots['data_non_qcd_subtracted'][histogram] = plots[dataset][histogram].copy()
+    #         for bkg in non_qcd_bkgs:
+    #             plots['data_non_qcd_subtracted'][histogram] = subtract_histograms(
+    #                 plots['data_non_qcd_subtracted'][histogram], plots[bkg][histogram]
+    #             )
+    #             progress.update(task, advance=1)
 
     return plots

@@ -106,6 +106,7 @@ def get_main_parser():
             "SUEP_SR_extrapolation",
             "SUEP_kinematics",
             "SUEP_fake_rate",
+            "SUEP_fake_rate_new",
         ],
         help="Which processor to run",
         required=True,
@@ -829,6 +830,28 @@ def setupSUEP_fake_rate(args, sample_dict):
     )
     return instance
 
+def setupSUEP_fake_rate_new(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_fake_rate_new import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=args.era,
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst=False,
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -961,6 +984,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_kinematics(args, sample_dict)
     elif args.workflow == "SUEP_fake_rate":
         processor_instance = setupSUEP_fake_rate(args, sample_dict)
+    elif args.workflow == "SUEP_fake_rate_new":
+        processor_instance = setupSUEP_fake_rate_new(args, sample_dict)
     else:
         raise NotImplementedError
 

@@ -209,9 +209,6 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.eta) < 2.4)
             & (abs(events.Muon.dxy) <= 0.02) 
             & (abs(events.Muon.dz) <= 0.1)
-            & ((muons.miniPFRelIso_all) < 1) 
-            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1) 
-
         )
         if (iso_cut is not None) and (iso_cut < 99):
             clean_muons = clean_muons & (events.Muon.miniPFRelIso_all < iso_cut)
@@ -301,7 +298,7 @@ class SUEP_cluster(processor.ProcessorABC):
         sorted_local_idx = ak.local_index(muons.jetIdx)[ak.argsort(muons.jetIdx)]
 
         # Unsort the numbers and replace the number for -1 idxs with 0
-        num_muons_in_associated_jet = num_muons_in_associated_jet[sorted_local_idx]
+        num_muons_in_associated_jet = num_muons_in_associated_jet[ak.argsort(sorted_local_idx)]
         num_muons_in_associated_jet = ak.where(muons.jetIdx == -1, 0, num_muons_in_associated_jet)
         
         return num_muons_in_associated_jet
@@ -312,17 +309,24 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         events_, muons = self.muon_filter(events, iso_cut=None)
-        
+        if (len(events_) == 0) or (len(muons) == 0):
+            return
+
+
         # Get the muons in each jet
         jets = events_.Jet[(events_.Jet.pt > 15) & (abs(events_.Jet.eta) < 2.4)]
         muons_per_jet = self.match_muons_to_jets(jets, muons, delta_r=0.4)
 
-        # Select events with at most 2 muons per jet
-        up_to_two_muons_per_jet = ~ak.any(ak.num(muons_per_jet, axis=-1) > 2, axis=-1)
-        events_ = events_[up_to_two_muons_per_jet]
-        muons = muons[up_to_two_muons_per_jet]
-        jets = jets[up_to_two_muons_per_jet]
-        muons_per_jet = muons_per_jet[up_to_two_muons_per_jet]
+        # Get the number of muons in each jet associated with each muon
+        num_muons_in_associated_jet = self.get_num_muons_in_associated_jet(muons)
+
+        # # Select events with at most 2 muons per jet
+        # up_to_two_muons_per_jet = ~ak.any(num_muons_in_associated_jet > 2, axis=-1)
+        # events_ = events_[up_to_two_muons_per_jet]
+        # muons = muons[up_to_two_muons_per_jet]
+        # jets = jets[up_to_two_muons_per_jet]
+        # muons_per_jet = muons_per_jet[up_to_two_muons_per_jet]
+        # num_muons_in_associated_jet = num_muons_in_associated_jet[up_to_two_muons_per_jet]
 
         # # # Select jets with exactly N=0 muons and drop events without any jets left
         # # muons_per_jet = muons_per_jet[ak.num(muons_per_jet, axis=-1) == 3]
@@ -349,9 +353,6 @@ class SUEP_cluster(processor.ProcessorABC):
         # jets = jets[limit_jets_with_muons]
         # muons_per_jet = muons_per_jet[limit_jets_with_muons]
 
-        # Get the number of muons in each jet associated with each muon
-        num_muons_in_associated_jet = self.get_num_muons_in_associated_jet(muons)
-
         if len(events_) == 0:
             return
 
@@ -369,7 +370,6 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.flatten(ak.num(inverse_muons_per_2muon_jet, axis=-1)),
             weight=ak.flatten(ak.broadcast_arrays(weights, ak.num(muons_per_2muon_jet, axis=-1))[0]),
         )
-
 
         output[dataset]["histograms"]["num_muons_in_associated_jet_vs_nMuon"].fill(
             ak.flatten(num_muons_in_associated_jet),
@@ -410,44 +410,44 @@ class SUEP_cluster(processor.ProcessorABC):
         # inverted_cuts = muons_iso_sub_muons >= 0.3
 
         # Full cuts
-        # # B veto
-        # muons_jetIdx_sanitized = ak.where(muons.jetIdx >= 0, muons.jetIdx, 0)
-        # muon_is_not_from_b = ak.where(muons.jetIdx >= 0, events_.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
+        # B veto
+        muons_jetIdx_sanitized = ak.where(muons.jetIdx >= 0, muons.jetIdx, 0)
+        muon_is_not_from_b = ak.where(muons.jetIdx >= 0, events_.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
 
-        tight_cuts = (
-            (muons.ip3d < 0.01)
-        )
-        inverted_cuts = (
-            (muons.ip3d >= 0.01)
+        is_tight = (
+            # (muons.ip3d < 0.01) 
+            # (muons.miniPFRelIso_all < 15) 
+            muon_is_not_from_b
+            #& ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1)
         )
 
         output[dataset]["histograms"]["nMuon_inv_in_vs_nMuon_tight_in_vs_nMuon_inv_out_vs_nMuon_tight_out_vs_nMuon"].fill(
-            ak.num(muons[inverted_cuts & (muons.jetIdx >= 0)]),
-            ak.num(muons[tight_cuts & (muons.jetIdx >= 0)]),
-            ak.num(muons[inverted_cuts & (muons.jetIdx == -1)]),
-            ak.num(muons[tight_cuts & (muons.jetIdx == -1)]),
+            ak.num(muons[~is_tight & (muons.jetIdx >= 0)]),
+            ak.num(muons[is_tight & (muons.jetIdx >= 0)]),
+            ak.num(muons[~is_tight & (muons.jetIdx == -1)]),
+            ak.num(muons[is_tight & (muons.jetIdx == -1)]),
             ak.num(muons),
             weight=weights,
         )
 
         output[dataset]["histograms"]["nMuon_inv_vs_nMuon_tight_vs_nMuon"].fill(
-            ak.num(muons[inverted_cuts]),
-            ak.num(muons[tight_cuts]),
+            ak.num(muons[~is_tight]),
+            ak.num(muons[is_tight]),
             ak.num(muons),
             weight=weights,
         )
 
         output[dataset]["histograms"]["nMuon_inv_0_nMuon_tight_0_through_4_vs_nMuon"].fill(
-            ak.num(muons[inverted_cuts & (num_muons_in_associated_jet == 0)]),
-            ak.num(muons[tight_cuts & (num_muons_in_associated_jet == 0)]),
-            ak.num(muons[inverted_cuts & (num_muons_in_associated_jet == 1)]),
-            ak.num(muons[tight_cuts & (num_muons_in_associated_jet == 1)]),
-            ak.num(muons[inverted_cuts & (num_muons_in_associated_jet == 2)]),
-            ak.num(muons[tight_cuts & (num_muons_in_associated_jet == 2)]),
-            # ak.num(muons[inverted_cuts & (num_muons_in_associated_jet == 3)]),
-            # ak.num(muons[tight_cuts & (num_muons_in_associated_jet == 3)]),
-            # ak.num(muons[inverted_cuts & (num_muons_in_associated_jet == 4)]),
-            # ak.num(muons[tight_cuts & (num_muons_in_associated_jet == 4)]),
+            ak.num(muons[~is_tight & (num_muons_in_associated_jet == 0)]),
+            ak.num(muons[is_tight & (num_muons_in_associated_jet == 0)]),
+            ak.num(muons[~is_tight & (num_muons_in_associated_jet == 1)]),
+            ak.num(muons[is_tight & (num_muons_in_associated_jet == 1)]),
+            ak.num(muons[~is_tight & (num_muons_in_associated_jet == 2)]),
+            ak.num(muons[is_tight & (num_muons_in_associated_jet == 2)]),
+            # ak.num(muons[~is_tight & (num_muons_in_associated_jet == 3)]),
+            # ak.num(muons[is_tight & (num_muons_in_associated_jet == 3)]),
+            # ak.num(muons[~is_tight & (num_muons_in_associated_jet == 4)]),
+            # ak.num(muons[is_tight & (num_muons_in_associated_jet == 4)]),
             ak.num(muons),
             weight=weights,
         )
@@ -457,9 +457,11 @@ class SUEP_cluster(processor.ProcessorABC):
         nJets_with_2_inverse = ak.sum(ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 0, axis=-1)
         nJets_with_1_tight_1_inverse = ak.sum(ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 1, axis=-1)
 
+        isCorrelated = num_muons_in_associated_jet > 1
+
         output[dataset]["histograms"]["full_method_hist"].fill(
-            ak.num(muons[tight_cuts & (num_muons_in_associated_jet < 2)]),
-            ak.num(muons[inverted_cuts & (num_muons_in_associated_jet < 2)]),
+            ak.num(muons[is_tight & (num_muons_in_associated_jet < 2)]),
+            ak.num(muons[~is_tight & (num_muons_in_associated_jet < 2)]),
             nJets_with_2_tights,
             nJets_with_2_inverse,
             nJets_with_1_tight_1_inverse,
@@ -467,12 +469,20 @@ class SUEP_cluster(processor.ProcessorABC):
             weight=weights,
         )
 
+        output[dataset]["histograms"]["full_method_hist_inference"].fill(
+            ak.sum(~isCorrelated, axis=-1),
+            ak.sum(isCorrelated, axis=-1),
+            ak.num(muons),
+            weight=weights,
+        )
+
         for pt in np.logspace(np.log10(3), np.log10(300), 10)[:-1]:
             muons_ = muons[(num_muons_in_associated_jet < 2) & (muons.pt >= pt) & (muons.pt < (pt + 2))]
+            is_tight_ = is_tight[(num_muons_in_associated_jet < 2) & (muons.pt >= pt) & (muons.pt < (pt + 2))]
             output[dataset]["histograms"]["check_pt_dependency"].fill(
                 pt * 1.01,
-                ak.num(muons_[muons_.ip3d < 0.01]),
-                ak.num(muons_[muons_.ip3d >= 0.01]),
+                ak.num(muons_[is_tight_]),
+                ak.num(muons_[~is_tight_]),
                 ak.num(muons_),
                 weight=weights,
             )
@@ -739,6 +749,13 @@ class SUEP_cluster(processor.ProcessorABC):
                 4, 0, 4, name="nJet_2I_muons", label="nJet_2I_muons"
             ).Regular(
                 4, 0, 4, name="nJet_1I1T_muons", label="nJet_1I1T_muons"
+            ).Regular(
+                8, 0, 8, name="nMuon", label="nMuon"
+            ).Weight(),
+            "full_method_hist_inference": hist.Hist.new.Regular(
+                8, 0, 8, name="nMuon_uncorr", label="nMuon_uncorr"
+            ).Regular(
+                8, 0, 8, name="nMuon_corr", label="nMuon_corr"
             ).Regular(
                 8, 0, 8, name="nMuon", label="nMuon"
             ).Weight(),
