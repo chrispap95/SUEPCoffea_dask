@@ -465,7 +465,9 @@ def FastJetReclustering(tracks, r, min_pt):
     return ak_inclusive_jets, ak_inclusive_cluster
 
 
-def getTopTwoJets(self, events_, tracks, muons_, ak_inclusive_jets, ak_inclusive_cluster):
+def getTopTwoJets(
+    self, events_, tracks, muons_, ak_inclusive_jets, ak_inclusive_cluster
+):
     # order the reclustered jets by pT (will take top 2 for ISR removal method)
     highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
     jets_pTsorted = ak_inclusive_jets[highpt_jet]
@@ -507,7 +509,9 @@ def getTopTwoJets(self, events_, tracks, muons_, ak_inclusive_jets, ak_inclusive
     )
 
     return (
-        events_, tracks, muons_,
+        events_,
+        tracks,
+        muons_,
         (SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks),
     )
 

@@ -4,6 +4,7 @@
 *.dat
 *.pkl
 *.hdf5
+*.tar
 
 # Checkpoints & cache directories
 .ipynb_checkpoints/
@@ -12,6 +13,13 @@ dask-worker-space/
 .vscode/
 *.pyc
 
+# Local environment files/directories
+.bashrc
+.condor_config
+.ipython/
+.local/
+shell
+
 # Python envs
 env/
 .env/
@@ -19,6 +27,11 @@ venv/
 .venv/
 myenv/
 .myenv/
+myenv*/
+
+# Testing stuff
+test*
+test*/
 
 # Log & txt files
 dask-report.html

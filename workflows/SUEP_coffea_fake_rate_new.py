@@ -27,10 +27,11 @@ import workflows.SUEP_utils as SUEP_utils
 # Set vector behavior
 vector.register_awkward()
 
+
 @nb.njit
 def numba_n_unique(flat_array, starts, stops, placeholder):
     result = np.empty(len(starts), dtype=np.int64)
-    
+
     # Loop over each sublist
     for i in range(len(starts)):
         seen = set()  # Set to track unique elements
@@ -39,25 +40,27 @@ def numba_n_unique(flat_array, starts, stops, placeholder):
             if elem != placeholder:  # Skip placeholder values (e.g., -1)
                 seen.add(elem)
         result[i] = len(seen)  # Store the count of unique elements
-    
+
     return result
+
 
 def n_unique(ak_array):
     # Flatten the awkward array
     # Use a placeholder (e.g., -1) for None values
     flat_array = ak.fill_none(ak.flatten(ak_array), -1)
     flat_array = np.array(flat_array)  # Convert to numpy array
-    
+
     # Get the start and stop positions for each sublist and convert them to numpy arrays
     layout = ak_array.layout
     starts = np.array(layout.starts)
     stops = np.array(layout.stops)
-    
+
     # Call numba function to count unique elements
     unique_counts = numba_n_unique(flat_array, starts, stops, -1)
-    
+
     # Return result as an awkward array
     return ak.Array(unique_counts)
+
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(
@@ -131,19 +134,19 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32))
+        pu_weights = pileup_weight(
+            self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
+        )
         # L1 prefire weights
         prefire_weights = GetPrefireWeights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
 
-
     def ht(self, events):
         jet_Cut = (events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)
         jets = events.Jet[jet_Cut]
         return ak.sum(jets.pt, axis=-1)
-
 
     def muon_filter(self, events):
         """
@@ -158,7 +161,7 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dxy) <= 0.02) 
+            & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
         )
 
@@ -167,8 +170,6 @@ class SUEP_cluster(processor.ProcessorABC):
         events = events[select_by_muons_high]
         muons = muons[select_by_muons_high]
         return events, muons
-
-
 
     def fill_preclustering_histograms(self, events, output):
         dataset = events.metadata["dataset"]
@@ -239,16 +240,15 @@ class SUEP_cluster(processor.ProcessorABC):
             name="cutflow",
             label="cutflow",
         ).Weight()
-        histograms = { 
+        histograms = {
             "nMuon_inv_vs_nMuon_tight_vs_nMuon": hist.Hist.new.Regular(
                 8, 0, 8, name="nMuon_inv", label="nMuon_inv"
-            ).Regular(
-                8, 0, 8, name="nMuon_tight", label="nMuon_tight"
-            ).Regular(
-                5, 3, 8, name="nMuon", label="nMuon"
-            ).Weight(),
+            )
+            .Regular(8, 0, 8, name="nMuon_tight", label="nMuon_tight")
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
         }
-        
+
         output = {
             dataset: {
                 "cutflow": cutflow,

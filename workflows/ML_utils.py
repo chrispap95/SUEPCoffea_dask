@@ -219,7 +219,7 @@ class SUEPNet(nn.Module):
             nn.ELU(),
             nn.Linear(8, 4),
             nn.ELU(),
-            nn.Linear(4, out_dim)
+            nn.Linear(4, out_dim),
             # nn.Sigmoid()
         )
 

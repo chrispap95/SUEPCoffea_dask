@@ -15,7 +15,7 @@ def pileup_weight(era, nTrueInt, sys=""):
         The number of true interactions
     sys: str
         The systematic variation to be applied to the pileup weights
-        
+
     Returns:
     weights: array
         The pileup weights
@@ -26,9 +26,7 @@ def pileup_weight(era, nTrueInt, sys=""):
         )
 
     f_MC = uproot.open(f"data/pileup/mcPileupUL{era}.root")
-    f_data = uproot.open(
-        f"data/pileup/PileupHistogram-UL{era}-100bins_withVar.root"
-    )
+    f_data = uproot.open(f"data/pileup/PileupHistogram-UL{era}-100bins_withVar.root")
 
     variation = ""
     if "up" in sys:

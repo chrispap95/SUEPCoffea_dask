@@ -26,33 +26,119 @@ vector.register_awkward()
 
 muon_pt_distribution = np.array(
     [
-        0.01444606, 0.01788267, 0.01863509, 0.01871521, 0.018271,
-        0.01862738, 0.02023799, 0.02037756, 0.02292804, 0.02308553,
-        0.02105714, 0.03559662, 0.04153534, 0.03952179, 0.03809815,
-        0.03558699, 0.0383288 , 0.03530175, 0.03413093, 0.03184524,
-        0.02880311, 0.02495798, 0.0267085 , 0.02652325, 0.02433806,
-        0.02026294, 0.02393517, 0.02388314, 0.02415238, 0.02158113,
-        0.01992112, 0.01734985, 0.01589269, 0.01681835, 0.01399663,
-        0.01296229, 0.01209786, 0.01085313, 0.00997262, 0.00895907,
-        0.0083739 , 0.00688307, 0.00622945, 0.0060278 , 0.0052202 ,
-        0.00493383, 0.0043168 , 0.00398108, 0.00303587, 0.00304323,
-        0.00272003, 0.0021949 , 0.00198677, 0.00172853, 0.00148774,
-        0.00160906, 0.00108399, 0.00098058, 0.00079216, 0.00083225,
-        0.0006787 , 0.00054658, 0.0004822 , 0.00046058, 0.00036664,
-        0.00028516, 0.00025096, 0.00022413, 0.00021782, 0.0001452 ,
-        0.0001075 , 0.00010252, 0.00008649, 0.00007262, 0.00005316,
-        0.00005349, 0.00004146, 0.00003346, 0.00002879, 0.0000242 ,
-        0.00001898, 0.00001544, 0.00001344, 0.00001056, 0.00000816,
-        0.00000598, 0.00000601, 0.000004  , 0.00000379, 0.00000275,
-        0.0000019 , 0.00000157, 0.00000162, 0.00000134, 0.00000085,
-        0.00000074, 0.00000055, 0.00000029, 0.00000041, 0.00000021
+        0.01444606,
+        0.01788267,
+        0.01863509,
+        0.01871521,
+        0.018271,
+        0.01862738,
+        0.02023799,
+        0.02037756,
+        0.02292804,
+        0.02308553,
+        0.02105714,
+        0.03559662,
+        0.04153534,
+        0.03952179,
+        0.03809815,
+        0.03558699,
+        0.0383288,
+        0.03530175,
+        0.03413093,
+        0.03184524,
+        0.02880311,
+        0.02495798,
+        0.0267085,
+        0.02652325,
+        0.02433806,
+        0.02026294,
+        0.02393517,
+        0.02388314,
+        0.02415238,
+        0.02158113,
+        0.01992112,
+        0.01734985,
+        0.01589269,
+        0.01681835,
+        0.01399663,
+        0.01296229,
+        0.01209786,
+        0.01085313,
+        0.00997262,
+        0.00895907,
+        0.0083739,
+        0.00688307,
+        0.00622945,
+        0.0060278,
+        0.0052202,
+        0.00493383,
+        0.0043168,
+        0.00398108,
+        0.00303587,
+        0.00304323,
+        0.00272003,
+        0.0021949,
+        0.00198677,
+        0.00172853,
+        0.00148774,
+        0.00160906,
+        0.00108399,
+        0.00098058,
+        0.00079216,
+        0.00083225,
+        0.0006787,
+        0.00054658,
+        0.0004822,
+        0.00046058,
+        0.00036664,
+        0.00028516,
+        0.00025096,
+        0.00022413,
+        0.00021782,
+        0.0001452,
+        0.0001075,
+        0.00010252,
+        0.00008649,
+        0.00007262,
+        0.00005316,
+        0.00005349,
+        0.00004146,
+        0.00003346,
+        0.00002879,
+        0.0000242,
+        0.00001898,
+        0.00001544,
+        0.00001344,
+        0.00001056,
+        0.00000816,
+        0.00000598,
+        0.00000601,
+        0.000004,
+        0.00000379,
+        0.00000275,
+        0.0000019,
+        0.00000157,
+        0.00000162,
+        0.00000134,
+        0.00000085,
+        0.00000074,
+        0.00000055,
+        0.00000029,
+        0.00000041,
+        0.00000021,
     ]
 )
 hist_muon_pt_distribution = hist.Hist.new.Reg(
-    100, 3, 300, name="muon_pt_distr", label="muon_pt_distr", transform=hist.axis.transform.log
+    100,
+    3,
+    300,
+    name="muon_pt_distr",
+    label="muon_pt_distr",
+    transform=hist.axis.transform.log,
 ).Double()
 for i in range(100):
     hist_muon_pt_distribution[i] = muon_pt_distribution[i]
+
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(
@@ -126,19 +212,19 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32))
+        pu_weights = pileup_weight(
+            self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
+        )
         # L1 prefire weights
         prefire_weights = GetPrefireWeights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
 
-
     def ht(self, events):
         jet_Cut = (events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)
         jets = events.Jet[jet_Cut]
         return ak.sum(jets.pt, axis=-1)
-
 
     def get_tracks(self, events):
         Cands = ak.zip(
@@ -194,7 +280,7 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dxy) <= 0.02) 
+            & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
         )
         if muon_iso_cut < 87:
@@ -254,15 +340,25 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
-        leptonsCollection = ak.concatenate([muonsCollection, electronsCollection], axis=-1)
+        leptonsCollection = ak.concatenate(
+            [muonsCollection, electronsCollection], axis=-1
+        )
 
         # Fill the histograms
-        interiso_we = SUEP_utils.inter_isolation(muonsCollection[:, 0], leptonsCollection, dR=6.4)
-        interiso = SUEP_utils.inter_isolation(muonsCollection[:, 0], muonsCollection, dR=6.4)
-        output[dataset]["histograms"]["lead_interiso_norm_vs_muon_iso_cut_vs_nMuon"].fill(
+        interiso_we = SUEP_utils.inter_isolation(
+            muonsCollection[:, 0], leptonsCollection, dR=6.4
+        )
+        interiso = SUEP_utils.inter_isolation(
+            muonsCollection[:, 0], muonsCollection, dR=6.4
+        )
+        output[dataset]["histograms"][
+            "lead_interiso_norm_vs_muon_iso_cut_vs_nMuon"
+        ].fill(
             interiso / (ak.num(muons) - 1),
             muon_iso_cut * np.ones_like(interiso),
-            ak.where(ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))),
+            ak.where(
+                ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))
+            ),
             weight=weights,
         )
 
@@ -278,10 +374,14 @@ class SUEP_cluster(processor.ProcessorABC):
                 for muon_pt_j in muons[i].pt:
                     if muon_pt_j >= 300:
                         likelihood *= hist_muon_pt_distribution[299 * 1j]
-                        likelihood_normalized *= hist_muon_pt_distribution[299 * 1j] * nMuon_i
+                        likelihood_normalized *= (
+                            hist_muon_pt_distribution[299 * 1j] * nMuon_i
+                        )
                         continue
                     likelihood *= hist_muon_pt_distribution[muon_pt_j * 1j]
-                    likelihood_normalized *= hist_muon_pt_distribution[muon_pt_j * 1j] * nMuon_i
+                    likelihood_normalized *= (
+                        hist_muon_pt_distribution[muon_pt_j * 1j] * nMuon_i
+                    )
                 if likelihood >= 1:
                     likelihood = 0.9999999999
                 elif likelihood <= 1e-15:
@@ -305,31 +405,45 @@ class SUEP_cluster(processor.ProcessorABC):
             for muon_i in range(1, 8):
                 at_least_i_muons = ak.num(muons) >= muon_i
                 output[dataset]["histograms"][f"mu_{muon_i}_pt"].fill(
-                    muons[at_least_i_muons][:, muon_i-1].pt,
+                    muons[at_least_i_muons][:, muon_i - 1].pt,
                     ak.num(muons[at_least_i_muons]),
                     weight=weights[at_least_i_muons],
                 )
-            
+
             tracks = self.get_tracks(events)
             nTrack = ak.num(tracks)
             lead_track_pt = ak.max(tracks.pt, axis=-1)
-            track_interiso = ((ak.sum(tracks.pt, axis=-1) - lead_track_pt) / lead_track_pt)
-            output[dataset]["histograms"]["track_interiso_norm_vs_nTrack_vs_nMuon"].fill(
+            track_interiso = (
+                ak.sum(tracks.pt, axis=-1) - lead_track_pt
+            ) / lead_track_pt
+            output[dataset]["histograms"][
+                "track_interiso_norm_vs_nTrack_vs_nMuon"
+            ].fill(
                 track_interiso / (nTrack - 1),
                 ak.where(nTrack >= 250, 249, nTrack),
-                ak.where(ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))),
+                ak.where(
+                    ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))
+                ),
                 weight=weights,
             )
-            output[dataset]["histograms"]["track_interiso_norm_vs_lead_interiso_norm_vs_nMuon"].fill(
+            output[dataset]["histograms"][
+                "track_interiso_norm_vs_lead_interiso_norm_vs_nMuon"
+            ].fill(
                 track_interiso / (nTrack - 1),
                 interiso / (ak.num(muons) - 1),
-                ak.where(ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))),
+                ak.where(
+                    ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))
+                ),
                 weight=weights,
             )
-            output[dataset]["histograms"]["track_interiso_vs_lead_interiso_vs_nMuon"].fill(
+            output[dataset]["histograms"][
+                "track_interiso_vs_lead_interiso_vs_nMuon"
+            ].fill(
                 ak.where(track_interiso >= 20, 19.9, track_interiso),
                 ak.where(interiso >= 10, 9.9, interiso),
-                ak.where(ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))),
+                ak.where(
+                    ak.num(muons) > 9, 9, ak.where(ak.num(muons) < 3, 3, ak.num(muons))
+                ),
                 weight=weights,
             )
 
@@ -341,8 +455,8 @@ class SUEP_cluster(processor.ProcessorABC):
         # Muon_Jet_btagDeepFlavB = ak.flatten(events.Jet.btagDeepFlavB[jet_idx])
         # output[dataset]["histograms"]["Muon_miniPFRelIso_all"].fill(
         #     ak.where(
-        #         Muon_miniPFRelIso_all <= 0.01, 
-        #         0.01, 
+        #         Muon_miniPFRelIso_all <= 0.01,
+        #         0.01,
         #         ak.where(Muon_miniPFRelIso_all >= 10, 9.9, Muon_miniPFRelIso_all)
         #     ),
         #     weight=weights_per_muon,
@@ -354,16 +468,16 @@ class SUEP_cluster(processor.ProcessorABC):
         # )
         # output[dataset]["histograms"]["Muon_jetPtRelv2"].fill(
         #     ak.where(
-        #         Muon_jetPtRelv2 <= 0.01, 
-        #         0.01, 
+        #         Muon_jetPtRelv2 <= 0.01,
+        #         0.01,
         #         ak.where(Muon_jetPtRelv2 >= 10, 9.9, Muon_jetPtRelv2)
         #     ),
         #     weight=weights_per_muon,
         # )
         # output[dataset]["histograms"]["Muon_jetRelIso"].fill(
         #     ak.where(
-        #         Muon_jetRelIso <= 0.01, 
-        #         0.01, 
+        #         Muon_jetRelIso <= 0.01,
+        #         0.01,
         #         ak.where(Muon_jetRelIso >= 10, 9.9, Muon_jetRelIso)
         #     ),
         #     weight=weights_per_muon,
@@ -433,8 +547,12 @@ class SUEP_cluster(processor.ProcessorABC):
         # for the iso cut, make sure values are within the bins
         iso_values = np.logspace(-1, 2, 51)[:-1] * 1.01
         for muon_iso_cut in iso_values:
-            events_, electrons_, muons_ = self.muon_filter(events, muon_iso_cut=muon_iso_cut)
-            self.fill_histograms(events_, electrons_, muons_, output, muon_iso_cut=muon_iso_cut)
+            events_, electrons_, muons_ = self.muon_filter(
+                events, muon_iso_cut=muon_iso_cut
+            )
+            self.fill_histograms(
+                events_, electrons_, muons_, output, muon_iso_cut=muon_iso_cut
+            )
 
         return
 
@@ -450,16 +568,33 @@ class SUEP_cluster(processor.ProcessorABC):
         ).Weight()
         histograms = {
             "muon_pt": hist.Hist.new.Regular(
-                100, 3, 300, name="muon_pt", label="muon_pt", transform=hist.axis.transform.log
+                100,
+                3,
+                300,
+                name="muon_pt",
+                label="muon_pt",
+                transform=hist.axis.transform.log,
             ).Weight(),
             "likelihood": hist.Hist.new.Regular(
-                150, 1e-15, 1e0, name="likelihood", label="likelihood", transform=hist.axis.transform.log
+                150,
+                1e-15,
+                1e0,
+                name="likelihood",
+                label="likelihood",
+                transform=hist.axis.transform.log,
             )
-            .Regular(5, 3, 8, name="nMuon", label="nMuon").Weight(),
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "likelihood_normalized": hist.Hist.new.Regular(
-                150, 1e-15, 1e0, name="likelihood", label="likelihood", transform=hist.axis.transform.log
+                150,
+                1e-15,
+                1e0,
+                name="likelihood",
+                label="likelihood",
+                transform=hist.axis.transform.log,
             )
-            .Regular(5, 3, 8, name="nMuon", label="nMuon").Weight(),
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "lead_interiso_norm_vs_muon_iso_cut_vs_nMuon": hist.Hist.new.Regular(
                 50,
                 0,
@@ -477,14 +612,23 @@ class SUEP_cluster(processor.ProcessorABC):
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-
             "mu_1_pt": hist.Hist.new.Regular(
-                100, 3, 300, name="mu_1_pt", label="mu_1_pt", transform=hist.axis.transform.log
+                100,
+                3,
+                300,
+                name="mu_1_pt",
+                label="mu_1_pt",
+                transform=hist.axis.transform.log,
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
             "mu_2_pt": hist.Hist.new.Regular(
-                50, 3, 200, name="mu_2_pt", label="mu_2_pt", transform=hist.axis.transform.log
+                50,
+                3,
+                200,
+                name="mu_2_pt",
+                label="mu_2_pt",
+                transform=hist.axis.transform.log,
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
@@ -498,22 +642,15 @@ class SUEP_cluster(processor.ProcessorABC):
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-            "mu_5_pt": hist.Hist.new.Regular(
-                50, 3, 40, name="mu_5_pt", label="mu_5_pt"
-            )
+            "mu_5_pt": hist.Hist.new.Regular(50, 3, 40, name="mu_5_pt", label="mu_5_pt")
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-            "mu_6_pt": hist.Hist.new.Regular(
-                40, 3, 20, name="mu_6_pt", label="mu_6_pt"
-            )
+            "mu_6_pt": hist.Hist.new.Regular(40, 3, 20, name="mu_6_pt", label="mu_6_pt")
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-            "mu_7_pt": hist.Hist.new.Regular(
-                40, 3, 8, name="mu_7_pt", label="mu_7_pt"
-            )
+            "mu_7_pt": hist.Hist.new.Regular(40, 3, 8, name="mu_7_pt", label="mu_7_pt")
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-
             "track_interiso_norm_vs_nTrack_vs_nMuon": hist.Hist.new.Regular(
                 50,
                 0,
@@ -556,7 +693,6 @@ class SUEP_cluster(processor.ProcessorABC):
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-
             # "Muon_miniPFRelIso_all_max": hist.Hist.new.Regular(
             #     50,
             #     0,

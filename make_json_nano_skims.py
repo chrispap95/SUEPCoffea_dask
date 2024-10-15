@@ -41,10 +41,10 @@ datasets = [
     "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
     "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
     "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
-    #"DoubleMuon+Run2018A-UL2018_MiniAODv2_NanoAODv9-v1+NANOAOD",
-    #"DoubleMuon+Run2018B-UL2018_MiniAODv2_NanoAODv9-v1+NANOAOD ",
-    #"DoubleMuon+Run2018C-UL2018_MiniAODv2_NanoAODv9-v1+NANOAOD",
-    #"DoubleMuon+Run2018D-UL2018_MiniAODv2_NanoAODv9-v2+NANOAOD",
+    # "DoubleMuon+Run2018A-UL2018_MiniAODv2_NanoAODv9-v1+NANOAOD",
+    # "DoubleMuon+Run2018B-UL2018_MiniAODv2_NanoAODv9-v1+NANOAOD ",
+    # "DoubleMuon+Run2018C-UL2018_MiniAODv2_NanoAODv9-v1+NANOAOD",
+    # "DoubleMuon+Run2018D-UL2018_MiniAODv2_NanoAODv9-v2+NANOAOD",
 ]
 
 dir_path = "/store/user/chpapage/Central_NANO_skims_merged/"

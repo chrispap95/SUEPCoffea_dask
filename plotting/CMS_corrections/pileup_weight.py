@@ -1,6 +1,7 @@
 import numpy as np
 import uproot
 
+
 def pileup_weight(era):
     if era == 2018:
         f_MC = uproot.open("../data/pileup/mcPileupUL2018.root")

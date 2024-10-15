@@ -533,11 +533,11 @@ def create_output_file(label, abcd):
     output.update(
         {
             f"muon_pt_mean_{label}": Hist.new.Reg(
-                100, 
-                2, 
-                200, 
-                transform=hist.axis.transform.log, 
-                name=f"muon_pt_mean_{label}", 
+                100,
+                2,
+                200,
+                transform=hist.axis.transform.log,
+                name=f"muon_pt_mean_{label}",
                 label="mean muon pt in Event",
             ).Weight(),
             f"muon_dxy_mean_{label}": Hist.new.Reg(
@@ -562,17 +562,17 @@ def create_output_file(label, abcd):
                 label="mean muon ip3d in Event",
             ).Weight(),
             f"muon_pt_leading_{label}": Hist.new.Reg(
-                100, 
-                2, 
-                200, 
+                100,
+                2,
+                200,
                 transform=hist.axis.transform.log,
                 name=f"muon_pt_leading_{label}",
                 label="leading muon pt in Event",
             ).Weight(),
             f"muon_pt_subleading_{label}": Hist.new.Reg(
-                100, 
-                2, 
-                200, 
+                100,
+                2,
+                200,
                 transform=hist.axis.transform.log,
                 name=f"muon_pt_subleading_{label}",
                 label="subleading muon pt in Event",

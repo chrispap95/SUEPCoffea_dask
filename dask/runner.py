@@ -238,7 +238,11 @@ def get_main_parser():
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     parser.add_argument("--check_hlt", action="store_true", help="Check HLT paths")
-    parser.add_argument("--gen_sum_file", type=str, help="Gen sum weight file. Overrides the count from the jobs.")
+    parser.add_argument(
+        "--gen_sum_file",
+        type=str,
+        help="Gen sum weight file. Overrides the count from the jobs.",
+    )
     return parser
 
 
@@ -808,6 +812,7 @@ def setupSUEP_kinematics(args, sample_dict):
     )
     return instance
 
+
 def setupSUEP_fake_rate(args, sample_dict):
     """
     Setup the SUEP workflow
@@ -830,6 +835,7 @@ def setupSUEP_fake_rate(args, sample_dict):
     )
     return instance
 
+
 def setupSUEP_fake_rate_new(args, sample_dict):
     """
     Setup the SUEP workflow
@@ -851,6 +857,7 @@ def setupSUEP_fake_rate_new(args, sample_dict):
         debug=args.debug,
     )
     return instance
+
 
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
@@ -952,7 +959,6 @@ if __name__ == "__main__":
         print(hlt)
         sys.exit(0)
 
-
     # Load workflow
     if args.workflow == "SUEP":
         processor_instance = setupSUEP(args, sample_dict)
@@ -1019,9 +1025,7 @@ if __name__ == "__main__":
             weight = weights[sample]
             if not isinstance(weight, int):
                 weight = weight.value
-            saveOutput(
-                args, processor_instance, output[sample], sample, weight
-            )
+            saveOutput(args, processor_instance, output[sample], sample, weight)
         else:
             saveOutput(
                 args,

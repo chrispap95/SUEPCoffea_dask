@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from iminuit.cost import poisson_chi2
 
+
 class BB:
     def __init__(self, xe, n, t):
         self.xe = xe
@@ -31,7 +32,7 @@ class BB:
 
     def visualize(self, args):
         n, t = self.data
-        ne = n ** 0.5
+        ne = n**0.5
         xe = self.xe
         cx = 0.5 * (xe[1:] + xe[:-1])
         plt.errorbar(cx, n, ne, fmt="ok")
@@ -41,5 +42,5 @@ class BB:
             f = 1 / np.sum(c)
             mu += c * y * f
             mu_var += c * (f * y) ** 2
-        mu_err = mu_var ** 0.5
+        mu_err = mu_var**0.5
         plt.stairs(mu + mu_err, xe, baseline=mu - mu_err, fill=True, color="C0")

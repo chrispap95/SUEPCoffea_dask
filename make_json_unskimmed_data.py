@@ -2,7 +2,9 @@ import subprocess
 import json
 import os
 
-dir_path = "/store/user/lpcsuep/SUEPNano_data/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD"
+dir_path = (
+    "/store/user/lpcsuep/SUEPNano_data/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD"
+)
 xrootd_redirector = "root://cmseos.fnal.gov/"
 
 file_dict = {}

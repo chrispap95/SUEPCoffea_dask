@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import iminuit.util
 from iminuit.cost import poisson_chi2
 
+
 class BBlite_histograms:
     def __init__(self, regions, data, templates):
         """
@@ -29,7 +30,9 @@ class BBlite_histograms:
         if par.ndim != 1:
             par = np.ravel(par)
         k_factors = par[:-1, np.newaxis]
-        S_decay = np.array(n_processes * [[[par[-1]**i if i else 0 for i in range(8)]] * n_bins])
+        S_decay = np.array(
+            n_processes * [[[par[-1] ** i if i else 0 for i in range(8)]] * n_bins]
+        )
         t_ndf = np.array([tt[0].values() for tt in templates])
         vt_ndf = np.array([tt[0].variances() for tt in templates])
         t_df = np.array([tt[1].values() for tt in templates])
@@ -37,7 +40,7 @@ class BBlite_histograms:
         t = t_ndf + np.sum(t_df * S_decay, axis=-1)
         vt = vt_ndf + np.sum(vt_df * (S_decay**2), axis=-1)
         mu = np.sum(k_factors * t, axis=-2)
-        mu_var = np.sum((k_factors**2) * vt , axis=-2)
+        mu_var = np.sum((k_factors**2) * vt, axis=-2)
         return mu, mu_var
 
     def _template_chi2_jsc(self, n, mu, mu_var):
@@ -53,7 +56,7 @@ class BBlite_histograms:
         """
         data = self.data
         templates = self.templates
-        r = 0 
+        r = 0
         for i, _ in enumerate(self.regions):
             mu_i, mu_var_i = self._pred(templates[i], par)
             n_i = data[i].values()
@@ -79,7 +82,7 @@ class BBlite_histograms:
         fig.set_figwidth(4 * fig.get_figwidth() / 1.5)
         fig.set_figheight(2 * fig.get_figheight() / 1.5)
         _, ax = plt.subplots(2, 4, num=fig.number)
-        j=0
+        j = 0
         for i, r in enumerate(regions):
             if i > 3:
                 j = 1
@@ -93,10 +96,16 @@ class BBlite_histograms:
             # for fill in [False, True]:
             #     ax[i].stairs(mu_i + mu_var_i**0.5, xe[i], baseline=mu_i - mu_var_i**0.5, fill=fill, color="C0")
             # ax[i].set_title(r)
-            ax[j, i%4].errorbar(cx, n_i, ne_i, fmt="ok")
+            ax[j, i % 4].errorbar(cx, n_i, ne_i, fmt="ok")
             for fill in [False, True]:
-                ax[j, i%4].stairs(mu_i + mu_var_i**0.5, xe[i], baseline=mu_i - mu_var_i**0.5, fill=fill, color="C0")
-            ax[j, i%4].set_title(r)
+                ax[j, i % 4].stairs(
+                    mu_i + mu_var_i**0.5,
+                    xe[i],
+                    baseline=mu_i - mu_var_i**0.5,
+                    fill=fill,
+                    color="C0",
+                )
+            ax[j, i % 4].set_title(r)
 
 
 class BBlite_sources:
@@ -126,7 +135,7 @@ class BBlite_sources:
         t = t_ndf + t_df * S_decay
         vt = vt_ndf + vt_df * (S_decay**2)
         mu = np.sum(k_factors * t, axis=-2)
-        mu_var = np.sum((k_factors**2) * vt , axis=-2)
+        mu_var = np.sum((k_factors**2) * vt, axis=-2)
         return mu, mu_var
 
     def _template_chi2_jsc(self, n, mu, mu_var):
@@ -142,7 +151,7 @@ class BBlite_sources:
         """
         n, t_ndf, vt_ndf, t_df, vt_df = self.data
         mu, mu_var = self._pred(t_ndf, vt_ndf, t_df, vt_df, par)
-        r = 0 
+        r = 0
         for i, _ in enumerate(self.regions):
             n_i = n[i]
             mu_i = mu[i]
@@ -159,7 +168,7 @@ class BBlite_sources:
     def visualize(self, par):
         regions = self.regions
         n, t_ndf, vt_ndf, t_df, vt_df = self.data
-        ne = n ** 0.5
+        ne = n**0.5
         xe = self.xe
         mu, mu_var = self._pred(t_ndf, vt_ndf, t_df, vt_df, par)
         fig = plt.gcf()
@@ -176,7 +185,13 @@ class BBlite_sources:
                 ax = [ax]
             ax[i].errorbar(cx, n_i, ne_i, fmt="ok")
             for fill in [False, True]:
-                ax[i].stairs(mu_i + mu_var_i**0.5, xe[i], baseline=mu_i - mu_var_i**0.5, fill=fill, color="C0")
+                ax[i].stairs(
+                    mu_i + mu_var_i**0.5,
+                    xe[i],
+                    baseline=mu_i - mu_var_i**0.5,
+                    fill=fill,
+                    color="C0",
+                )
             ax[i].set_title(r)
 
 
@@ -202,7 +217,7 @@ class BBlite:
             par = np.ravel(par)
         k_factors = par[:, np.newaxis]
         mu = np.sum(k_factors * t, axis=-2)
-        mu_var = np.sum((k_factors**2) * t , axis=-2)
+        mu_var = np.sum((k_factors**2) * t, axis=-2)
         return mu, mu_var
 
     def _template_chi2_jsc(self, n, mu, mu_var):
@@ -218,7 +233,7 @@ class BBlite:
         """
         n, t = self.data
         mu, mu_var = self._pred(t, par)
-        r = 0 
+        r = 0
         for i, _ in enumerate(self.regions):
             n_i = n[i]
             mu_i = mu[i]
@@ -235,7 +250,7 @@ class BBlite:
     def visualize(self, par):
         regions = self.regions
         n, t = self.data
-        ne = n ** 0.5
+        ne = n**0.5
         xe = self.xe
         mu, mu_var = self._pred(t, par)
         fig = plt.gcf()
@@ -253,8 +268,15 @@ class BBlite:
                 ax = [ax]
             ax[i].errorbar(cx, n_i, ne_i, fmt="ok")
             for fill in [False, True]:
-                ax[i].stairs(mu_i + mu_var_i**0.5, xe[i], baseline=mu_i - mu_var_i**0.5, fill=fill, color="C0")
+                ax[i].stairs(
+                    mu_i + mu_var_i**0.5,
+                    xe[i],
+                    baseline=mu_i - mu_var_i**0.5,
+                    fill=fill,
+                    color="C0",
+                )
             ax[i].set_title(r)
+
 
 class BB:
     def __init__(self, xe, n, t):
@@ -285,7 +307,7 @@ class BB:
 
     def visualize(self, args):
         n, t = self.data
-        ne = n ** 0.5
+        ne = n**0.5
         xe = self.xe
         cx = 0.5 * (xe[1:] + xe[:-1])
         plt.errorbar(cx, n, ne, fmt="ok")
@@ -295,5 +317,5 @@ class BB:
             f = 1 / np.sum(c)
             mu += c * y * f
             mu_var += c * (f * y) ** 2
-        mu_err = mu_var ** 0.5
+        mu_err = mu_var**0.5
         plt.stairs(mu + mu_err, xe, baseline=mu - mu_err, fill=True, color="C0")

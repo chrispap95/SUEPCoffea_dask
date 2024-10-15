@@ -22,7 +22,9 @@ def convert_permuon_to_perevent(h):
     ).Weight()
     h_new[0] = h[0]
     for i in range(1, 10):
-        h_new[i] = hist.accumulators.WeightedSum(h[i].value / i, h[i].variance / (i**2))
+        h_new[i] = hist.accumulators.WeightedSum(
+            h[i].value / i, h[i].variance / (i**2)
+        )
     return h_new
 
 
@@ -402,7 +404,7 @@ def plot_stack(
     # for b, h_b in zip(bkg_list, hists):
     #     print(
     #         b.replace("_2018", ""),
-    #         np.round(h_b.values(), 2), 
+    #         np.round(h_b.values(), 2),
     #         # np.round(h_b.variances(), 2)
     #     )
     hep.histplot(
@@ -413,7 +415,7 @@ def plot_stack(
         ec="black",
         lw=2,
         ax=ax,
-        #sort="l",
+        # sort="l",
         zorder=1,
     )
 
@@ -423,9 +425,9 @@ def plot_stack(
     x_hatch = np.vstack(
         (hist_bkg_total.axes[0].edges[:-1], hist_bkg_total.axes[0].edges[1:])
     ).reshape((-1,), order="F")
-    y_hatch1 = np.vstack(
-        (hist_bkg_total.values(), hist_bkg_total.values())
-    ).reshape((-1,), order="F")
+    y_hatch1 = np.vstack((hist_bkg_total.values(), hist_bkg_total.values())).reshape(
+        (-1,), order="F"
+    )
     y_hatch1_unc = np.vstack(
         (np.sqrt(hist_bkg_total.variances()), np.sqrt(hist_bkg_total.variances()))
     ).reshape((-1,), order="F")
@@ -446,7 +448,7 @@ def plot_stack(
     if len(sig_list) > 0:
         hep.histplot(
             hists_sig,
-            yerr = [np.sqrt(h.variances()) for h in hists_sig],
+            yerr=[np.sqrt(h.variances()) for h in hists_sig],
             label=[
                 sig.replace("_2018", "")
                 .replace("GluGluToSUEP_", "")
@@ -456,7 +458,7 @@ def plot_stack(
                 .replace("mDark", "mD")
                 .replace("temp", "T")
                 .replace("decay-", "")
-                .replace("ggH-channel_","")
+                .replace("ggH-channel_", "")
                 .replace(".000", "")
                 .replace("_13TeV", "")
                 .replace("mode", "")

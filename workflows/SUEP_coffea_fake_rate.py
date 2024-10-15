@@ -27,10 +27,11 @@ import workflows.SUEP_utils as SUEP_utils
 # Set vector behavior
 vector.register_awkward()
 
+
 @nb.njit
 def numba_n_unique(flat_array, starts, stops, placeholder):
     result = np.empty(len(starts), dtype=np.int64)
-    
+
     # Loop over each sublist
     for i in range(len(starts)):
         seen = set()  # Set to track unique elements
@@ -39,25 +40,27 @@ def numba_n_unique(flat_array, starts, stops, placeholder):
             if elem != placeholder:  # Skip placeholder values (e.g., -1)
                 seen.add(elem)
         result[i] = len(seen)  # Store the count of unique elements
-    
+
     return result
+
 
 def n_unique(ak_array):
     # Flatten the awkward array
     # Use a placeholder (e.g., -1) for None values
     flat_array = ak.fill_none(ak.flatten(ak_array), -1)
     flat_array = np.array(flat_array)  # Convert to numpy array
-    
+
     # Get the start and stop positions for each sublist and convert them to numpy arrays
     layout = ak_array.layout
     starts = np.array(layout.starts)
     stops = np.array(layout.stops)
-    
+
     # Call numba function to count unique elements
     unique_counts = numba_n_unique(flat_array, starts, stops, -1)
-    
+
     # Return result as an awkward array
     return ak.Array(unique_counts)
+
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(
@@ -131,19 +134,19 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32))
+        pu_weights = pileup_weight(
+            self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
+        )
         # L1 prefire weights
         prefire_weights = GetPrefireWeights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
 
-
     def ht(self, events):
         jet_Cut = (events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)
         jets = events.Jet[jet_Cut]
         return ak.sum(jets.pt, axis=-1)
-
 
     def getTracks(self, events):
         Cands = ak.zip(
@@ -193,7 +196,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         return tracks, Cleaned_cands
 
-
     def muon_filter(self, events, iso_cut=None):
         """
         Filter events after the TripleMu trigger.
@@ -207,7 +209,7 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dxy) <= 0.02) 
+            & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
         )
         if (iso_cut is not None) and (iso_cut < 99):
@@ -219,7 +221,6 @@ class SUEP_cluster(processor.ProcessorABC):
         muons = muons[select_by_muons_high]
         return events, muons
 
-
     def match_muons_to_jets(self, jets, muons, delta_r=0.4):
         """
         Will match muons to each jet after checking the delta_r between them.
@@ -229,25 +230,23 @@ class SUEP_cluster(processor.ProcessorABC):
         muons_per_jet = muons_per_jet[dr_jets_to_muons < delta_r]
         return muons_per_jet
 
-
     def mini_iso_cone_size(self, muons):
         """
         Calculate the miniPFRelIso_all cone size for each muon.
         This is 0.2 for muons with pt <= 50, 0.05 for muons with pt >= 200, and 10/pt for muons with 50 < pt < 200.
         """
         return ak.where(
-            muons.pt <= 50, 
-            0.2, 
-            ak.where(muons.pt >= 200, 0.05, 10 / muons.pt)
+            muons.pt <= 50, 0.2, ak.where(muons.pt >= 200, 0.05, 10 / muons.pt)
         )
-
 
     def muon_iso_sub_muons(self, muons_for_iso, muons_all):
         """
         Subtract the isolation of other muons from the isolation of the muon.
         """
         dR_muons = ak.fill_none(muons_for_iso.metric_table(muons_all), [], axis=0)
-        muons_for_iso_broadcasted, muons_in_cone = ak.unzip(ak.cartesian([muons_for_iso, muons_all], nested=True))
+        muons_for_iso_broadcasted, muons_in_cone = ak.unzip(
+            ak.cartesian([muons_for_iso, muons_all], nested=True)
+        )
         cone_size = self.mini_iso_cone_size(muons_for_iso_broadcasted)
         muons_in_cone = muons_in_cone[dR_muons < cone_size]
         muon_contributions = (
@@ -255,26 +254,27 @@ class SUEP_cluster(processor.ProcessorABC):
         ) / muons_for_iso.pt
         return muons_for_iso.miniPFRelIso_all - muon_contributions
 
-
     def b_veto(self, events, muons, threshold):
         muons_jetIdx_sanitized = ak.where(muons.jetIdx >= 0, muons.jetIdx, 0)
-        muon_is_not_from_b = ak.where(muons.jetIdx >= 0, events.Jet[muons_jetIdx_sanitized].btagDeepFlavB < threshold, True)
+        muon_is_not_from_b = ak.where(
+            muons.jetIdx >= 0,
+            events.Jet[muons_jetIdx_sanitized].btagDeepFlavB < threshold,
+            True,
+        )
         tight_cuts = (
-            ((muons.miniPFRelIso_all) < 1) 
-            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1) 
+            ((muons.miniPFRelIso_all) < 1)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1)
             & muon_is_not_from_b
         )
         return ak.sum(tight_cuts, axis=-1)
 
-
     def ip3d_cut(self, muons, threshold):
         tight_cuts = (
-            ((muons.miniPFRelIso_all) < 1) 
-            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1) 
+            ((muons.miniPFRelIso_all) < 1)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1)
             & (muons.ip3d < threshold)
         )
         return ak.sum(tight_cuts, axis=-1)
-
 
     def get_num_muons_in_associated_jet(self, muons):
         # Get sorted jet idxs & their run lengths
@@ -284,25 +284,27 @@ class SUEP_cluster(processor.ProcessorABC):
         # Group the idxs that have the same value
         grouped_idxs = ak.unflatten(
             ak.unflatten(ak.flatten(sorted_jetIdx), ak.flatten(run_lengths)),
-            ak.num(run_lengths)
+            ak.num(run_lengths),
         )
 
-        # Get the length of each idx group and broadcast it so that each  
+        # Get the length of each idx group and broadcast it so that each
         # muon has a number that corresponds to the length of its group
         num_muons_in_associated_jet = ak.flatten(
-            ak.broadcast_arrays(ak.num(grouped_idxs, axis=-1), grouped_idxs)[0], 
-            axis=-1
+            ak.broadcast_arrays(ak.num(grouped_idxs, axis=-1), grouped_idxs)[0], axis=-1
         )
 
         # Get the sorted local idxs
         sorted_local_idx = ak.local_index(muons.jetIdx)[ak.argsort(muons.jetIdx)]
 
         # Unsort the numbers and replace the number for -1 idxs with 0
-        num_muons_in_associated_jet = num_muons_in_associated_jet[ak.argsort(sorted_local_idx)]
-        num_muons_in_associated_jet = ak.where(muons.jetIdx == -1, 0, num_muons_in_associated_jet)
-        
-        return num_muons_in_associated_jet
+        num_muons_in_associated_jet = num_muons_in_associated_jet[
+            ak.argsort(sorted_local_idx)
+        ]
+        num_muons_in_associated_jet = ak.where(
+            muons.jetIdx == -1, 0, num_muons_in_associated_jet
+        )
 
+        return num_muons_in_associated_jet
 
     def fill_preclustering_histograms(self, events, output):
         # Reconctruct the dark photons and dark mesons
@@ -311,7 +313,6 @@ class SUEP_cluster(processor.ProcessorABC):
         events_, muons = self.muon_filter(events, iso_cut=None)
         if (len(events_) == 0) or (len(muons) == 0):
             return
-
 
         # Get the muons in each jet
         jets = events_.Jet[(events_.Jet.pt > 15) & (abs(events_.Jet.eta) < 2.4)]
@@ -358,28 +359,41 @@ class SUEP_cluster(processor.ProcessorABC):
 
         weights = self.get_weights(events_)
 
-
         keep_jets_with_2_muons = ak.num(muons_per_jet, axis=-1) == 2
         muons_per_2muon_jet = muons_per_jet[keep_jets_with_2_muons]
 
         tight_muons_per_2muon_jet = muons_per_2muon_jet[muons_per_2muon_jet.ip3d < 0.01]
-        inverse_muons_per_2muon_jet = muons_per_2muon_jet[muons_per_2muon_jet.ip3d >= 0.01]
+        inverse_muons_per_2muon_jet = muons_per_2muon_jet[
+            muons_per_2muon_jet.ip3d >= 0.01
+        ]
 
-        output[dataset]["histograms"]["nMuon_tight_per_jet_vs_nMuon_inverse_per_jet"].fill(
+        output[dataset]["histograms"][
+            "nMuon_tight_per_jet_vs_nMuon_inverse_per_jet"
+        ].fill(
             ak.flatten(ak.num(tight_muons_per_2muon_jet, axis=-1)),
             ak.flatten(ak.num(inverse_muons_per_2muon_jet, axis=-1)),
-            weight=ak.flatten(ak.broadcast_arrays(weights, ak.num(muons_per_2muon_jet, axis=-1))[0]),
+            weight=ak.flatten(
+                ak.broadcast_arrays(weights, ak.num(muons_per_2muon_jet, axis=-1))[0]
+            ),
         )
 
         output[dataset]["histograms"]["num_muons_in_associated_jet_vs_nMuon"].fill(
             ak.flatten(num_muons_in_associated_jet),
-            ak.flatten(ak.broadcast_arrays(ak.num(muons), num_muons_in_associated_jet)[0]),
-            weight=ak.flatten(ak.broadcast_arrays(weights, num_muons_in_associated_jet)[0]),
+            ak.flatten(
+                ak.broadcast_arrays(ak.num(muons), num_muons_in_associated_jet)[0]
+            ),
+            weight=ak.flatten(
+                ak.broadcast_arrays(weights, num_muons_in_associated_jet)[0]
+            ),
         )
         output[dataset]["histograms"]["nMuons_per_jet_vs_nMuon"].fill(
             ak.flatten(ak.num(muons_per_jet, axis=-1)),
-            ak.flatten(ak.broadcast_arrays(ak.num(muons), ak.num(muons_per_jet, axis=-1))[0]),
-            weight=ak.flatten(ak.broadcast_arrays(weights, ak.num(muons_per_jet, axis=-1))[0]),
+            ak.flatten(
+                ak.broadcast_arrays(ak.num(muons), ak.num(muons_per_jet, axis=-1))[0]
+            ),
+            weight=ak.flatten(
+                ak.broadcast_arrays(weights, ak.num(muons_per_jet, axis=-1))[0]
+            ),
         )
 
         ########################################################################
@@ -412,16 +426,22 @@ class SUEP_cluster(processor.ProcessorABC):
         # Full cuts
         # B veto
         muons_jetIdx_sanitized = ak.where(muons.jetIdx >= 0, muons.jetIdx, 0)
-        muon_is_not_from_b = ak.where(muons.jetIdx >= 0, events_.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
-
-        is_tight = (
-            # (muons.ip3d < 0.01) 
-            # (muons.miniPFRelIso_all < 15) 
-            muon_is_not_from_b
-            #& ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1)
+        muon_is_not_from_b = ak.where(
+            muons.jetIdx >= 0,
+            events_.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05,
+            True,
         )
 
-        output[dataset]["histograms"]["nMuon_inv_in_vs_nMuon_tight_in_vs_nMuon_inv_out_vs_nMuon_tight_out_vs_nMuon"].fill(
+        is_tight = (
+            # (muons.ip3d < 0.01)
+            # (muons.miniPFRelIso_all < 15)
+            muon_is_not_from_b
+            # & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1)
+        )
+
+        output[dataset]["histograms"][
+            "nMuon_inv_in_vs_nMuon_tight_in_vs_nMuon_inv_out_vs_nMuon_tight_out_vs_nMuon"
+        ].fill(
             ak.num(muons[~is_tight & (muons.jetIdx >= 0)]),
             ak.num(muons[is_tight & (muons.jetIdx >= 0)]),
             ak.num(muons[~is_tight & (muons.jetIdx == -1)]),
@@ -437,7 +457,9 @@ class SUEP_cluster(processor.ProcessorABC):
             weight=weights,
         )
 
-        output[dataset]["histograms"]["nMuon_inv_0_nMuon_tight_0_through_4_vs_nMuon"].fill(
+        output[dataset]["histograms"][
+            "nMuon_inv_0_nMuon_tight_0_through_4_vs_nMuon"
+        ].fill(
             ak.num(muons[~is_tight & (num_muons_in_associated_jet == 0)]),
             ak.num(muons[is_tight & (num_muons_in_associated_jet == 0)]),
             ak.num(muons[~is_tight & (num_muons_in_associated_jet == 1)]),
@@ -453,9 +475,15 @@ class SUEP_cluster(processor.ProcessorABC):
         )
 
         muons_per_jet_with_2_muons = muons_per_jet[ak.num(muons_per_jet, axis=-1) == 2]
-        nJets_with_2_tights = ak.sum(ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 2, axis=-1)
-        nJets_with_2_inverse = ak.sum(ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 0, axis=-1)
-        nJets_with_1_tight_1_inverse = ak.sum(ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 1, axis=-1)
+        nJets_with_2_tights = ak.sum(
+            ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 2, axis=-1
+        )
+        nJets_with_2_inverse = ak.sum(
+            ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 0, axis=-1
+        )
+        nJets_with_1_tight_1_inverse = ak.sum(
+            ak.sum(muons_per_jet_with_2_muons.ip3d < 0.01, axis=-1) == 1, axis=-1
+        )
 
         isCorrelated = num_muons_in_associated_jet > 1
 
@@ -477,8 +505,16 @@ class SUEP_cluster(processor.ProcessorABC):
         )
 
         for pt in np.logspace(np.log10(3), np.log10(300), 10)[:-1]:
-            muons_ = muons[(num_muons_in_associated_jet < 2) & (muons.pt >= pt) & (muons.pt < (pt + 2))]
-            is_tight_ = is_tight[(num_muons_in_associated_jet < 2) & (muons.pt >= pt) & (muons.pt < (pt + 2))]
+            muons_ = muons[
+                (num_muons_in_associated_jet < 2)
+                & (muons.pt >= pt)
+                & (muons.pt < (pt + 2))
+            ]
+            is_tight_ = is_tight[
+                (num_muons_in_associated_jet < 2)
+                & (muons.pt >= pt)
+                & (muons.pt < (pt + 2))
+            ]
             output[dataset]["histograms"]["check_pt_dependency"].fill(
                 pt * 1.01,
                 ak.num(muons_[is_tight_]),
@@ -511,12 +547,11 @@ class SUEP_cluster(processor.ProcessorABC):
         #         weight=weights,
         #     )
 
-
         ########################################################################
         # Section 2: fill histogram for nMuon vs nJet with muon
         ########################################################################
 
-        # Description: 
+        # Description:
         #   1. For each muon calculate dR with all jets in the event
         #   2. Reduce innermost axis by selecting closest jet to each muon (minimum dR)
         #   3. Get the index of that closest jet
@@ -548,7 +583,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #     + ak.values_astype(muon_2.miniPFRelIso_all < 1, np.int32)
         # )
         # nInverse = (
-        #     ak.values_astype(muon_0.miniPFRelIso_all >= 1, np.int32) 
+        #     ak.values_astype(muon_0.miniPFRelIso_all >= 1, np.int32)
         #     + ak.values_astype(muon_1.miniPFRelIso_all >= 1, np.int32)
         #     + ak.values_astype(muon_2.miniPFRelIso_all >= 1, np.int32)
         # )
@@ -557,7 +592,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # muon_0_iso_sub_muons = self.muon_iso_sub_muons(muon_0, muons)
         # muon_1_iso_sub_muons = self.muon_iso_sub_muons(muon_1, muons)
         # muon_2_iso_sub_muons = self.muon_iso_sub_muons(muon_2, muons)
-        
+
         # nTight = (
         #     ak.values_astype(muon_0_iso_sub_muons < 0.3, np.int32)
         #     + ak.values_astype(muon_1_iso_sub_muons < 0.3, np.int32)
@@ -577,7 +612,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # muon_2_jetIdx_sanitized = ak.where(muon_2.jetIdx >= 0, muon_2.jetIdx, 0)
         # muon_2_is_not_from_b = ak.where(muon_2.jetIdx >= 0, events_.Jet[muon_2_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
         # tight_cut_0 = (
-        #     ((muon_0.miniPFRelIso_all - muon_0.miniPFRelIso_chg) < 0.1) & 
+        #     ((muon_0.miniPFRelIso_all - muon_0.miniPFRelIso_chg) < 0.1) &
         #     (muon_0.miniPFRelIso_all < 1) &
         #     muon_0_is_not_from_b
         # )
@@ -714,26 +749,25 @@ class SUEP_cluster(processor.ProcessorABC):
             #     100, 0, 100, name="jet_pt_0I3T", label="jet_pt_0I3T"
             # ).Weight(),
             # "muon_iso_sub_muons_vs_nMuon": hist.Hist.new.Regular(
-            #     100, 1e-2, 100, 
-            #     name="muon_iso_sub_muons", 
-            #     label="muon_iso_sub_muons", 
+            #     100, 1e-2, 100,
+            #     name="muon_iso_sub_muons",
+            #     label="muon_iso_sub_muons",
             #     transform=hist.axis.transform.log
             # ).Regular(
-            #     100, 1e-2, 100, 
-            #     name="muon_iso", 
-            #     label="muon_iso", 
+            #     100, 1e-2, 100,
+            #     name="muon_iso",
+            #     label="muon_iso",
             #     transform=hist.axis.transform.log
             # ).Regular(
-            #     100, 1e-2, 100, 
-            #     name="muon_iso_chg", 
-            #     label="muon_iso_chg", 
+            #     100, 1e-2, 100,
+            #     name="muon_iso_chg",
+            #     label="muon_iso_chg",
             #     transform=hist.axis.transform.log
             # # ).Regular(
             # #     5, 3, 8, name="nMuon", label="nMuon"
             # ).Weight(),
-
             # Histogram for full method
-            # Stores: 
+            # Stores:
             #   - number of tight muons in the event that are not in jets with 2 muons
             #   - number of inverse muons in the event that are not in jets with 2 muons
             #   - number of jets with 2 tight muons
@@ -741,93 +775,96 @@ class SUEP_cluster(processor.ProcessorABC):
             #   - number of jets with 1 tight and 1 inverse muon
             "full_method_hist": hist.Hist.new.Regular(
                 8, 0, 8, name="nMuon_tight_l2", label="nMuon_tight_l2"
-            ).Regular(
-                8, 0, 8, name="nMuon_inverse_l2", label="nMuon_inverse_l2"
-            ).Regular(
-                4, 0, 4, name="nJet_2T_muons", label="nJet_2T_muons"
-            ).Regular(
-                4, 0, 4, name="nJet_2I_muons", label="nJet_2I_muons"
-            ).Regular(
-                4, 0, 4, name="nJet_1I1T_muons", label="nJet_1I1T_muons"
-            ).Regular(
-                8, 0, 8, name="nMuon", label="nMuon"
-            ).Weight(),
+            )
+            .Regular(8, 0, 8, name="nMuon_inverse_l2", label="nMuon_inverse_l2")
+            .Regular(4, 0, 4, name="nJet_2T_muons", label="nJet_2T_muons")
+            .Regular(4, 0, 4, name="nJet_2I_muons", label="nJet_2I_muons")
+            .Regular(4, 0, 4, name="nJet_1I1T_muons", label="nJet_1I1T_muons")
+            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "full_method_hist_inference": hist.Hist.new.Regular(
                 8, 0, 8, name="nMuon_uncorr", label="nMuon_uncorr"
-            ).Regular(
-                8, 0, 8, name="nMuon_corr", label="nMuon_corr"
-            ).Regular(
-                8, 0, 8, name="nMuon", label="nMuon"
-            ).Weight(),
+            )
+            .Regular(8, 0, 8, name="nMuon_corr", label="nMuon_corr")
+            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "check_pt_dependency": hist.Hist.new.Regular(
                 9, 3, 300, name="pt", label="pt", transform=hist.axis.transform.log
-            ).Regular(
-                8, 0, 8, name="nMuon_tight", label="nMuon_tight"
-            ).Regular(
-                8, 0, 8, name="nMuon_inverse", label="nMuon_inverse"
-            ).Regular(
-                8, 0, 8, name="nMuon", label="nMuon"
-            ).Weight(),
- 
+            )
+            .Regular(8, 0, 8, name="nMuon_tight", label="nMuon_tight")
+            .Regular(8, 0, 8, name="nMuon_inverse", label="nMuon_inverse")
+            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "nMuon_tight_per_jet_vs_nMuon_inverse_per_jet": hist.Hist.new.Regular(
                 3, 0, 3, name="nMuon_tight_per_jet", label="nMuon_tight_per_jet"
-            ).Regular(
+            )
+            .Regular(
                 3, 0, 3, name="nMuon_inverse_per_jet", label="nMuon_inverse_per_jet"
-            ).Weight(),
+            )
+            .Weight(),
             "num_muons_in_associated_jet_vs_nMuon": hist.Hist.new.Regular(
-                8, 0, 8, name="num_muons_in_associated_jet", label="num_muons_in_associated_jet"
-            ).Regular(
-                5, 3, 8, name="nMuon", label="nMuon"
-            ).Weight(),
+                8,
+                0,
+                8,
+                name="num_muons_in_associated_jet",
+                label="num_muons_in_associated_jet",
+            )
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "nMuons_per_jet_vs_nMuon": hist.Hist.new.Regular(
                 8, 0, 8, name="nMuons_per_jet", label="nMuons_per_jet"
-            ).Regular(
-                5, 3, 8, name="nMuon", label="nMuon"
-            ).Weight(),
+            )
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
             "nMuon_inv_in_vs_nMuon_tight_in_vs_nMuon_inv_out_vs_nMuon_tight_out_vs_nMuon": hist.Hist.new.Regular(
                 8, 0, 8, name="nMuon_inv_in", label="nMuon_inv_in"
-            ).Regular(
-                8, 0, 8, name="nMuon_tight_in", label="nMuon_tight_in"
-            ).Regular(
-                8, 0, 8, name="nMuon_inv_out", label="nMuon_inv_out"
-            ).Regular(
-                8, 0, 8, name="nMuon_tight_out", label="nMuon_tight_out"
-            ).Regular(
-                5, 3, 8, name="nMuon", label="nMuon"
-            ).Weight(),
-
+            )
+            .Regular(8, 0, 8, name="nMuon_tight_in", label="nMuon_tight_in")
+            .Regular(8, 0, 8, name="nMuon_inv_out", label="nMuon_inv_out")
+            .Regular(8, 0, 8, name="nMuon_tight_out", label="nMuon_tight_out")
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
             # Better definition of the above histogram
             "nMuon_inv_0_nMuon_tight_0_through_4_vs_nMuon": hist.Hist.new.Regular(
                 6, 0, 6, name="nMuon_inv_out_of_jet", label="nMuon_inv_out_of_jet"
-            ).Regular(
+            )
+            .Regular(
                 6, 0, 6, name="nMuon_tight_out_of_jet", label="nMuon_tight_out_of_jet"
-            ).Regular(
+            )
+            .Regular(
                 6, 0, 6, name="nMuon_inv_in_1muon_jet", label="nMuon_inv_in_1muon_jet"
-            ).Regular(
-                6, 0, 6, name="nMuon_tight_in_1muon_jet", label="nMuon_tight_in_1muon_jet"
-            ).IntCategory(
+            )
+            .Regular(
+                6,
+                0,
+                6,
+                name="nMuon_tight_in_1muon_jet",
+                label="nMuon_tight_in_1muon_jet",
+            )
+            .IntCategory(
                 [0, 2, 4], name="nMuon_inv_in_2muon_jet", label="nMuon_inv_in_2muon_jet"
-            ).IntCategory(
-                [0, 2, 4], name="nMuon_tight_in_2muon_jet", label="nMuon_tight_in_2muon_jet"
-            # ).IntCategory(
-            #     [0, 3], name="nMuon_inv_in_3muon_jet", label="nMuon_inv_in_3muon_jet"
-            # ).IntCategory(
-            #     [0, 3], name="nMuon_tight_in_3muon_jet", label="nMuon_tight_in_3muon_jet"
-            # ).IntCategory(
-            #     [0, 4], name="nMuon_inv_in_4muon_jet", label="nMuon_inv_in_4muon_jet"
-            # ).IntCategory(
-            #     [0, 4], name="nMuon_tight_in_4muon_jet", label="nMuon_tight_in_4muon_jet"
-            ).Regular(
-                3, 3, 6, name="nMuon", label="nMuon"
-            ).Weight(),
-
+            )
+            .IntCategory(
+                [0, 2, 4],
+                name="nMuon_tight_in_2muon_jet",
+                label="nMuon_tight_in_2muon_jet",
+                # ).IntCategory(
+                #     [0, 3], name="nMuon_inv_in_3muon_jet", label="nMuon_inv_in_3muon_jet"
+                # ).IntCategory(
+                #     [0, 3], name="nMuon_tight_in_3muon_jet", label="nMuon_tight_in_3muon_jet"
+                # ).IntCategory(
+                #     [0, 4], name="nMuon_inv_in_4muon_jet", label="nMuon_inv_in_4muon_jet"
+                # ).IntCategory(
+                #     [0, 4], name="nMuon_tight_in_4muon_jet", label="nMuon_tight_in_4muon_jet"
+            )
+            .Regular(3, 3, 6, name="nMuon", label="nMuon")
+            .Weight(),
             "nMuon_inv_vs_nMuon_tight_vs_nMuon": hist.Hist.new.Regular(
                 8, 0, 8, name="nMuon_inv", label="nMuon_inv"
-            ).Regular(
-                8, 0, 8, name="nMuon_tight", label="nMuon_tight"
-            ).Regular(
-                5, 3, 8, name="nMuon", label="nMuon"
-            ).Weight(),
+            )
+            .Regular(8, 0, 8, name="nMuon_tight", label="nMuon_tight")
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
             # "nMuon_vs_nJet_with_muon": hist.Hist.new.Regular(
             #     5, 3, 8, name="nMuon", label="nMuon"
             # ).Regular(
@@ -858,7 +895,7 @@ class SUEP_cluster(processor.ProcessorABC):
             #     5, 3, 8, name="nMuon", label="nMuon"
             # ).Weight(),
         }
-        
+
         output = {
             dataset: {
                 "cutflow": cutflow,

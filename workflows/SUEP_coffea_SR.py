@@ -109,7 +109,7 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dxy) <= 0.02) 
+            & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
         )
         clean_electrons = (
