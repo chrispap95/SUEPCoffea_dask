@@ -16,20 +16,28 @@ def subtract_histograms(h1, h2):
         hist_out[indices] = (values[indices], variances[indices])
     return hist_out
 
-def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity=0):
+
+def loader(
+    tag="test",
+    custom_lumi=None,
+    load_data=False,
+    scale_qcd=0,
+    calc_subtracted_data=False,
+    verbosity=0,
+):
     # input .pkl files
-    plotDir = f'./{tag}_output_histograms/'
-    infile_names = glob.glob(plotDir+'*.pkl')
+    plotDir = f"./{tag}_output_histograms/"
+    infile_names = glob.glob(plotDir + "*.pkl")
 
     # generate list of files that you want to merge histograms for
     offline_files_SUEP = [
         f for f in infile_names if ("SUEP" in f) and ("histograms.pkl" in f)
     ]
-    offline_files_normalized = [
-        f for f in infile_names if ("normalized.pkl" in f)
-    ]
+    offline_files_normalized = [f for f in infile_names if ("normalized.pkl" in f)]
     offline_files_other = [
-        f for f in infile_names if ("pythia8" in f) and ("histograms.pkl" in f) and ("SUEP" not in f)
+        f
+        for f in infile_names
+        if ("pythia8" in f) and ("histograms.pkl" in f) and ("SUEP" not in f)
     ]
     offline_files = offline_files_normalized + offline_files_other
     data_files = [
@@ -42,37 +50,39 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
         "DY0JetsToLL": "DY0JetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
         "DYJetsToLL_NLO": "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
         "DYLowMass_NLO": "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8+"
-                        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
         "DYLowMass_LO": "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8+"
-                        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
         "TTJets": "TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+"
-                "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
         "TTToHadronic": "TTToHadronic_TuneCP5_13TeV-powheg-pythia8+"
-                "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+        "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
         "TTToSemiLeptonic": "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+"
-                "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+        "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
         "TTTo2L2Nu": "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+"
-                "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+        "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
         "ttZJets": "ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+"
-                "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
         "WWZ_4F": "WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8+"
-                "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM",
         "ZZTo4L": "ZZTo4L_TuneCP5_13TeV_powheg_pythia8+"
-                "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
         "ZZZ": "ZZZ_TuneCP5_13TeV-amcatnlo-pythia8+"
-            "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM",
+        "RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM",
         "WJets_inclusive": "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+"
-                    "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+        "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
         "ST_tW": "ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8+"
-                "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM"
+        "RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
     }
 
     # merge the histograms, apply lumis, exclude low HT bins
-    plots_SUEP_2018 = plot_utils.loader(offline_files_SUEP, year=2018, custom_lumi=custom_lumi)
+    plots_SUEP_2018 = plot_utils.loader(
+        offline_files_SUEP, year=2018, custom_lumi=custom_lumi
+    )
     plots_2018 = plot_utils.loader(offline_files, year=2018, custom_lumi=custom_lumi)
     if load_data:
         plots_data = plot_utils.loader(data_files, year=2018, is_data=True)
-    
+
     if verbosity > 1:
         print(plots_SUEP_2018)
 
@@ -84,9 +94,7 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
             tag = "+RunIIAutumn18-private+MINIAODSIM"
         plots[key + "_2018"] = fill_utils.apply_normalization(
             plots_SUEP_2018[key],
-            fill_utils.getXSection(
-                key + tag, "2018", SUEP=True
-            ),
+            fill_utils.getXSection(key + tag, "2018", SUEP=True),
         )
     for key in plots_2018.keys():
         is_binned = False
@@ -115,8 +123,8 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
             )
 
     if load_data:
-        for key in plots_data.keys(): 
-            plots[key+"_2018"] = plots_data[key]
+        for key in plots_data.keys():
+            plots[key + "_2018"] = plots_data[key]
 
     # Combine DYJetsToLL_NLO with DYLowMass_NLO
     if "DYLowMass_NLO_2018" in plots.keys():
@@ -132,7 +140,7 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
         ttbar_powheg = {}
         for plt_i in plots["TTToHadronic_2018"].keys():
             ttbar_powheg[plt_i] = (
-                plots["TTToHadronic_2018"][plt_i] 
+                plots["TTToHadronic_2018"][plt_i]
                 + plots["TTToSemiLeptonic_2018"][plt_i]
                 + plots["TTTo2L2Nu_2018"][plt_i]
             )
@@ -170,7 +178,8 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
         wjets_combined = {}
         for plt_i in plots["WJetsToLNu_HT_2018"].keys():
             wjets_combined[plt_i] = (
-                plots["WJetsToLNu_HT_2018"][plt_i] + plots["WJets_inclusive_2018"][plt_i]
+                plots["WJetsToLNu_HT_2018"][plt_i]
+                + plots["WJets_inclusive_2018"][plt_i]
             )
         plots["WJets_all_2018"] = wjets_combined
 
@@ -188,28 +197,35 @@ def loader(tag="test", custom_lumi=None, load_data=False, scale_qcd=0, verbosity
     # Normalize QCD MuEnriched if it exists
     if "QCD_Pt_MuEnriched_2018" in plots.keys() and scale_qcd > 0:
         for plot in plots["QCD_Pt_MuEnriched_2018"].keys():
-            plots["QCD_Pt_MuEnriched_2018"][plot] = plots["QCD_Pt_MuEnriched_2018"][
-                plot
-            ]
+            plots["QCD_Pt_MuEnriched_2018"][plot] = (
+                plots["QCD_Pt_MuEnriched_2018"][plot] * scale_qcd
+            )
         plots["QCD_2018"] = plots["QCD_Pt_MuEnriched_2018"]
 
-    # # Subtract non-QCD backgrounds from data
-    # dataset = "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018"
-    # non_qcd_bkgs = [
-    #     'Other_2018',
-    #     'VV_2018',
-    #     'DY_2018',
-    #     'TT_powheg_2018',
-    # ]
-    # plots['data_non_qcd_subtracted'] = {}
-    # with Progress() as progress:
-    #     task = progress.add_task("[red]Subtracting other bkgs from data...", total=len(non_qcd_bkgs)*len(plots[dataset]))
-    #     for histogram in plots[dataset]:
-    #         plots['data_non_qcd_subtracted'][histogram] = plots[dataset][histogram].copy()
-    #         for bkg in non_qcd_bkgs:
-    #             plots['data_non_qcd_subtracted'][histogram] = subtract_histograms(
-    #                 plots['data_non_qcd_subtracted'][histogram], plots[bkg][histogram]
-    #             )
-    #             progress.update(task, advance=1)
+    # Subtract non-QCD backgrounds from data
+    if calc_subtracted_data:
+        dataset = "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018"
+        non_qcd_bkgs = [
+            "Other_2018",
+            "VV_2018",
+            "DY_2018",
+            "TT_powheg_2018",
+        ]
+        plots["data_non_qcd_subtracted"] = {}
+        with Progress() as progress:
+            task = progress.add_task(
+                "[red]Subtracting other bkgs from data...",
+                total=len(non_qcd_bkgs) * len(plots[dataset]),
+            )
+            for histogram in plots[dataset]:
+                plots["data_non_qcd_subtracted"][histogram] = plots[dataset][
+                    histogram
+                ].copy()
+                for bkg in non_qcd_bkgs:
+                    plots["data_non_qcd_subtracted"][histogram] = subtract_histograms(
+                        plots["data_non_qcd_subtracted"][histogram],
+                        plots[bkg][histogram],
+                    )
+                    progress.update(task, advance=1)
 
     return plots
