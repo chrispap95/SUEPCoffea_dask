@@ -5,6 +5,7 @@ https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
 
+import itertools
 from typing import Optional
 
 import awkward as ak
@@ -180,14 +181,98 @@ class SUEP_cluster(processor.ProcessorABC):
 
         weights = self.get_weights(events_)
 
-        is_tight = muons.pt > 0
+        for (
+            cut_on_ip3d,
+            cut_on_mini_iso,
+            cut_on_neutral_iso,
+            cut_on_pt,
+        ) in itertools.product([True, False], repeat=4):
+            cut = muons.pt > 0
+            if cut_on_ip3d:
+                cut = cut & (muons.ip3d < 0.01)
+            if cut_on_mini_iso:
+                cut = cut & (muons.miniPFRelIso_all < 1)
+            if cut_on_neutral_iso:
+                cut = cut & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.1)
+            if cut_on_pt:
+                cut = cut & (muons.pt < 35)
 
-        output[dataset]["histograms"]["nMuon_inv_vs_nMuon_tight_vs_nMuon"].fill(
-            ak.num(muons[~is_tight]),
-            ak.num(muons[is_tight]),
-            ak.num(muons),
-            weight=weights,
-        )
+            output[dataset]["histograms"][
+                "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_nMuon"
+            ].fill(
+                cut_on_ip3d,
+                cut_on_mini_iso,
+                cut_on_neutral_iso,
+                cut_on_pt,
+                ak.sum(cut, axis=-1),
+                weight=weights,
+            )
+            muon_ip3d = ak.flatten(muons[cut].ip3d)
+            muon_ip3d = ak.where(
+                muon_ip3d < 1e-4,
+                1.01 * 1.0e-4,
+                ak.where(muon_ip3d >= 1, 1 * 0.99, muon_ip3d),
+            )
+            output[dataset]["histograms"][
+                "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_ip3d"
+            ].fill(
+                cut_on_ip3d,
+                cut_on_mini_iso,
+                cut_on_neutral_iso,
+                cut_on_pt,
+                ak.flatten(muons[cut].ip3d),
+                weight=ak.flatten(ak.broadcast_arrays(weights, muons[cut].pt)[0]),
+            )
+            muon_miniPFRelIso_all = ak.flatten(muons[cut].miniPFRelIso_all)
+            muon_miniPFRelIso_all = ak.where(
+                muon_miniPFRelIso_all < 1e-2,
+                1.01 * 1e-2,
+                ak.where(
+                    muon_miniPFRelIso_all >= 100, 100 * 0.99, muon_miniPFRelIso_all
+                ),
+            )
+            output[dataset]["histograms"][
+                "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_miniPFRelIso_all"
+            ].fill(
+                cut_on_ip3d,
+                cut_on_mini_iso,
+                cut_on_neutral_iso,
+                cut_on_pt,
+                ak.flatten(muons[cut].miniPFRelIso_all),
+                weight=ak.flatten(ak.broadcast_arrays(weights, muons[cut].pt)[0]),
+            )
+            muon_neutral_iso = ak.flatten(
+                muons[cut].miniPFRelIso_all - muons[cut].miniPFRelIso_chg
+            )
+            muon_neutral_iso = ak.where(
+                muon_neutral_iso < 1e-5,
+                1.01 * 1e-5,
+                ak.where(muon_neutral_iso >= 10, 10 * 0.99, muon_neutral_iso),
+            )
+            output[dataset]["histograms"][
+                "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_neutral_iso"
+            ].fill(
+                cut_on_ip3d,
+                cut_on_mini_iso,
+                cut_on_neutral_iso,
+                cut_on_pt,
+                ak.flatten(muons[cut].miniPFRelIso_all - muons[cut].miniPFRelIso_chg),
+                weight=ak.flatten(ak.broadcast_arrays(weights, muons[cut].pt)[0]),
+            )
+            muon_pt = ak.flatten(muons[cut].pt)
+            muon_pt = ak.where(
+                muon_pt < 3, 1.01 * 3, ak.where(muon_pt >= 300, 300 * 0.99, muon_pt)
+            )
+            output[dataset]["histograms"][
+                "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_pt"
+            ].fill(
+                cut_on_ip3d,
+                cut_on_mini_iso,
+                cut_on_neutral_iso,
+                cut_on_pt,
+                ak.flatten(muons[cut].pt),
+                weight=ak.flatten(ak.broadcast_arrays(weights, muons[cut].pt)[0]),
+            )
 
         return
 
@@ -241,20 +326,74 @@ class SUEP_cluster(processor.ProcessorABC):
             label="cutflow",
         ).Weight()
         histograms = {
-            "nMuon_inv_vs_nMuon_tight_vs_nMuon": hist.Hist.new.Regular(
-                8, 0, 8, name="nMuon_inv", label="nMuon_inv"
+            "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_nMuon": hist.Hist.new.Bool(
+                name="ip3d_cut", label="ip3d_cut"
             )
-            .Regular(8, 0, 8, name="nMuon_tight", label="nMuon_tight")
+            .Bool(name="mini_iso_cut", label="mini_iso_cut")
+            .Bool(name="neutral_iso_cut", label="neutral_iso_cut")
+            .Bool(name="pt_cut", label="pt_cut")
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-            "muon_pt": hist.Hist.new.Regular(
+            "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_ip3d": hist.Hist.new.Bool(
+                name="ip3d_cut", label="ip3d_cut"
+            )
+            .Bool(name="mini_iso_cut", label="mini_iso_cut")
+            .Bool(name="neutral_iso_cut", label="neutral_iso_cut")
+            .Bool(name="pt_cut", label="pt_cut")
+            .Regular(
+                100,
+                1e-4,
+                1,
+                name="muon_ip3d",
+                label="muon_ip3d",
+                transform=hist.axis.transform.log,
+            )
+            .Weight(),
+            "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_miniPFRelIso_all": hist.Hist.new.Bool(
+                name="ip3d_cut", label="ip3d_cut"
+            )
+            .Bool(name="mini_iso_cut", label="mini_iso_cut")
+            .Bool(name="neutral_iso_cut", label="neutral_iso_cut")
+            .Bool(name="pt_cut", label="pt_cut")
+            .Regular(
+                100,
+                1e-2,
+                100,
+                name="muon_miniPFRelIso_all",
+                label="muon_miniPFRelIso_all",
+                transform=hist.axis.transform.log,
+            )
+            .Weight(),
+            "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_neutral_iso": hist.Hist.new.Bool(
+                name="ip3d_cut", label="ip3d_cut"
+            )
+            .Bool(name="mini_iso_cut", label="mini_iso_cut")
+            .Bool(name="neutral_iso_cut", label="neutral_iso_cut")
+            .Bool(name="pt_cut", label="pt_cut")
+            .Regular(
+                100,
+                1e-5,
+                10,
+                name="muon_neutral_iso",
+                label="muon_neutral_iso",
+                transform=hist.axis.transform.log,
+            )
+            .Weight(),
+            "ip3d_cut_vs_mini_iso_cut_vs_neutral_iso_cut_vs_pt_cut_vs_muon_pt": hist.Hist.new.Bool(
+                name="ip3d_cut", label="ip3d_cut"
+            )
+            .Bool(name="mini_iso_cut", label="mini_iso_cut")
+            .Bool(name="neutral_iso_cut", label="neutral_iso_cut")
+            .Bool(name="pt_cut", label="pt_cut")
+            .Regular(
                 100,
                 3,
                 300,
                 name="muon_pt",
                 label="muon_pt",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .Weight(),
         }
 
         output = {
