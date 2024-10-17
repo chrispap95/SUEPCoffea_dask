@@ -66,15 +66,15 @@ fi
 if [ $extra_commands -eq 1 ]; then
     # Needs +3 to account for the ./ in the beginning and the _ in the end
     tag_length=$((${#tag} + 3))
-    for mode in cutflow histograms; do 
+    for mode in cutflow histograms; do
         if [ ! -d "plotting/${tag}_output_${mode}" ]; then
-            mkdir plotting/${tag}_output_${mode}
+            mkdir "plotting/${tag}_output_${mode}"
         fi
-        for i in ./${tag}*_${mode}.pkl; do 
-            mv $i plotting/${tag}_output_${mode}/${i:$tag_length}
+        for i in ./"${tag}"*_"${mode}".pkl; do
+            mv "$i" "plotting/${tag}_output_${mode}/${i:$tag_length}"
         done
     done
-    for f in ./condor_${tag}*hdf5; do
-        rm $f
+    for f in ./condor_"${tag}"*hdf5; do
+        rm "$f"
     done
 fi
