@@ -107,6 +107,8 @@ def loader(
             "ST_t-channel",
             "JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
             "DYNJetsToLL",
+            "J_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+            "DYJetsToLL_NJ",
         ]
         for binned_sample in binned_samples:
             if binned_sample in key:

@@ -599,6 +599,21 @@
     "kr": 1,
     "xsec": 44.03
   },
+  "DYJetsToLL_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 5129.0
+  },
+  "DYJetsToLL_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 951.5
+  },
+  "DYJetsToLL_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 361.4
+  },
   "ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
     "kr": 1,
