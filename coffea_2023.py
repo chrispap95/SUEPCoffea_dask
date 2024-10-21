@@ -1,9 +1,8 @@
+import dask
 import dask_awkward as dak
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.schemas import NanoAODSchema
 from distributed import Client
-
-import dask
 
 client = Client()
 

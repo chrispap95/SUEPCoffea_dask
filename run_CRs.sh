@@ -54,7 +54,7 @@ fi
 
 if [ $signal -eq 1 ]; then
     echo "Processing signal..."
-    python dask/runner.py \
+    python runner.py \
         --workflow "${workflow}" -o "${tag}" --region "${region}" \
         --json filelist/SUEP_signal_all_leptonic_2018.json \
         --executor futures -j 4 --chunk 10000 \
@@ -63,7 +63,7 @@ fi
 
 if [ $other_bkg -eq 1 ]; then
     echo "Processing other BKG..."
-    python dask/runner.py \
+    python runner.py \
         --workflow "${workflow}" -o "${tag}" \
         --json filelist/nanoaodsim_skimmed.json \
         --executor futures -j 8 --chunk 20000 \
@@ -73,7 +73,7 @@ fi
 
 if [ $background -eq 1 ]; then
     echo "Processing BKG..."
-    python dask/runner.py \
+    python runner.py \
         --workflow "${workflow}" -o "${tag}" --memory 2GB \
         --json filelist/full_mc_skimmed_merged.json \
         --executor dask/lpc --chunk 20000 \
@@ -83,7 +83,7 @@ fi
 
 if [ $data -eq 1 ]; then
     echo "Processing data..."
-    python dask/runner.py \
+    python runner.py \
         --workflow "${workflow}" -o "${tag}" --memory 2GB \
         --json filelist/data_Run2018A_1fb_unskimmed.json \
         --executor dask/lpc --chunk 15000 \
@@ -93,7 +93,7 @@ fi
 
 if [ $unskimmed -eq 1 ]; then
     echo "Processing unskimmed MC..."
-    python dask/runner.py \
+    python runner.py \
         --workflow "${workflow}" -o "${tag}" --memory 4GB \
         --json filelist/mc_unskimmed_necessary_new_1.json \
         --executor dask/lpc --chunk 50000 \

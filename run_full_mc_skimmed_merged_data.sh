@@ -31,7 +31,7 @@ fi
 
 if [ $signal -eq 1 ]; then
     echo "Processing signal..."
-    python dask/runner.py \
+    python runner.py \
         --workflow SUEP_data -o "${tag}" --memory 4GB \
         --json filelist/SUEP_signal_leptonic_2018.json \
         --executor futures --chunk 5000 \
@@ -40,7 +40,7 @@ fi
 
 if [ $background -eq 1 ]; then
     echo "Processing BKG..."
-    python dask/runner.py \
+    python runner.py \
         --workflow SUEP_data -o "${tag}" --memory 4GB \
         --json filelist/full_mc_skimmed_merged.json \
         --executor dask/lpc --chunk 10000 \
@@ -50,7 +50,7 @@ fi
 
 if [ $data -eq 1 ]; then
     echo "Processing data..."
-    python dask/runner.py \
+    python runner.py \
         --workflow SUEP_data -o "${tag}" --memory 4GB \
         --json filelist/data_Run2018A_1fb_unskimmed.json \
         --executor dask/lpc --chunk 5000 \

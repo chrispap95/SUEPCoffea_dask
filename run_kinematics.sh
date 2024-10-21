@@ -34,7 +34,7 @@ fi
         # --json filelist/SUEP_signal_central_2018.json \
 if [ $signal -eq 1 ]; then
     echo "Processing signal..."
-    python dask/runner.py \
+    python runner.py \
         --workflow SUEP_fake_rate_new -o "$tag" \
         --json filelist/SUEP_signal_central_2018_working.json \
         --executor futures -j 8 --chunk 10000 \
@@ -45,7 +45,7 @@ if [ $background -eq 1 ]; then
         # --json filelist/qcd_mu_enriched_skimmed_merged_new_trigger.json \
         # --json filelist/qcd_muenriched_jul2024.json \
     echo "Processing BKG..."
-    python dask/runner.py \
+    python runner.py \
         --workflow SUEP_fake_rate_new -o "$tag" \
         --json filelist/full_mc_skimmed_merged_new_trigger.json \
         --executor futures -j 8 --chunk 20000 \
@@ -56,7 +56,7 @@ fi
 if [ $data -eq 1 ]; then
         # --json filelist/data_Run2018A_1fb_unskimmed.json \
     echo "Processing data..."
-    python dask/runner.py \
+    python runner.py \
         --workflow SUEP_fake_rate_new -o "$tag" \
         --json filelist/data_Run2018A_5p3fb_unskimmed.json \
         --executor futures --chunk 30000 \

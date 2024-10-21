@@ -267,10 +267,9 @@ def specificProcessing(args, sample_dict):
 def daskExecutor(args, env_extra):
     import shutil
 
+    from dask.distributed import Client, Worker, WorkerPlugin
     from dask_jobqueue import HTCondorCluster, SLURMCluster
     from distributed.diagnostics.plugin import UploadDirectory
-
-    from dask.distributed import Client, Worker, WorkerPlugin
 
     if "lpc" in args.executor:
         from lpcjobqueue import LPCCondorCluster
