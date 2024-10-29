@@ -107,6 +107,7 @@ def get_main_parser():
             "SUEP_kinematics",
             "SUEP_fake_rate",
             "SUEP_post_gensum_bug",
+            "SUEP_pgb_scans",
         ],
         help="Which processor to run",
         required=True,
@@ -305,10 +306,11 @@ def daskExecutor(args, env_extra):
             def setup(self, worker: Worker):
                 sys.path.insert(0, os.getcwd() + "/workflows/")
 
-        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_worker_plugin(SettingSitePath())
+        client.register_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_plugin(SettingSitePath())
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
+
         print("Waiting for at least one worker...")
         client.wait_for_workers(1)
 
@@ -319,8 +321,8 @@ def daskExecutor(args, env_extra):
                 sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
 
         client = Client("tls://localhost:8786")
-        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_worker_plugin(SettingSitePath())
+        client.register_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_plugin(SettingSitePath())
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
     elif "lxplus" in args.executor:
@@ -858,6 +860,29 @@ def setupSUEP_post_gensum_bug(args, sample_dict):
     return instance
 
 
+def setupSUEP_pgb_scans(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_pgb_scans import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=args.era,
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst=False,
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -896,8 +921,6 @@ def saveOutput(args, processor_instance, output, sample, gensumweight=None):
         output["gensumweight"].value = gensumweight
         output["cutflow"][0] = [gensumweight, gensumweight]
 
-    df = output["vars"].value
-
     metadata = dict(
         gensumweight=output["gensumweight"].value,
         era=processor_instance.era,
@@ -910,8 +933,11 @@ def saveOutput(args, processor_instance, output, sample, gensumweight=None):
     if args.output is not None:
         outputName = f"{args.output}_"
     outputName = f"{outputName}{sample}.hdf5"
-    print(f"Saving the following output to {outputName}")
-    pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
+
+    if "vars" in output.keys():
+        df = output["vars"].value
+        print(f"Saving the following output to {outputName}")
+        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
     # Save the cutflow (normalized to the gensumweight)
     if "cutflow" in output.keys():
@@ -991,6 +1017,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_fake_rate(args, sample_dict)
     elif args.workflow == "SUEP_post_gensum_bug":
         processor_instance = setupSUEP_post_gensum_bug(args, sample_dict)
+    elif args.workflow == "SUEP_pgb_scans":
+        processor_instance = setupSUEP_pgb_scans(args, sample_dict)
     else:
         raise NotImplementedError
 

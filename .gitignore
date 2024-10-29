@@ -5,6 +5,7 @@
 *.pkl
 *.hdf5
 *.tar
+*.zip
 
 # Checkpoints & cache directories
 .ipynb_checkpoints/

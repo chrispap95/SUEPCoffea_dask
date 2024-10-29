@@ -11,14 +11,16 @@ signal=0
 background=0
 data=0
 tag=post_gensum_bug
+workflow=SUEP_pgb_scans
 extra_commands=0
 
-while getopts 'sbdt:c' flag; do
+while getopts 'sbdt:cw:' flag; do
   case "${flag}" in
     s) all=0; signal=1 ;;
     b) all=0; background=1 ;;
     d) all=0; data=1 ;;
     t) tag="${OPTARG}" ;;
+    w) workflow="${OPTARG}" ;;
     c) extra_commands=1 ;;
     *) echo "Unexpected option ${flag}" ;;
   esac
@@ -30,25 +32,25 @@ if [ $all -eq 1 ]; then
     data=1
 fi
 
-#        --json filelist/SUEP_signal_central_2018_from_mini.json \
-        # --json filelist/SUEP_signal_central_2018.json \
+#        --json filelists/signal/SUEP_signal_central_2018_from_mini.json \
+        # --json filelists/signal/SUEP_signal_central_2018.json \
 if [ $signal -eq 1 ]; then
     echo "Processing signal..."
     python runner.py \
-        --workflow SUEP_post_gensum_bug -o "$tag" \
-        --json filelist/SUEP_signal_central_2018_working.json \
-        --executor futures -j 8 --chunk 10000 \
+        --workflow "$workflow" -o "$tag" \
+        --json filelists/signal/SUEP_signal_central_2018_working.json \
+        --executor dask/lpc --chunk 50000 \
         --trigger TripleMu --era 2018 --isMC
 fi
 
 if [ $background -eq 1 ]; then
-        # --json filelist/qcd_mu_enriched_skimmed_merged_new_trigger.json \
-        # --json filelist/qcd_muenriched_jul2024.json \
+        # --json filelists/mc_processes/qcd_mu_enriched_skimmed_merged_new_trigger.json \
+        # --json filelists/mc_processes/qcd_muenriched_jul2024.json \
     echo "Processing BKG..."
     python runner.py \
-        --workflow SUEP_post_gensum_bug -o "$tag" \
-        --json filelist/full_mc_skimmed_merged_new_trigger.json \
-        --executor futures -j 8 --chunk 20000 \
+        --workflow "$workflow" -o "$tag" \
+        --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
+        --executor dask/lpc --chunk 100000 \
         --skimmed --trigger TripleMu \
         --era 2018 --isMC
 fi
@@ -57,8 +59,8 @@ if [ $data -eq 1 ]; then
         # --json filelist/data_Run2018A_1fb_unskimmed.json \
     echo "Processing data..."
     python runner.py \
-        --workflow SUEP_post_gensum_bug -o "$tag" \
-        --json filelist/data_Run2018A_5p3fb_unskimmed.json \
+        --workflow "$workflow" -o "$tag" \
+        --json filelists/data/data_Run2018A_5p3fb_unskimmed.json \
         --executor futures --chunk 30000 \
         --trigger TripleMu --era 2018
 fi
@@ -74,7 +76,7 @@ if [ $extra_commands -eq 1 ]; then
             mv "$i" "plotting/${tag}_output_${mode}/${i:$tag_length}"
         done
     done
-    for f in ./condor_"${tag}"*hdf5; do
-        rm "$f"
-    done
+    # for f in ./condor_"${tag}"*hdf5; do
+    #     rm "$f"
+    # done
 fi

@@ -1,8 +1,10 @@
 #!/bin/bash
 
+source setup.sh
+
 PORT=$1
 if [ -z "$PORT" ]; then
-	PORT=8888
+	PORT=8989
 fi
 
 # generate 32 bit random hex string
