@@ -46,7 +46,7 @@ def getXSection(dataset, year, SUEP=False, path="../data/"):
                 xsection *= MC_xsecs[dataset]
             except KeyError:
                 print(
-                    "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
+                    f"WARNING: I did not find the xsection for {dataset}. Check the dataset name and the relevant yaml file"
                 )
                 return 1
     return xsection

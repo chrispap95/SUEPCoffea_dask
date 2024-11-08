@@ -32,6 +32,9 @@ def loader(
     offline_files_SUEP = [
         f for f in infile_names if ("SUEP" in f) and ("histograms.pkl" in f)
     ]
+    offline_files_SUEP += [
+        f for f in infile_names if ("ggHBSMpythia" in f) and ("histograms.pkl" in f)
+    ]
     offline_files_normalized = [f for f in infile_names if ("normalized.pkl" in f)]
     offline_files_other = [
         f
