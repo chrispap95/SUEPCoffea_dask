@@ -1,0 +1,32 @@
+{
+    "ggHBSMpythia_hadronic_M400_MD3_T3": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_hadronic_M400_MD3_T3_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_hadronic_M400_MD6_T6": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_hadronic_M400_MD6_T6_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M125_MD3_T3": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M125_MD3_T3_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M125_MD6_T6": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M125_MD6_T6_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M400_MD3_T3": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M400_MD3_T3_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M400_MD6_T6": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M400_MD6_T6_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M500_MD3_T3": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M500_MD3_T3_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M500_MD6_T6": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M500_MD6_T6_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M700_MD3_T3": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M700_MD3_T3_HT-1_/NANOAOD/total.root"
+    ],
+    "ggHBSMpythia_leptonic_M700_MD6_T6": [
+        "root://eosuser.cern.ch//eos/cms/store/user/cericeci/SUEPS/MuonCounting/UL18/ggHBSMpythia_leptonic_M700_MD6_T6_HT-1_/NANOAOD/total.root"
+    ]
+}

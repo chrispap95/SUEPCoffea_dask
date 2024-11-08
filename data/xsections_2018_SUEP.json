@@ -565,5 +565,21 @@
     "GluGluToSUEP_mS1000.000_mPhi8.000_T32.000_modehadronic_13TeV": 0.185,
     "SUEP_mS125_mPhi1p4_T0p35_modehadronic": 45.2,
     "SUEP_mS125_mPhi2_T2_modehadronic": 45.2,
-    "SUEP_mS125_mPhi8_T32_modehadronic": 45.2
+    "SUEP_mS125_mPhi8_T32_modehadronic": 45.2,
+    "ggHBSMpythia_leptonic_M125_MD3_T3": 45.2,
+    "ggHBSMpythia_leptonic_M125_MD6_T6": 45.2,
+    "ggHBSMpythia_hadronic_M125_MD3_T3": 45.2,
+    "ggHBSMpythia_hadronic_M125_MD6_T6": 45.2,
+    "ggHBSMpythia_leptonic_M400_MD3_T3": 3.19,
+    "ggHBSMpythia_leptonic_M400_MD6_T6": 3.19,
+    "ggHBSMpythia_hadronic_M400_MD3_T3": 3.19,
+    "ggHBSMpythia_hadronic_M400_MD6_T6": 3.19,
+    "ggHBSMpythia_leptonic_M500_MD3_T3": 1.71,
+    "ggHBSMpythia_leptonic_M500_MD6_T6": 1.71,
+    "ggHBSMpythia_hadronic_M500_MD3_T3": 1.71,
+    "ggHBSMpythia_hadronic_M500_MD6_T6": 1.71,
+    "ggHBSMpythia_leptonic_M700_MD3_T3": 0.6206,
+    "ggHBSMpythia_leptonic_M700_MD6_T6": 0.6206,
+    "ggHBSMpythia_hadronic_M700_MD3_T3": 0.6206,
+    "ggHBSMpythia_hadronic_M700_MD6_T6": 3.19
 }
