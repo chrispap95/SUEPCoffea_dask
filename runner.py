@@ -4,6 +4,9 @@ import os
 import pickle
 import sys
 import time
+import importlib
+import inspect
+from typing import Any
 
 import numpy as np
 import uproot
@@ -68,48 +71,77 @@ def loadder(args):
     return sample_dict
 
 
-def check_port(port):
-    import socket
+def setup_workflow(
+    workflow_name: str, args: argparse.Namespace, sample_dict: dict
+) -> Any:
+    """
+    Dynamically import and setup workflow from the workflow name
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    Args:
+        workflow_name: Name of the workflow (will be used to construct file/class name)
+        args: Command line arguments
+        sample_dict: Dictionary of samples to process
+
+    Returns:
+        Workflow processor instance
+    """
     try:
-        sock.bind(("0.0.0.0", port))
-        available = True
-    except RuntimeError:
-        available = False
-    sock.close()
-    return available
+        # Construct the module name
+        module_name = f"workflows.{workflow_name}"
+
+        # Import the module
+        module = importlib.import_module(module_name)
+
+        # Get the SUEP_cluster class from the module
+        workflow_class = getattr(module, "SUEP_cluster")
+
+        # Default list of all parameters
+        params = {
+            "isMC": args.isMC,
+            "era": args.era,
+            "do_syst": args.doSyst,
+            "syst_var": "",
+            "sample": sample_dict,
+            "weight_syst": False,
+            "flag": False,
+            "output_location": os.getcwd(),
+            "accum": args.executor,
+            "trigger": args.trigger,
+            "debug": args.debug,
+            "scouting": args.scouting,
+            "do_inf": args.doInf,
+            "blind": True,
+            "region": args.region,
+        }
+
+        # Check if the parameters are valid for the workflow
+        params_used = {}
+        signature = inspect.signature(workflow_class.__init__)
+        for param in params:
+            if param in signature.parameters:
+                params_used[param] = params[param]
+
+        # Create and return the workflow instance
+        return workflow_class(**params_used)
+
+    except ImportError as e:
+        raise ImportError(f"Could not import workflow '{workflow_name}'. Error: {e}")
+    except AttributeError as e:
+        raise AttributeError(
+            f"Workflow module '{workflow_name}' must contain a 'SUEP_cluster' class. Error: {e}"
+        )
 
 
-def get_main_parser():
+def get_main_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run analysis on baconbits files using processor coffea files"
     )
     # Inputs
     parser.add_argument(
-        "--wf",
+        "-w",
         "--workflow",
-        dest="workflow",
-        choices=[
-            "SUEP",
-            "SUEP_slim",
-            "SUEP_fastjet_testing",
-            "SUEP_ttbar_sources",
-            "SUEP_data",
-            "SUEP_SR",
-            "SUEP_CRprompt",
-            "SUEP_CRcb",
-            "SUEP_CRlight",
-            "SUEP_nbjet_comparison",
-            "SUEP_DYstudy",
-            "SUEP_combine",
-            "SUEP_SR_extrapolation",
-            "SUEP_kinematics",
-            "SUEP_fake_rate",
-            "SUEP_post_gensum_bug",
-            "SUEP_pgb_scans",
-        ],
-        help="Which processor to run",
+        type=str,
+        help="Name of the workflow to run (will be used to import SUEP_coffea_<workflow>)",
         required=True,
     )
     parser.add_argument(
@@ -325,87 +357,10 @@ def daskExecutor(args, env_extra):
         client.register_plugin(SettingSitePath())
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
-    elif "lxplus" in args.executor:
-        # NOTE: This is unmaintained, but kept for reference
-        n_port = 8786
-        if not check_port(8786):
-            raise RuntimeError(
-                "Port '8786' is not occupied on this node. Try another one."
-            )
-        import socket
-
-        cluster = HTCondorCluster(
-            cores=1,
-            memory="4GB",  # hardcoded
-            disk="1GB",
-            death_timeout="60",
-            nanny=False,
-            scheduler_options={"port": n_port, "host": socket.gethostname()},
-            job_extra={
-                "log": "dask_out/dask_job_output.log",
-                "output": "dask_out/dask_job_output.out",
-                "error": "dask_out/dask_job_output.err",
-                "should_transfer_files": "Yes",
-                "when_to_transfer_output": "ON_EXIT",
-                "+SingularityImage": '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
-                "+JobFlavour": '"workday"',
-            },
-            extra=[f"--worker-port {n_port}"],
-            env_extra=env_extra,
-        )
-    elif "mit" in args.executor:
-        # NOTE: This is unmaintained, but kept for reference
-        # n_port = 8786
-        # if not check_port(8786):
-        #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
-        import socket
-
-        cluster = HTCondorCluster(
-            cores=1,
-            memory="4GB",  # hardcoded
-            disk="1GB",
-            death_timeout="60",
-            nanny=False,
-            scheduler_options={
-                # 'port': n_port,
-                "dashboard_address": 8000,
-                "host": socket.gethostname(),
-            },
-            job_extra={
-                "log": "dask_out/dask_job_output.log",
-                "output": "dask_out/dask_job_output.out",
-                "error": "dask_out/dask_job_output.err",
-                "should_transfer_files": "Yes",
-                "when_to_transfer_output": "ON_EXIT",
-                "+SingularityImage": '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
-            },
-            # extra = ['--worker-port {}'.format(n_port)],
-            env_extra=env_extra,
-        )
-    elif "slurm" in args.executor:
-        # NOTE: This is unmaintained, but kept for reference
-        cluster = SLURMCluster(
-            queue="all",
-            cores=args.workers,
-            processes=args.workers,
-            memory="200 GB",
-            retries=10,
-            walltime="00:30:00",
-            env_extra=env_extra,
-        )
-    elif "condor" in args.executor:
-        # NOTE: This is unmaintained, but kept for reference
-        cluster = HTCondorCluster(
-            cores=args.workers,
-            memory="4GB",
-            disk="4GB",
-            env_extra=env_extra,
-        )
     else:
         raise NotImplementedError(f"I don't know anything about {args.executor}.")
 
-    executor = processor.DaskExecutor(client=client)
-    return executor
+    return processor.DaskExecutor(client=client)
 
 
 def nativeExecutors(args):
@@ -489,400 +444,6 @@ def exportCert(args):
     return env_extra, condor_extra
 
 
-def setupSUEP(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        scouting=args.scouting,
-        do_inf=args.doInf,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_slim(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_slim import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_fastjet_testing(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_fastjet_testing import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        scouting=args.scouting,
-        do_inf=args.doInf,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_ttbar_sources(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_ttbar_sources import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        scouting=args.scouting,
-        do_inf=args.doInf,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_data(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_data import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_SR(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_SR import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_CRprompt(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_CRprompt import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_CRcb(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_CRcb import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_CRlight(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_CRlight import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_nbjet_comparison(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_nbjet_comparison import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_DYstudy(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_DYstudy import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=int(args.era),
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_combine(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_combine import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=args.era,
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        region=args.region,
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_SR_extrapolation(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_SR_extrapolation import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=args.era,
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_kinematics(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_kinematics import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=args.era,
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_fake_rate(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_fake_rate import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=args.era,
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_post_gensum_bug(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_post_gensum_bug import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=args.era,
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
-def setupSUEP_pgb_scans(args, sample_dict):
-    """
-    Setup the SUEP workflow
-    """
-    from workflows.SUEP_coffea_pgb_scans import SUEP_cluster
-
-    instance = SUEP_cluster(
-        isMC=args.isMC,
-        era=args.era,
-        do_syst=args.doSyst,
-        syst_var="",
-        sample=sample_dict,
-        weight_syst=False,
-        flag=False,
-        output_location=os.getcwd(),
-        accum=args.executor,
-        trigger=args.trigger,
-        blind=(not args.isMC),
-        debug=args.debug,
-    )
-    return instance
-
-
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -962,19 +523,15 @@ def saveOutput(args, processor_instance, output, sample, gensumweight=None):
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
-    # if args.output == parser.get_default("output"):
-    #    args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
 
     # Load dataset
     sample_dict = loadder(args)
 
     # For debugging
-    # NOTE: This has not been maintained for a while
     if args.only:
         sample_dict = specificProcessing(args, sample_dict)
 
     # Scan if files can be opened
-    # NOTE: This has not been maintained for a while
     if args.validate:
         validation(args, sample_dict)
 
@@ -984,43 +541,8 @@ if __name__ == "__main__":
         print(hlt)
         sys.exit(0)
 
-    # Load workflow
-    if args.workflow == "SUEP":
-        processor_instance = setupSUEP(args, sample_dict)
-    elif args.workflow == "SUEP_slim":
-        processor_instance = setupSUEP_slim(args, sample_dict)
-    elif args.workflow == "SUEP_fastjet_testing":
-        processor_instance = setupSUEP_fastjet_testing(args, sample_dict)
-    elif args.workflow == "SUEP_ttbar_sources":
-        processor_instance = setupSUEP_ttbar_sources(args, sample_dict)
-    elif args.workflow == "SUEP_data":
-        processor_instance = setupSUEP_data(args, sample_dict)
-    elif args.workflow == "SUEP_SR":
-        processor_instance = setupSUEP_SR(args, sample_dict)
-    elif args.workflow == "SUEP_CRprompt":
-        processor_instance = setupSUEP_CRprompt(args, sample_dict)
-    elif args.workflow == "SUEP_CRcb":
-        processor_instance = setupSUEP_CRcb(args, sample_dict)
-    elif args.workflow == "SUEP_CRlight":
-        processor_instance = setupSUEP_CRlight(args, sample_dict)
-    elif args.workflow == "SUEP_nbjet_comparison":
-        processor_instance = setupSUEP_nbjet_comparison(args, sample_dict)
-    elif args.workflow == "SUEP_DYstudy":
-        processor_instance = setupSUEP_DYstudy(args, sample_dict)
-    elif args.workflow == "SUEP_combine":
-        processor_instance = setupSUEP_combine(args, sample_dict)
-    elif args.workflow == "SUEP_SR_extrapolation":
-        processor_instance = setupSUEP_SR_extrapolation(args, sample_dict)
-    elif args.workflow == "SUEP_kinematics":
-        processor_instance = setupSUEP_kinematics(args, sample_dict)
-    elif args.workflow == "SUEP_fake_rate":
-        processor_instance = setupSUEP_fake_rate(args, sample_dict)
-    elif args.workflow == "SUEP_post_gensum_bug":
-        processor_instance = setupSUEP_post_gensum_bug(args, sample_dict)
-    elif args.workflow == "SUEP_pgb_scans":
-        processor_instance = setupSUEP_pgb_scans(args, sample_dict)
-    else:
-        raise NotImplementedError
+    # Load workflow using dynamic import
+    processor_instance = setup_workflow(args.workflow, args, sample_dict)
 
     # Setup x509 for dask/parsl
     env_extra, condor_extra = None, None
@@ -1054,11 +576,7 @@ if __name__ == "__main__":
                 weight = weight.value
             saveOutput(args, processor_instance, output[sample], sample, weight)
         else:
-            saveOutput(
-                args,
-                processor_instance,
-                output[sample],
-                sample,
-            )
+            saveOutput(args, processor_instance, output[sample], sample)
+
     if args.verbose:
         pretty.pprint(output)
