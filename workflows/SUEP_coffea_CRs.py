@@ -1,3 +1,4 @@
+from ctypes import Union
 from typing import Optional
 
 import awkward as ak
@@ -22,7 +23,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def __init__(
         self,
         isMC: int,
-        era: int,
+        era: str,
         sample: str,
         do_syst: bool,
         syst_var: str,
@@ -38,7 +39,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.output_location = output_location
         self.do_syst = do_syst
         self.gensumweight = 1.0
-        self.era = int(era)
+        self.era = era
         self.isMC = bool(isMC)
         self.sample = sample
         self.syst_var, self.syst_suffix = (
@@ -109,16 +110,40 @@ class SUEP_cluster(processor.ProcessorABC):
         return events.genWeight * pu_weights * prefire_weights
 
     def ht(self, events):
-        jet_Cut = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
+        jet_Cut = (events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)
         jets = events.Jet[jet_Cut]
         return ak.sum(jets.pt, axis=-1)
 
     def muon_filter(self, events):
         """
-        Filter events after the TripleMu trigger. Cleans muons.
-        Requires at least nMuons with mediumId, pt, dxy, dz, and eta cuts.
+        Filter events after the TripleMu trigger.
+        Cleans muons and electrons.
+        Requires at least nMuons with mediumId, pt, dz, and eta cuts.
         """
         muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+
+        clean_muons = (
+            (events.Muon.mediumId)
+            & (events.Muon.pt > 3)
+            & (abs(events.Muon.eta) < 2.4)
+            & (abs(events.Muon.dz) < 0.2)
+        )
+        muons = muons[clean_muons]
+        select_by_muons_high = ak.num(muons, axis=-1) < 5
+        select_by_muons_low = ak.num(muons, axis=-1) > 2
+        events = events[select_by_muons_high & select_by_muons_low]
+
+        return events
+
+    def apply_CR_prompt(self, events):
+        """
+        Apply the CR_prompt selection to the events.
+        """
+        muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+
+        # Apply basic muon cuts
         clean_muons = (
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
@@ -126,45 +151,119 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.dz) < 0.2)
         )
 
-        muons = muons[clean_muons]
+        # Apply extra very tight cuts for CR_prompt
+        prompt_muons = (
+            (events.Muon.pt > 25)
+            & (events.Muon.miniPFRelIso_all < 0.1)
+            & (abs(events.Muon.dxy) < 0.005)
+            & (abs(events.Muon.dz) < 0.01)
+            & (abs(events.Muon.ip3d < 0.008))
+        )
+        muons = muons[clean_muons & prompt_muons]
+
+        # Make sure there is at least one muon in the event after the cuts
         select_by_muons_high = ak.num(muons, axis=-1) < 5
-        select_by_muons_low = ak.num(muons, axis=-1) > 2
+        select_by_muons_low = ak.num(muons, axis=-1) > 0
         events = events[select_by_muons_high & select_by_muons_low]
         muons = muons[select_by_muons_high & select_by_muons_low]
 
-        # Cuts for this CR
-        CR_requirement = (abs(muons.dxy) >= 0.01) & (abs(muons.dxy) <= 0.2)
-        muons = muons[CR_requirement]
+        return events, muons
+
+    def apply_CR_light(self, events):
+        """
+        Apply the CR_light selection to the events.
+        """
+        muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+
+        # Apply basic muon cuts
+        clean_muons = (
+            (events.Muon.mediumId)
+            & (events.Muon.pt > 3)
+            & (abs(events.Muon.eta) < 2.4)
+            & (abs(events.Muon.dz) < 0.2)
+        )
+
+        # Apply extra very tight cuts for CR_light
+        prompt_muons = (
+            (abs(muons.dxy) <= 0.02)
+            & (abs(muons.dz) <= 0.1)
+            & (abs(muons.ip3d) <= 0.02)
+        )
+        non_isolated_muons = muons.miniPFRelIso_all > 0.65
+        light_muons = prompt_muons & non_isolated_muons
+        muons = muons[light_muons]
 
         # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_final = ak.num(CR_requirement, axis=-1) > 0
-        events = events[select_by_muons_final]
-        muons = muons[select_by_muons_final]
+        select_by_muons_high = ak.num(muons, axis=-1) < 5
+        select_by_muons_low = ak.num(muons, axis=-1) > 0
+        events = events[select_by_muons_high & select_by_muons_low]
+        muons = muons[select_by_muons_high & select_by_muons_low]
+
+        return events, muons
+
+    def apply_CR_cb(self, events):
+        """
+        Apply the CR_cb selection to the events.
+        """
+        muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+
+        # Apply basic muon cuts
+        clean_muons = (
+            (events.Muon.mediumId)
+            & (events.Muon.pt > 3)
+            & (abs(events.Muon.eta) < 2.4)
+            & (abs(events.Muon.dz) < 0.2)
+        )
+
+        # Apply extra very tight cuts for CR_light
+        cb_muons = (abs(muons.dxy) >= 0.01) & (abs(muons.dxy) <= 0.2)
+        muons = muons[cb_muons]
+
+        # Make sure there is at least one muon in the event after the cuts
+        select_by_muons_high = ak.num(muons, axis=-1) < 5
+        select_by_muons_low = ak.num(muons, axis=-1) > 0
+        events = events[select_by_muons_high & select_by_muons_low]
+        muons = muons[select_by_muons_high & select_by_muons_low]
 
         return events, muons
 
     def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
 
-        events_, muons = self.muon_filter(events)
-        if (len(events_) == 0) or (len(muons) == 0):
+        events_ = self.muon_filter(events)
+        if len(events_) == 0:
             return
 
-        weights = self.get_weights(events_)
-
-        nMuon = ak.num(muons, axis=-1)
-
-        output[dataset]["histograms"]["CR_cb"].fill(
-            ak.where(nMuon > 5, 5, nMuon),
-            weight=weights,
+        events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
+        weights_CR_prompt = self.get_weights(events_CR_prompt)
+        output[dataset]["histograms"]["CR_prompt"].fill(
+            ak.num(muons_CR_prompt, axis=-1),
+            weight=weights_CR_prompt,
         )
+
+        events_CR_light, muons_CR_light = self.apply_CR_light(events_)
+        weights_CR_light = self.get_weights(events_CR_light)
+        output[dataset]["histograms"]["CR_light"].fill(
+            ak.num(muons_CR_light, axis=-1),
+            weight=weights_CR_light,
+        )
+
+        events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
+        weights_CR_cb = self.get_weights(events_CR_cb)
+        output[dataset]["histograms"]["CR_cb"].fill(
+            ak.num(muons_CR_cb, axis=-1),
+            weight=weights_CR_cb,
+        )
+
         return
 
     def analysis(self, events, output):
-        #####################################################################################
+        #######################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
-        #####################################################################################
+        #######################################################################
 
         # get dataset name
         dataset = events.metadata["dataset"]
@@ -207,10 +306,17 @@ class SUEP_cluster(processor.ProcessorABC):
             label="cutflow",
         ).Weight()
         histograms = {
+            "CR_prompt": hist.Hist.new.Regular(
+                4, 1, 5, name="nMuon", label="nMuon"
+            ).Weight(),
+            "CR_light": hist.Hist.new.Regular(
+                4, 1, 5, name="nMuon", label="nMuon"
+            ).Weight(),
             "CR_cb": hist.Hist.new.Regular(
-                6, 0, 6, name="nMuon", label="nMuon"
+                4, 1, 5, name="nMuon", label="nMuon"
             ).Weight(),
         }
+
         output = {
             dataset: {
                 "cutflow": cutflow,

@@ -1,16 +1,8 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 import hist
 import numpy as np
-import pandas as pd
 import vector
 from coffea import processor
 
@@ -19,7 +11,8 @@ import workflows.SUEP_utils as SUEP_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.pandas_accumulator import pandas_accumulator
+from workflows.CMS_corrections.pileup_utils import pileup_weight
+from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 
 # Set vector behavior
 vector.register_awkward()
@@ -61,168 +54,118 @@ class SUEP_cluster(processor.ProcessorABC):
     def eventSelection(self, events):
         """
         Applies trigger, returns events.
-        Default is PFHT triggers. Can use selection variable for customization.
         """
-        if self.trigger == "TripleMu":
-            if self.era == 2016:
-                trigger = events.HLT.TripleMu_5_3_3 == 1
-            elif self.era == 2017:
-                trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
-            elif self.era == 2018:
-                if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
-                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
-                else:
-                    if self.isMC:
-                        raise ValueError(
-                            "This 2018 file seems to have the 2017 trigger names"
-                        )
-                    trigger = ak.zeros_like(events.HLT.ZeroBias)
-            else:
-                raise ValueError("Invalid era")
-            events = events[trigger]
+        trigger1 = np.ones(len(events), dtype=bool)
+        trigger2 = np.ones(len(events), dtype=bool)
+        trigger3 = np.ones(len(events), dtype=bool)
+        trigger4 = np.ones(len(events), dtype=bool)
+        if self.era in ["2016", "2016APV"]:
+            if "TripleMu_5_3_3" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3 == 1
+            if "TripleMu_5_3_3_DZ_Mass3p8" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_5_3_3_DZ_Mass3p8 == 1
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger3 = events.HLT.TripleMu_12_10_5 == 1
+        elif self.era == "2017":
+            if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_10_5_5_DZ == 1
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger3 = events.HLT.TripleMu_12_10_5 == 1
+        elif self.era == "2018":
+            if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
+                trigger3 = events.HLT.TripleMu_10_5_5_DZ == 1
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger4 = events.HLT.TripleMu_12_10_5 == 1
+        elif self.era in ["2022", "2023"]:
+            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_10_5_5_DZ == 1
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger3 = events.HLT.TripleMu_12_10_5 == 1
         else:
-            raise ValueError("Invalid trigger path")
+            raise ValueError(f"Invalid era: {self.era}")
+        trigger = np.any(np.array([trigger1, trigger2, trigger3, trigger4]).T, axis=-1)
+        events = events[trigger]
         return events
+
+    def get_weights(self, events):
+        if not self.isMC:
+            return np.ones(len(events))
+        # Pileup weights (need to be fed with integers)
+        pu_weights = pileup_weight(
+            self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
+        )
+        # L1 prefire weights
+        prefire_weights = GetPrefireWeights(events)
+        # Trigger scale factors
+        # To be implemented
+        return events.genWeight * pu_weights * prefire_weights
 
     def ht(self, events):
         jet_Cut = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
         jets = events.Jet[jet_Cut]
         return ak.sum(jets.pt, axis=-1)
 
-    def clean_jets(self, jets):
-        jet_Cut = (jets.pt > 30) & (abs(jets.eta) < 2.4)
-        return jets[jet_Cut]
-
-    def muon_filter(
-        self,
-        events,
-    ):
+    def muon_filter(self, events):
         """
         Filter events after the TripleMu trigger.
         Cleans muons and electrons.
         Requires at least nMuons with mediumId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+
+        # First, apply basic muon cuts and make sure we are in the trigger plateau.
         clean_muons = (
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
             & (abs(events.Muon.dz) < 0.2)
         )
-
         muons = muons[clean_muons]
-        select_by_muons_high = ak.num(muons, axis=-1) < 5
         select_by_muons_low = ak.num(muons, axis=-1) > 2
+        events = events[select_by_muons_low]
+        muons = muons[select_by_muons_low]
+
+        # Then, go for the light flavor muons.
+        # They should be prompt-ish and non-isolated.
+        prompt_muons = (
+            (abs(muons.dxy) <= 0.02)
+            & (abs(muons.dz) <= 0.1)
+            & (abs(muons.ip3d) <= 0.02)
+        )
+        non_isolated_muons = muons.miniPFRelIso_all > 0.65
+        light_muons = prompt_muons & non_isolated_muons
+        muons = muons[light_muons]
+        select_by_muons_high = ak.num(muons, axis=-1) < 5
+        select_by_muons_low = ak.num(muons, axis=-1) > 0
         events = events[select_by_muons_high & select_by_muons_low]
         muons = muons[select_by_muons_high & select_by_muons_low]
 
-        # # Cuts for this CR
-        # CR_requirement = (abs(muons.dxy) >= 0.01) & (abs(muons.dxy) <= 0.2)
-        # muons = muons[CR_requirement]
-
-        # # Make sure there is at least one muon in the event after the cuts
-        # select_by_muons_final = ak.num(CR_requirement, axis=-1) > 0
-        # events = events[select_by_muons_final]
-        # muons = muons[select_by_muons_final]
-
         return events, muons
 
-    def fill_histograms(self, events, muons, output):
+    def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
 
-        # Apply cuts - comment out for now to check if this is the issue...
-        # cut = (muons.pt > 30) & (muons.miniPFRelIso_all < 0.1)
-        # muons = muons[cut]
-
-        # These arrays need to be broadcasted to the per muon dims from per event dims
-        nMuons = ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0])
-        weights = np.ones(len(events))
-        muons_genPartFlav = ak.flatten(ak.zeros_like(muons.pt, dtype=int))
-        if self.isMC:
-            weights = events.genWeight
-            muons_genPartFlav = ak.flatten(muons.genPartFlav).to_numpy().astype(int)
-        weights_per_muon = ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0])
-
-        if len(events) == 0 or ak.all(ak.num(muons) == 0):
+        events_, muons = self.muon_filter(events)
+        if (len(events_) == 0) or (len(muons) == 0):
             return
 
-        # Fill the histograms
-        # Per event histograms
-        output[dataset]["histograms"]["ht"].fill(
-            self.ht(events),
-            weight=weights,
-        )
-        nGenJets = np.zeros(len(events))
-        if self.isMC:
-            nGenJets = ak.num(events.GenJet)
-        output[dataset]["histograms"]["nJet_vs_nGenJet"].fill(
-            ak.num(self.clean_jets(events.Jet)),
-            nGenJets,
-            weight=weights,
-        )
-        # Per muon histograms
-        output[dataset]["histograms"]["muon_pt_vs_genPartFlav_vs_nMuon"].fill(
-            ak.flatten(muons.pt),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"]["muon_eta_vs_genPartFlav_vs_nMuon"].fill(
-            ak.flatten(muons.eta),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"]["muon_phi_vs_genPartFlav_vs_nMuon"].fill(
-            ak.flatten(muons.phi),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"]["muon_dxy_vs_genPartFlav_vs_nMuon"].fill(
-            ak.flatten(abs(muons.dxy)),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"]["muon_dz_vs_genPartFlav_vs_nMuon"].fill(
-            ak.flatten(abs(muons.dz)),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"]["muon_miniPFRelIso_vs_genPartFlav_vs_nMuon"].fill(
-            ak.flatten(muons.miniPFRelIso_all),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"][
-            "muon_btagDeepFlavB_vs_genPartFlav_vs_nMuon"
-        ].fill(
-            ak.flatten(ak.fill_none(muons.matched_jet.btagDeepFlavB, 0)),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        # Try to include underflow values in the first bin
-        output[dataset]["histograms"][
-            "muon_matched_jetPtRelv2_vs_genPartFlav_vs_nMuon"
-        ].fill(
-            ak.flatten(ak.where(muons.jetPtRelv2 > 1e-3, muons.jetPtRelv2, 1e-3)),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"][
-            "muon_matched_jetRelIso_vs_genPartFlav_vs_nMuon"
-        ].fill(
-            ak.flatten(ak.where(muons.jetRelIso > 1e-4, muons.jetRelIso, 1e-4)),
-            muons_genPartFlav,
-            nMuons,
-            weight=weights_per_muon,
-        )
+        weights = self.get_weights(events_)
 
+        nMuon = ak.num(muons, axis=-1)
+
+        output[dataset]["histograms"]["CR_cb"].fill(
+            ak.where(nMuon > 5, 5, nMuon),
+            weight=weights,
+        )
         return
 
     def analysis(self, events, output):
@@ -235,9 +178,7 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         # take care of weights
-        weights = np.ones(len(events))
-        if self.isMC:
-            weights = events.genWeight
+        weights = self.get_weights(events)
 
         # Fill the cutflow columns for all
         output[dataset]["cutflow"].fill(len(events) * ["all"], weight=weights)
@@ -254,9 +195,7 @@ class SUEP_cluster(processor.ProcessorABC):
         elif "WJetsToLNu_TuneCP5" in dataset:
             events = events[self.ht(events) < 70]
 
-        weights = np.ones(len(events))
-        if self.isMC:
-            weights = events.genWeight
+        weights = self.get_weights(events)
 
         # Fill the cutflow columns for trigger
         output[dataset]["cutflow"].fill(
@@ -264,177 +203,26 @@ class SUEP_cluster(processor.ProcessorABC):
             weight=weights,
         )
 
-        # fill the histograms
-        events, muons = self.muon_filter(events)
-        self.fill_histograms(events, muons, output)
+        self.fill_histograms(events, output)
 
         return
 
     def process(self, events):
         dataset = events.metadata["dataset"]
         cutflow = hist.Hist.new.StrCategory(
-            [
-                "all",
-                "trigger",
-                "nMu==3",
-            ],
+            ["all", "trigger"],
             name="cutflow",
             label="cutflow",
         ).Weight()
         histograms = {
-            # Per event histograms
-            "ht": hist.Hist.new.Reg(
-                100,
-                1,
-                1e4,
-                name="ht",
-                label="ht",
-                transform=hist.axis.transform.log,
+            "CR_light": hist.Hist.new.Regular(
+                6, 0, 6, name="nMuon", label="nMuon"
             ).Weight(),
-            "nJet_vs_nGenJet": hist.Hist.new.Reg(
-                20,
-                0,
-                20,
-                name="nJet",
-                label="nJet",
-            )
-            .Reg(
-                20,
-                0,
-                20,
-                name="nGenJet",
-                label="nGenJet",
-            )
-            .Weight(),
-            # Muon histograms - per muon entry
-            # Add an axis for nMuon
-            # Make sure we have the following variables:
-            #  - pt
-            #  - dxy
-            #  - miniPFRelIso
-            #  - btagDeepFlavB
-            #  - matched_jetPtRelv2
-            #  - matched_jetRelIso
-            "muon_pt_vs_genPartFlav_vs_nMuon": hist.Hist.new.Regular(
-                50,
-                1,
-                1e3,
-                name="Muon_pt",
-                label="Muon_pt",
-                transform=hist.axis.transform.log,
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_eta_vs_genPartFlav_vs_nMuon": hist.Hist.new.Regular(
-                50,
-                -4,
-                4,
-                name="Muon_eta",
-                label="Muon_eta",
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_phi_vs_genPartFlav_vs_nMuon": hist.Hist.new.Regular(
-                50,
-                -4,
-                4,
-                name="Muon_phi",
-                label="Muon_phi",
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_dxy_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
-                100,
-                1e-3,
-                1,
-                name="Muon_dxy",
-                label="Muon_dxy",
-                transform=hist.axis.transform.log,
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_dz_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
-                100,
-                1e-5,
-                1,
-                name="Muon_dz",
-                label="Muon_dz",
-                transform=hist.axis.transform.log,
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_miniPFRelIso_vs_genPartFlav_vs_nMuon": hist.Hist.new.Regular(
-                100,
-                1e-4,
-                1e3,
-                name="Muon_miniPFRelIso_all",
-                label="Muon_miniPFRelIso_all",
-                transform=hist.axis.transform.log,
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_btagDeepFlavB_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
-                40,
-                0,
-                1,
-                name="matched_jet_btagDeepFlavB",
-                label="matched_jet_btagDeepFlavB",
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_matched_jetPtRelv2_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
-                100,
-                1e-3,
-                1e2,
-                name="matched_jetPtRelv2",
-                label="matched_jetPtRelv2",
-                transform=hist.axis.transform.log,
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_matched_jetRelIso_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
-                100,
-                1e-4,
-                1e3,
-                name="matched_jetRelIso",
-                label="matched_jetRelIso",
-                transform=hist.axis.transform.log,
-            )
-            .IntCategory(
-                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
-            )
-            .Reg(8, 0, 8, name="nMuon", label="nMuon")
-            .Weight(),
         }
         output = {
             dataset: {
                 "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
                 "histograms": histograms,
             },
         }

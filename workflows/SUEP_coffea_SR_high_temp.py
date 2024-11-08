@@ -6,9 +6,6 @@ import numpy as np
 import vector
 from coffea import processor
 
-# Importing SUEP specific functions
-import workflows.SUEP_utils as SUEP_utils
-
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.pileup_utils import pileup_weight
@@ -22,7 +19,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def __init__(
         self,
         isMC: int,
-        era: int,
+        era: str,
         sample: str,
         do_syst: bool,
         syst_var: str,
@@ -38,7 +35,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.output_location = output_location
         self.do_syst = do_syst
         self.gensumweight = 1.0
-        self.era = int(era)
+        self.era = era
         self.isMC = bool(isMC)
         self.sample = sample
         self.syst_var, self.syst_suffix = (
@@ -109,54 +106,87 @@ class SUEP_cluster(processor.ProcessorABC):
         return events.genWeight * pu_weights * prefire_weights
 
     def ht(self, events):
-        jet_Cut = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
+        jet_Cut = (events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)
         jets = events.Jet[jet_Cut]
         return ak.sum(jets.pt, axis=-1)
 
     def muon_filter(self, events):
         """
-        Filter events after the TripleMu trigger. Cleans muons.
-        Requires at least nMuons with mediumId, pt, dxy, dz, and eta cuts.
+        Filter events after the TripleMu trigger.
+        Cleans muons and electrons.
+        Requires at least nMuons with mediumId, pt, dz, and eta cuts.
         """
         muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+
         clean_muons = (
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
             & (abs(events.Muon.dz) < 0.2)
         )
-
         muons = muons[clean_muons]
-        select_by_muons_high = ak.num(muons, axis=-1) < 5
         select_by_muons_low = ak.num(muons, axis=-1) > 2
-        events = events[select_by_muons_high & select_by_muons_low]
-        muons = muons[select_by_muons_high & select_by_muons_low]
+        events = events[select_by_muons_low]
 
-        # Cuts for this CR
-        CR_requirement = (abs(muons.dxy) >= 0.01) & (abs(muons.dxy) <= 0.2)
-        muons = muons[CR_requirement]
+        return events
 
-        # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_final = ak.num(CR_requirement, axis=-1) > 0
-        events = events[select_by_muons_final]
-        muons = muons[select_by_muons_final]
+    def apply_SR_high_temp(self, events):
+        """
+        Apply the SR_high_temp selection to the events.
+        """
+        muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
-        return events, muons
+        tight_cut = (
+            (muons.pt < 45)
+            & (muons.ip3d < 0.008)
+            & (muons.miniPFRelIso_all < 0.65)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
+        )
+        muons_tight_cut = muons[tight_cut]
+        selelct_by_muons_tight = ak.num(muons_tight_cut, axis=-1) > 2
+        events_tight_cut = events[selelct_by_muons_tight]
+        muons_tight_cut = muons_tight_cut[selelct_by_muons_tight]
+
+        loose_cut = (
+            (muons.ip3d < 0.1)
+            & (muons.miniPFRelIso_all < 10)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 10)
+        )
+        muons_loose_cut = muons[loose_cut]
+        selelct_by_muons_loose = ak.num(muons_loose_cut, axis=-1) > 2
+        events_loose_cut = events[selelct_by_muons_loose]
+        muons_loose_cut = muons_loose_cut[selelct_by_muons_loose]
+
+        return events_tight_cut, events_loose_cut, muons_tight_cut, muons_loose_cut
 
     def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
 
-        events_, muons = self.muon_filter(events)
-        if (len(events_) == 0) or (len(muons) == 0):
+        events_ = self.muon_filter(events)
+        if len(events_) == 0:
             return
 
-        weights = self.get_weights(events_)
+        (
+            events_SR_high_temp_tight,
+            events_SR_high_temp_loose,
+            muons_SR_high_temp_tight,
+            muons_SR_high_temp_loose,
+        ) = self.apply_SR_high_temp(events_)
 
-        nMuon = ak.num(muons, axis=-1)
+        weights_SR_high_temp_tight = self.get_weights(events_SR_high_temp_tight)
+        nMuon_SR_high_temp_tight = ak.num(muons_SR_high_temp_tight, axis=-1)
+        output[dataset]["histograms"]["SR_high_temp_tight"].fill(
+            ak.where(nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight),
+            weight=weights_SR_high_temp_tight,
+        )
 
-        output[dataset]["histograms"]["CR_cb"].fill(
-            ak.where(nMuon > 5, 5, nMuon),
-            weight=weights,
+        weights_SR_high_temp_loose = self.get_weights(events_SR_high_temp_loose)
+        nMuon_SR_high_temp_loose = ak.num(muons_SR_high_temp_loose, axis=-1)
+        output[dataset]["histograms"]["SR_high_temp_loose"].fill(
+            ak.where(nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose),
+            weight=weights_SR_high_temp_loose,
         )
         return
 
@@ -207,10 +237,14 @@ class SUEP_cluster(processor.ProcessorABC):
             label="cutflow",
         ).Weight()
         histograms = {
-            "CR_cb": hist.Hist.new.Regular(
-                6, 0, 6, name="nMuon", label="nMuon"
+            "SR_high_temp_tight": hist.Hist.new.Regular(
+                5, 3, 8, name="nMuon", label="nMuon"
+            ).Weight(),
+            "SR_high_temp_loose": hist.Hist.new.Regular(
+                5, 3, 8, name="nMuon", label="nMuon"
             ).Weight(),
         }
+
         output = {
             dataset: {
                 "cutflow": cutflow,
