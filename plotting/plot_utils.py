@@ -268,7 +268,7 @@ def fillSample(infile_name, plots, lumi):
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-    elif "SUEP" in infile_name:
+    elif "SUEP" in infile_name or "ggHBSMpythia" in infile_name:
         if "+" in infile_name:
             sample = infile_name.split("/")[-1].split("+")[0]
         elif "new_generic" in infile_name:
