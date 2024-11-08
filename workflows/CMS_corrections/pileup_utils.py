@@ -20,6 +20,8 @@ def pileup_weight(era, nTrueInt, sys=""):
     weights: array
         The pileup weights
     """
+    if era == "2016APV":
+        era = "2016"
     if era not in ["2016", "2017", "2018"]:
         raise ValueError(
             "no pileup weights because no year was selected for function pileup_weight"
