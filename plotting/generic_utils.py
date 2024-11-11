@@ -1,7 +1,6 @@
 import glob
 import itertools
 
-import fill_utils
 import plot_utils
 from rich.progress import Progress
 
@@ -25,7 +24,7 @@ def loader(
     verbosity=0,
 ):
     # input .pkl files
-    plotDir = f"./{tag}_output_histograms/"
+    plotDir = f"../processor_output_files/{tag}_output_histograms/"
     infile_names = glob.glob(plotDir + "*.pkl")
 
     # generate list of files that you want to merge histograms for
@@ -35,13 +34,11 @@ def loader(
     offline_files_SUEP += [
         f for f in infile_names if ("ggHBSMpythia" in f) and ("histograms.pkl" in f)
     ]
-    offline_files_normalized = [f for f in infile_names if ("normalized.pkl" in f)]
-    offline_files_other = [
+    offline_files = [
         f
         for f in infile_names
         if ("pythia8" in f) and ("histograms.pkl" in f) and ("SUEP" not in f)
     ]
-    offline_files = offline_files_normalized + offline_files_other
     data_files = [
         f for f in infile_names if ("DoubleMuon" in f) and ("histograms.pkl" in f)
     ]
@@ -94,10 +91,7 @@ def loader(
         tag = ""
         if "SUEP-m" in key:
             tag = "+RunIIAutumn18-private+MINIAODSIM"
-        plots[key + "_2018"] = fill_utils.apply_normalization(
-            plots_SUEP_2018[key],
-            fill_utils.getXSection(key + tag, "2018", SUEP=True),
-        )
+        plots[key + "_2018"] = plots_SUEP_2018[key]
     for key in plots_2018.keys():
         is_binned = False
         binned_samples = [
@@ -121,10 +115,7 @@ def loader(
         if is_binned or ("bkg" in key):
             plots[key + "_2018"] = plots_2018[key]
         else:
-            plots[key + "_2018"] = fill_utils.apply_normalization(
-                plots_2018[key],
-                fill_utils.getXSection(other_bkg_names[key], "2018", SUEP=False),
-            )
+            plots[key + "_2018"] = plots_2018[key]
 
     if load_data:
         for key in plots_data.keys():

@@ -7,6 +7,9 @@
 *.tar
 *.zip
 
+# Directory with output files
+processor_output_files/
+
 # Checkpoints & cache directories
 .ipynb_checkpoints/
 workflows/__pycache__/
