@@ -1,17 +1,17 @@
 import argparse
+import importlib
+import inspect
 import json
 import os
 import pickle
 import sys
-import time
-import importlib
-import inspect
-from typing import Any
+from typing import Optional, Union
 
-import numpy as np
-import uproot
 from coffea import nanoevents, processor
-from rich import pretty
+from coffea.processor import Accumulatable
+from rich import pretty  # type: ignore[import]
+
+from workflows.SUEP_coffea import SUEP_cluster
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -19,45 +19,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 
-def validate(file):
-    try:
-        fin = uproot.open(file)
-        return fin["Events"].num_entries
-    except RuntimeError:
-        print(f"Corrupted file: {file}")
-        return
-
-
-def validation(args, sample_dict):
-    start = time.time()
-    from p_tqdm import p_map
-
-    all_invalid = []
-    for sample in sample_dict.keys():
-        _rmap = p_map(
-            validate,
-            sample_dict[sample],
-            num_cpus=args.workers,
-            desc=f"Validating {sample[:20]}...",
-        )
-        _results = list(_rmap)
-        counts = np.sum([r for r in _results if np.isreal(r)])
-        all_invalid += [r for r in _results if type(r) == str]
-        print("Events:", np.sum(counts))
-    print("Bad files:")
-    for fi in all_invalid:
-        print(f"  {fi}")
-    end = time.time()
-    print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))
-    if input("Remove bad files? (y/n)") == "y":
-        print("Removing:")
-        for fi in all_invalid:
-            print(f"Removing: {fi}")
-            os.system(f"rm {fi}")
-    sys.exit(0)
-
-
-def loadder(args):
+def loadder(args: argparse.Namespace) -> dict:
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
     for key in sample_dict.keys():
@@ -71,9 +33,34 @@ def loadder(args):
     return sample_dict
 
 
+def getXSection(
+    dataset: str, year: str, SUEP: Optional[bool] = False, path: Optional[str] = "data/"
+) -> float:
+    filename = f"{path}/xsections_{year}_{'SUEP' if SUEP else ''}.json"
+
+    try:
+        with open(filename) as file:
+            MC_xsecs = json.load(file)
+
+        if SUEP:
+            return MC_xsecs[dataset]
+
+        return (
+            MC_xsecs[dataset]["xsec"]
+            * MC_xsecs[dataset]["kr"]
+            * MC_xsecs[dataset]["br"]
+        )
+
+    except (KeyError, FileNotFoundError) as e:
+        print(
+            f"WARNING: Could not find xsection for {dataset}. Check dataset name and json file."
+        )
+        return 1
+
+
 def setup_workflow(
     workflow_name: str, args: argparse.Namespace, sample_dict: dict
-) -> Any:
+) -> SUEP_cluster:
     """
     Dynamically import and setup workflow from the workflow name
 
@@ -166,20 +153,16 @@ def get_main_parser() -> argparse.ArgumentParser:
             "iterative",
             "futures",
             "dask/condor",
-            "dask/slurm",
             "dask/lpc",
             "dask/lxplus",
-            "dask/mit",
             "dask/casa",
         ],
         default="futures",
         help="The type of executor to use (default: %(default)s). Other options can be implemented. "
         "For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html"
-        "- `dask/slurm` - tested at DESY/Maxwell"
         "- `dask/condor` - tested at DESY, RWTH"
         "- `dask/lpc` - custom lpc/condor setup (due to write access restrictions)"
-        "- `dask/lxplus` - custom lxplus/condor setup (due to port restrictions)"
-        "- `dask/mit` - custom mit/condor setup",
+        "- `dask/lxplus` - custom lxplus/condor setup (due to port restrictions)",
     )
     parser.add_argument(
         "-j",
@@ -271,15 +254,10 @@ def get_main_parser() -> argparse.ArgumentParser:
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     parser.add_argument("--check_hlt", action="store_true", help="Check HLT paths")
-    parser.add_argument(
-        "--gen_sum_file",
-        type=str,
-        help="Gen sum weight file. Overrides the count from the jobs.",
-    )
     return parser
 
 
-def specificProcessing(args, sample_dict):
+def specificProcessing(args: argparse.Namespace, sample_dict: dict) -> dict:
     if args.only in sample_dict.keys():  # is dataset
         sample_dict = dict([(args.only, sample_dict[args.only])])
     if "*" in args.only:  # wildcard for datasets
@@ -297,15 +275,22 @@ def specificProcessing(args, sample_dict):
     return sample_dict
 
 
-def daskExecutor(args, env_extra):
+def daskExecutor(args: argparse.Namespace) -> processor.DaskExecutor:
     import shutil
 
-    from dask.distributed import Client, Worker, WorkerPlugin
-    from dask_jobqueue import HTCondorCluster, SLURMCluster
-    from distributed.diagnostics.plugin import UploadDirectory
+    from dask.distributed import Client, Worker, WorkerPlugin  # type: ignore[import]
+    from distributed.diagnostics.plugin import UploadDirectory  # type: ignore[import]
+
+    # Define the class once, outside the conditional blocks
+    class SettingSitePath(WorkerPlugin):
+        def __init__(self, base_path: str):
+            self.base_path = base_path
+
+        def setup(self, worker: Worker):
+            sys.path.insert(0, os.getcwd() + self.base_path)
 
     if "lpc" in args.executor:
-        from lpcjobqueue import LPCCondorCluster
+        from lpcjobqueue import LPCCondorCluster  # type: ignore[import]
 
         cluster = LPCCondorCluster(
             transfer_input_files="/srv/workflows/",
@@ -334,12 +319,8 @@ def daskExecutor(args, env_extra):
         )
         client = Client(cluster)
 
-        class SettingSitePath(WorkerPlugin):
-            def setup(self, worker: Worker):
-                sys.path.insert(0, os.getcwd() + "/workflows/")
-
         client.register_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_plugin(SettingSitePath())
+        client.register_plugin(SettingSitePath("/workflows/"))
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
 
@@ -347,14 +328,9 @@ def daskExecutor(args, env_extra):
         client.wait_for_workers(1)
 
     elif "casa" in args.executor:
-
-        class SettingSitePath(WorkerPlugin):
-            def setup(self, worker: Worker):
-                sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
-
         client = Client("tls://localhost:8786")
         client.register_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_plugin(SettingSitePath())
+        client.register_plugin(SettingSitePath("/dask-worker-space/"))
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
     else:
@@ -363,21 +339,23 @@ def daskExecutor(args, env_extra):
     return processor.DaskExecutor(client=client)
 
 
-def nativeExecutors(args):
+def nativeExecutors(
+    args: argparse.Namespace,
+) -> Union[processor.IterativeExecutor, processor.FuturesExecutor]:
     executor = processor.IterativeExecutor()
     if args.executor == "futures":
         executor = processor.FuturesExecutor(workers=args.workers)
     return executor
 
 
-def getWeights(sample_dict):
+def getWeights(sample_dict: dict) -> Accumulatable:
     from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
     genSumW_instance = GenSumWeightExtractor()
     genSumW_executor = processor.IterativeExecutor()
     genSumW_run = processor.Runner(
         executor=genSumW_executor,
-        schema=nanoevents.BaseSchema,
+        schema=nanoevents.BaseSchema,  # type: ignore[import]
         align_clusters=True,
     )
     genSumW = genSumW_run(
@@ -388,14 +366,14 @@ def getWeights(sample_dict):
     return genSumW
 
 
-def checkHLTpaths(sample_dict):
+def checkHLTpaths(sample_dict: dict) -> Accumulatable:
     from workflows.CheckHLTpaths import CheckHLTpaths
 
     hlt_instance = CheckHLTpaths()
     hlt_executor = processor.FuturesExecutor(workers=args.workers)
     hlt_run = processor.Runner(
         executor=hlt_executor,
-        schema=nanoevents.NanoAODSchema,
+        schema=nanoevents.NanoAODSchema,  # type: ignore[import]
         align_clusters=True,
     )
     hlt = hlt_run(
@@ -406,52 +384,16 @@ def checkHLTpaths(sample_dict):
     return hlt
 
 
-def exportCert(args):
-    """
-    dask/parsl needs to export x509 to read over xrootd
-    dask/lpc uses custom jobqueue provider that handles x509
-    """
-    if args.voms is not None:
-        _x509_path = args.voms
-    else:
-        try:
-            _x509_localpath = (
-                [
-                    line
-                    for line in os.popen("voms-proxy-info").read().split("\n")
-                    if line.startswith("path")
-                ][0]
-                .split(":")[-1]
-                .strip()
-            )
-        except RuntimeError as exc:
-            raise RuntimeError(
-                "x509 proxy could not be parsed, try creating it with 'voms-proxy-init'"
-            ) from exc
-        _x509_path = os.environ["HOME"] + f'/.{_x509_localpath.split("/")[-1]}'
-        os.system(f"cp {_x509_localpath} {_x509_path}")
-
-    env_extra = [
-        "export XRD_RUNFORKHANDLER=1",
-        "export XRD_STREAMTIMEOUT=10",
-        f"export X509_USER_PROXY={_x509_path}",
-        f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
-        f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-    ]
-    condor_extra = [
-        f'source {os.environ["HOME"]}/.bashrc',
-    ]
-    return env_extra, condor_extra
-
-
-def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
+def execute(
+    args: argparse.Namespace, processor_instance: SUEP_cluster, sample_dict: dict
+) -> Accumulatable:
     """
     Main function to execute the workflow
     """
     if args.executor in ["futures", "iterative"]:
         executor = nativeExecutors(args)
     elif "dask" in args.executor:
-        executor = daskExecutor(args, env_extra)
+        executor = daskExecutor(args)
     else:
         raise NotImplementedError
 
@@ -459,7 +401,7 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
         executor=executor,
         chunksize=args.chunk,
         maxchunks=args.max,
-        schema=nanoevents.NanoAODSchema,
+        schema=nanoevents.NanoAODSchema,  # type: ignore[import]
         skipbadfiles=args.skipbadfiles,
     )
     output = run(
@@ -471,52 +413,49 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     return output
 
 
-def saveOutput(args, processor_instance, output, sample, gensumweight=None):
+def saveOutput(
+    args: argparse.Namespace,
+    output: dict,
+    sample: str,
+    gensumweight: Optional[float] = None,
+) -> None:
     """
     Save the output to file(s)
     Will calculate weights if necessary
     """
-    from workflows import pandas_utils
 
     if gensumweight is not None:
         output["gensumweight"].value = gensumweight
         output["cutflow"][0] = [gensumweight, gensumweight]
 
-    metadata = dict(
-        gensumweight=output["gensumweight"].value,
-        era=processor_instance.era,
-        mc=processor_instance.isMC,
-        sample=sample,
-    )
+    if args.isMC:
+        xsection = getXSection(sample, args.era)
+        scale = xsection / output["gensumweight"].value
+        pretty.pprint(
+            f"Scaling {sample} by {xsection} / {output['gensumweight'].value} = {scale}"
+        )
 
     # Save the output
     outputName = ""
     if args.output is not None:
         outputName = f"{args.output}_"
-    outputName = f"{outputName}{sample}.hdf5"
-
-    if "vars" in output.keys():
-        df = output["vars"].value
-        print(f"Saving the following output to {outputName}")
-        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
+    outputName = f"{outputName}{sample}"
 
     # Save the cutflow (normalized to the gensumweight)
     if "cutflow" in output.keys():
-        cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
+        cutflowName = f"{outputName}_cutflow.pkl"
         if args.isMC:
-            output["cutflow"] /= output["gensumweight"].value
+            output["cutflow"] *= scale
         print(f"Saving the following cutflow to {cutflowName}")
-        pickle.dump(
-            {"cutflow": output["cutflow"]},
-            open(cutflowName, "wb"),
-        )
+        pickle.dump(output["cutflow"], open(cutflowName, "wb"))
 
+    # Save the histograms (normalized to the gensumweight)
     if "histograms" in output.keys():
-        histName = f"{outputName.replace('.hdf5', '')}_histograms.pkl"
-        print(f"Saving the following histograms to {histName}")
+        histName = f"{outputName}_histograms.pkl"
         if args.isMC:
             for p in output["histograms"].keys():
-                output["histograms"][p] /= metadata["gensumweight"]
+                output["histograms"][p] *= scale
+        print(f"Saving the following histograms to {histName}")
         pickle.dump(output["histograms"], open(histName, "wb"))
 
 
@@ -531,10 +470,6 @@ if __name__ == "__main__":
     if args.only:
         sample_dict = specificProcessing(args, sample_dict)
 
-    # Scan if files can be opened
-    if args.validate:
-        validation(args, sample_dict)
-
     # Check HLT paths
     if args.check_hlt:
         hlt = checkHLTpaths(sample_dict)
@@ -544,24 +479,11 @@ if __name__ == "__main__":
     # Load workflow using dynamic import
     processor_instance = setup_workflow(args.workflow, args, sample_dict)
 
-    # Setup x509 for dask/parsl
-    env_extra, condor_extra = None, None
-    if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
-        env_extra, condor_extra = exportCert(args)
-
     # Execute the workflow
-    output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
+    output = execute(args, processor_instance, sample_dict)
 
     # Calculate the gen sum weight for skimmed samples
-    # Or load gen sum weight dict
-    if args.gen_sum_file:
-        with open(args.gen_sum_file) as f:
-            weights = json.load(f)
-        print(
-            "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
-        )
-        pretty.pprint(weights)
-    elif args.skimmed:
+    if args.skimmed:
         weights = getWeights(sample_dict)
         print(
             "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
@@ -571,12 +493,12 @@ if __name__ == "__main__":
     # Save the output
     for sample in sample_dict:
         if args.skimmed:
-            weight = weights[sample]
+            weight = weights[sample]  # type: ignore[import]
             if not isinstance(weight, int):
                 weight = weight.value
-            saveOutput(args, processor_instance, output[sample], sample, weight)
+            saveOutput(args, output[sample], sample, gensumweight=weight)  # type: ignore[import]
         else:
-            saveOutput(args, processor_instance, output[sample], sample)
+            saveOutput(args, output[sample], sample)  # type: ignore[import]
 
     if args.verbose:
         pretty.pprint(output)
