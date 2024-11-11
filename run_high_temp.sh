@@ -54,17 +54,17 @@ if [ $background -eq 1 ]; then
         --executor futures --chunk 50000 \
         --skimmed --trigger TripleMu \
         --era 2018 --isMC
-    echo "Processing BKG CR..."
-    python runner.py \
-        --workflow SUEP_coffea_CRs -o "${tag}_CR" \
-        --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
-        --executor futures --chunk 50000 \
-        --skimmed --trigger TripleMu \
-        --era 2018 --isMC
+    # echo "Processing BKG CR..."
+    # python runner.py \
+    #     --workflow SUEP_coffea_CRs -o "${tag}_CR" \
+    #     --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
+    #     --executor futures --chunk 50000 \
+    #     --skimmed --trigger TripleMu \
+    #     --era 2018 --isMC
 fi
 
 if [ $data -eq 1 ]; then
-    if [ $blind -eq 0]; then
+    if [ $blind -eq 0 ]; then
         echo "Processing data SR..."
         python runner.py \
             --workflow SUEP_coffea_SR_high_temp -o "${tag}_SR" \
@@ -86,11 +86,11 @@ if [ $extra_commands -eq 1 ]; then
     tag_length=$((${#tag} + 3 + 3))
     for mode in cutflow histograms; do
         for region in CR SR; do
-            if [ ! -d "plotting/${tag}_${region}_output_${mode}" ]; then
-                mkdir "plotting/${tag}_${region}_output_${mode}"
+            if [ ! -d "processor_output_files/${tag}_${region}_output_${mode}" ]; then
+                mkdir "processor_output_files/${tag}_${region}_output_${mode}"
             fi
             for i in ./"${tag}"_"${region}"*_"${mode}".pkl; do
-                mv "$i" "plotting/${tag}_${region}_output_${mode}/${i:$tag_length}"
+                mv "$i" "processor_output_files/${tag}_${region}_output_${mode}/${i:$tag_length}"
             done
         done
     done

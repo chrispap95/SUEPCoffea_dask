@@ -1,14 +1,10 @@
-from ctypes import Union
 from typing import Optional
 
 import awkward as ak
 import hist
 import numpy as np
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
-
-# Importing SUEP specific functions
-import workflows.SUEP_utils as SUEP_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON

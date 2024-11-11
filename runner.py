@@ -11,7 +11,7 @@ from coffea import nanoevents, processor
 from coffea.processor import Accumulatable
 from rich import pretty  # type: ignore[import]
 
-from workflows.SUEP_coffea import SUEP_cluster
+from workflows.SUEP_coffea_SR_high_temp import SUEP_cluster
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -33,16 +33,15 @@ def loadder(args: argparse.Namespace) -> dict:
     return sample_dict
 
 
-def getXSection(
-    dataset: str, year: str, SUEP: Optional[bool] = False, path: Optional[str] = "data/"
-) -> float:
-    filename = f"{path}/xsections_{year}_{'SUEP' if SUEP else ''}.json"
+def getXSection(dataset: str, year: str, path: Optional[str] = "data/") -> float:
+    is_SUEP = True if "SUEP" in dataset else False
+    filename = f"{path}/xsections_{year}{'_SUEP' if is_SUEP else ''}.json"
 
     try:
         with open(filename) as file:
             MC_xsecs = json.load(file)
 
-        if SUEP:
+        if is_SUEP:
             return MC_xsecs[dataset]
 
         return (
@@ -53,7 +52,7 @@ def getXSection(
 
     except (KeyError, FileNotFoundError) as e:
         print(
-            f"WARNING: Could not find xsection for {dataset}. Check dataset name and json file."
+            f"WARNING: Could not find xsection for {dataset} in {filename}. Check dataset name and json file."
         )
         return 1
 
@@ -432,7 +431,7 @@ def saveOutput(
         xsection = getXSection(sample, args.era)
         scale = xsection / output["gensumweight"].value
         pretty.pprint(
-            f"Scaling {sample} by {xsection} / {output['gensumweight'].value} = {scale}"
+            f"Scaling {sample} by {xsection:.2e} / {output['gensumweight'].value:.2e} = {scale:.2e}"
         )
 
     # Save the output
