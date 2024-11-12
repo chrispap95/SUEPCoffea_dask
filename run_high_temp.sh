@@ -54,13 +54,13 @@ if [ $background -eq 1 ]; then
         --executor futures --chunk 50000 \
         --skimmed --trigger TripleMu \
         --era 2018 --isMC
-    # echo "Processing BKG CR..."
-    # python runner.py \
-    #     --workflow SUEP_coffea_CRs -o "${tag}_CR" \
-    #     --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
-    #     --executor futures --chunk 50000 \
-    #     --skimmed --trigger TripleMu \
-    #     --era 2018 --isMC
+    echo "Processing BKG CR..."
+    python runner.py \
+        --workflow SUEP_coffea_CRs -o "${tag}_CR" \
+        --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
+        --executor futures --chunk 50000 \
+        --skimmed --trigger TripleMu \
+        --era 2018 --isMC
 fi
 
 if [ $data -eq 1 ]; then

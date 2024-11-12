@@ -182,13 +182,13 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Apply extra very tight cuts for CR_light
         prompt_muons = (
-            (abs(muons.dxy) <= 0.02)
-            & (abs(muons.dz) <= 0.1)
-            & (abs(muons.ip3d) <= 0.02)
+            (abs(events.Muon.dxy) <= 0.02)
+            & (abs(events.Muon.dz) <= 0.1)
+            & (abs(events.Muon.ip3d) <= 0.02)
         )
-        non_isolated_muons = muons.miniPFRelIso_all > 0.65
+        non_isolated_muons = events.Muon.miniPFRelIso_all > 0.65
         light_muons = prompt_muons & non_isolated_muons
-        muons = muons[light_muons]
+        muons = muons[clean_muons & light_muons]
 
         # Make sure there is at least one muon in the event after the cuts
         select_by_muons_high = ak.num(muons, axis=-1) < 5
@@ -213,9 +213,9 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.dz) < 0.2)
         )
 
-        # Apply extra very tight cuts for CR_light
-        cb_muons = (abs(muons.dxy) >= 0.01) & (abs(muons.dxy) <= 0.2)
-        muons = muons[cb_muons]
+        # Apply extra very tight cuts for CR_cb
+        cb_muons = (abs(events.Muon.dxy) >= 0.01) & (abs(events.Muon.dxy) <= 0.2)
+        muons = muons[clean_muons & cb_muons]
 
         # Make sure there is at least one muon in the event after the cuts
         select_by_muons_high = ak.num(muons, axis=-1) < 5

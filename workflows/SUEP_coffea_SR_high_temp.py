@@ -3,7 +3,7 @@ from typing import Optional
 import awkward as ak
 import hist
 import numpy as np
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
 
 # Importing CMS corrections
@@ -138,23 +138,31 @@ class SUEP_cluster(processor.ProcessorABC):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
-        tight_cut = (
-            (muons.pt < 45)
-            & (muons.ip3d < 0.008)
-            & (muons.miniPFRelIso_all < 0.65)
-            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
+        # Apply basic muon cuts
+        clean_muons = (
+            (events.Muon.mediumId)
+            & (events.Muon.pt > 3)
+            & (abs(events.Muon.eta) < 2.4)
+            & (abs(events.Muon.dz) < 0.2)
         )
-        muons_tight_cut = muons[tight_cut]
+
+        tight_cut = (
+            (events.Muon.pt < 45)
+            & (events.Muon.ip3d < 0.008)
+            & (events.Muon.miniPFRelIso_all < 0.65)
+            & ((events.Muon.miniPFRelIso_all - events.Muon.miniPFRelIso_chg) < 0.5)
+        )
+        muons_tight_cut = muons[clean_muons & tight_cut]
         selelct_by_muons_tight = ak.num(muons_tight_cut, axis=-1) > 2
         events_tight_cut = events[selelct_by_muons_tight]
         muons_tight_cut = muons_tight_cut[selelct_by_muons_tight]
 
         loose_cut = (
-            (muons.ip3d < 0.1)
-            & (muons.miniPFRelIso_all < 10)
-            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 10)
+            (events.Muon.ip3d < 0.1)
+            & (events.Muon.miniPFRelIso_all < 10)
+            & ((events.Muon.miniPFRelIso_all - events.Muon.miniPFRelIso_chg) < 10)
         )
-        muons_loose_cut = muons[loose_cut]
+        muons_loose_cut = muons[clean_muons & loose_cut]
         selelct_by_muons_loose = ak.num(muons_loose_cut, axis=-1) > 2
         events_loose_cut = events[selelct_by_muons_loose]
         muons_loose_cut = muons_loose_cut[selelct_by_muons_loose]
