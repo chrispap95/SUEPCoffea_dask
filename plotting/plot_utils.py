@@ -1,5 +1,8 @@
 import os
+import glob
+import re
 import pickle
+from typing import Optional
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
@@ -10,52 +13,250 @@ lumis = {
     "2018": 54540.000,
 }
 
-sample_names = {
-    "QCD_Pt_": "QCD_Pt",
-    "QCD_HT": "QCD_HT",
-    "MuEnriched": "QCD_Pt_MuEnriched",
-    "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX": "DYJetsToLL_NLO",
-    "DYJetsToMuMu": "DYJetsToMuMu",
-    "DY0JetsToLL": "DY0JetsToLL",
-    "DY1JetsToLL": "DYNJetsToLL",
-    "DY2JetsToLL": "DYNJetsToLL",
-    "DY3JetsToLL": "DYNJetsToLL",
-    "DY4JetsToLL": "DYNJetsToLL",
-    "DYJetsToLL_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8": "DYJetsToLL_NJ",
-    "DYJetsToLL_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8": "DYJetsToLL_NJ",
-    "DYJetsToLL_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8": "DYJetsToLL_NJ",
-    "DYJetsToLL_M-50_HT": "DYJetsToLL_HT",
-    "DYJetsToLL_M-4to50_HT": "DYJetsToLL_HT",
-    "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8": "DYLowMass_NLO",
-    "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8+": "DYLowMass_LO",
-    "TTJets": "TTJets",
-    "TTTo2L2Nu": "TTTo2L2Nu",
-    "TTToSemiLeptonic": "TTToSemiLeptonic",
-    "TTToHadronic": "TTToHadronic",
-    "ttZJets": "ttZJets",
-    "WWTo": "WW_all",
-    "WZTo": "WZ_all",
-    "ST_t-channel_": "ST_t-channel",
-    "ST_tW_": "ST_tW",
-    "WWZ_4F": "WWZ_4F",
-    "WJetsToLNu_HT": "WJetsToLNu_HT",
-    "WJetsToLNu_TuneCP5": "WJets_inclusive",
-    "ZZTo4L": "ZZTo4L",
-    "ZZZ": "ZZZ",
-    "ZToMuMu": "ZToMuMu",
-    "JetHT+Run": "data",
-    "ScoutingPFHT": "data",
+
+dataset_groups_old = {
+    "QCD_Pt_MuEnrichedPt5": [
+        r"QCD_Pt-.*_MuEnrichedPt5_TuneCP5_13TeV-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "TT_powheg": [
+        r"TTTo.*_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "DY_inclusive_NLO": [
+        r"DYJetsToLL_M-.*_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "ST_NLO": [
+        r"ST_t-channel_.*_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
+        r"ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "WJetsToLNu_HT_LO": [
+        r"WJetsToLNu_HT-.*_TuneCP5_13TeV-madgraphMLM-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "WJetsToLNu_inclusive_NLO": [
+        r"WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "WJetsToLNu": [
+        "WJetsToLNu_HT_LO",
+        "WJetsToLNu_inclusive_NLO",
+    ],
+    "VV_NLO": [
+        r"WWTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
+        r"WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
+        r"WZTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
+        r"WZTo1L3Nu_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
+        r"WZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
+        r"WZTo3LNu_mllmin4p0_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
+        r"ZZTo4L_TuneCP5_13TeV_powheg_pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "VVV_NLO": [
+        r"WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8.*UL18.*NANOAODSIM$",
+        r"ZZZ_TuneCP5_13TeV-amcatnlo-pythia8.*UL18.*NANOAODSIM$",
+    ],
+    "TTZ_inclusive_LO": [
+        r"ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8.*UL18.*NANOAODSIM$",
+    ],
 }
 
 
-def lumiLabel(year):
-    if year in ["2017", "2018"]:
-        return round(lumis[year] / 1000, 1)
-    elif year == "2016":
+# dataset_groups_old = {
+#     "QCD_Pt_MuEnrichedPt5": [
+#         "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#     ],
+#     "TT_powheg": [
+#         "TTToHadronic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#     ],
+#     "DY_inclusive_NLO": [
+#         "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#     ],
+#     "ST_NLO": [
+#         "ST_t-channel_antitop_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "ST_t-channel_top_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#     ],
+#     "WJetsToLNu_HT_LO": [
+#         "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#     ],
+#     "WJetsToLNu_inclusive_NLO": [
+#         "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#     ],
+#     "WJetsToLNu": [
+#         "WJetsToLNu_HT_LO",
+#         "WJetsToLNu_inclusive_NLO",
+#     ],
+#     "VV_NLO": [
+#         "WWTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "WZTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WZTo1L3Nu_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM",
+#         "WZTo3LNu_mllmin4p0_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#         "ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#     ],
+#     "VVV_NLO": [
+#         "WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+NANOAODSIM",
+#         "ZZZ_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+NANOAODSIM",
+#     ],
+#     "TTZ_inclusive_LO": [
+#         "ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM",
+#     ],
+# }
+
+
+# dataset_groups = {
+#     "DY_NJets_LO": [
+#         "/DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/DY4JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer19UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#     ],
+#     "DY_LHEFilterPtZ_NLO": [
+#         "/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/DYJetsToLL_LHEFilterPtZ-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/DYJetsToLL_LHEFilterPtZ-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "DY_M-10to50_inclusive_NLO": [
+#         "/DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "DY_M-10to50_inclusive_LO": [
+#         "/DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#     ],
+#     "DY_M-50_inclusive_NLO": [
+#         "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "QCD_Pt_MuEnrichedPt5": [
+#         "/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "TT_powheg": [
+#         "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "TTW_NLO": [
+#         "/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#     ],
+#     "TTZ_NLO": [
+#         "/TTZToLL_TuneCP5_13TeV_amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v3/MINIAODSIM",
+#         "/TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/TTZToQQ_TuneCP5_13TeV_amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v3/MINIAODSIM",
+#     ],
+#     "TTZToLLNuNu_M-10_NLO": [
+#         "/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "TTZToLL_LO": [
+#         "/TTZToLL_5f_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "TTZ_inclusive_LO": [
+#         "/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "TTTT_NLO": [
+#         "/TTTT_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "ST_NLO": [
+#         "/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         # "/ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         # "/ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "WJetsToLNu_HT_LO": [
+#         "/WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#         "/WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#         "/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#         "/WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#     ],
+#     "WJetsToLNu_Pt_NLO": [
+#         "/WJetsToLNu_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_Pt-400To600_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#     ],
+#     "WJetsToLNu_inclusive_NLO": [
+#         "/WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "VV_NLO": [
+#         "/WWTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WZTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WZTo3LNu_mllmin4p0_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/ZZTo2L2Nu_TuneCP5_13TeV_powheg_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/ZZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/ZZTo4L_TuneCP5_13TeV_powheg_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+#     "VVV_NLO": [
+#         "/WWW_4F_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#         "/WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#         "/ZZZ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM",
+#     ],
+#     "Higgs": [
+#         "/GluGluHToZZTo4L_M125_TuneCP5_13TeV_powheg2_minloHJJ_JHUGenV7011_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         # "/GluGluToZH_HToZZTo4L_M125_TuneCP5_13TeV-jhugenv723-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/ZH_HToZZ_4LFilter_M125_TuneCP5_13TeV_powheg2-minlo-HZJ_JHUGenV7011_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/WminusH_HToBB_WToLNu_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         "/WplusH_HToBB_WToLNu_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+#         # "/VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/ttHToNonbb_M125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         "/ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#         # "/ttH_HToZZ_4LFilter_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+#     ],
+# }
+
+
+def lumi_Label(year: str) -> float:
+    if year == "2016":
         return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
+    return round(lumis[year] / 1000, 1)
 
 
-def findLumi(year, auto_lumi, infile_name):
+def find_lumi(
+    infile_name: str,
+    auto_lumi: Optional[bool] = True,
+    year: Optional[str | None] = None,
+) -> float:
     if auto_lumi:
         if "20UL16MiniAODv2" in infile_name:
             lumi = lumis["2016"]
@@ -67,119 +268,106 @@ def findLumi(year, auto_lumi, infile_name):
             lumi = lumis["2018"]
         if "SUEP-m" in infile_name or "SUEP_m" in infile_name:
             lumi = lumis["2018"]
-        if "JetHT+Run" in infile_name:
+        if "DoubleMuon" in infile_name:
             lumi = 1
     if year and not auto_lumi:
-        lumi = lumis[str(year)]
+        lumi = lumis[year]
     if year and auto_lumi:
         raise Exception("Apply lumis automatically or based on year")
     return lumi
 
 
-def fillSample(infile_name, plots, lumi):
-    found_name = False
-    sample = None
-    for name in sample_names.keys():
-        if name in infile_name:
-            if found_name:
-                raise Exception(f"Found multiple sample names in file name: {name}")
-            sample = sample_names[name]
-            found_name = True
+def load_samples(
+    infile_names: list[str],
+    year: Optional[int | str | None] = None,
+    auto_lumi: Optional[bool | None] = None,
+    custom_lumi: Optional[float | None] = None,
+    is_data: Optional[bool | None] = False,
+) -> dict:
+    if isinstance(year, int):
+        year = str(year)
 
-    is_binned = False
-    binned_samples = [
-        "QCD_Pt_",
-        "QCD_HT",
-        "MuEnriched",
-        "DY1JetsToLL",
-        "DY2JetsToLL",
-        "DY3JetsToLL",
-        "DY4JetsToLL",
-        "DYJetsToLL_0J",
-        "DYJetsToLL_1J",
-        "DYJetsToLL_2J",
-        "DYJetsToLL_NJ",
-        "DYJetsToLL_M-50_HT",
-        "DYJetsToLL_M-4to50_HT",
-        "ST_t-channel",
-        "WJetsToLNu_HT",
-        "WWTo",
-        "WZTo",
-        "ZToMuMu",
-    ]
-    for binned_sample in binned_samples:
-        if binned_sample in infile_name:
-            is_binned = True
-
-    if is_binned:
-        # include this block to import the bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        plots[temp_sample] = openpkl(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-    elif "SUEP" in infile_name or "ggHBSMpythia" in infile_name:
-        if "+" in infile_name:
-            sample = infile_name.split("/")[-1].split("+")[0]
-        elif "new_generic" in infile_name:
-            sample = infile_name.split("/")[-1].split("_")[
-                1
-            ]  # hack for Carlos naming convention
-        else:
-            sample = infile_name.split("/")[-1].replace("_histograms.pkl", "")
-    elif "DoubleMuon" in infile_name:
-        sample = infile_name.split("/")[-1].split(".pkl")[0]
-    elif sample is None:
-        sample = infile_name
-    return sample, plots
-
-
-# load file(s)
-def loader(
-    infile_names,
-    year=None,
-    auto_lumi=False,
-    custom_lumi=None,
-    is_data=False,
-):
-    plots = {}
+    plots_ = {}
+    # Load histograms and scale to lumi
     for infile_name in infile_names:
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
             continue
         elif ".pkl" not in infile_name:
+            print("WARNING:", infile_name, "is not a .pkl file")
             continue
 
         # set the lumi based on year or override using a custom value (in /pb). Data shouldn't be scaled.
-        lumi = findLumi(year, auto_lumi, infile_name)
+        lumi = find_lumi(
+            infile_name,
+            auto_lumi,
+            year,
+        )
         if custom_lumi is not None:
             lumi = custom_lumi
         if is_data:
             lumi = 1
 
-        # plots[sample] sample is filled here
-        sample, plots = fillSample(infile_name, plots, lumi)
+        sample = infile_name.split("/")[-1].replace("_histograms.pkl", "")
 
-        if sample not in plots:
-            plots[sample] = openpkl(infile_name)
-            for plot in plots[sample]:
-                plots[sample][plot] = plots[sample][plot] * lumi
-        else:
-            plotsToAdd = openpkl(infile_name)
-            for plot in plotsToAdd:
-                if plot not in plots[sample]:
-                    plots[sample][plot] = plotsToAdd[plot] * lumi
-                else:
-                    plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
-    return plots
+        with open(infile_name, "rb") as f:
+            plots_[sample] = pickle.load(f)
+        for plot in plots_[sample]:
+            plots_[sample][plot] = plots_[sample][plot] * lumi
+
+    # Create combined histograms
+    for combined_dataset in dataset_groups_old:
+        plots_[combined_dataset] = {}
+        for pattern in dataset_groups_old[combined_dataset]:
+            for sample in plots_:
+                if re.search(pattern, sample):
+                    for plot in plots_[sample]:
+                        if plot not in plots_[combined_dataset]:
+                            plots_[combined_dataset][plot] = plots_[sample][plot].copy()
+                        else:
+                            plots_[combined_dataset][plot] += plots_[sample][plot]
+
+    return plots_
 
 
-# function to load files from pickle
-def openpkl(infile_name):
+def loader(
+    tag="test",
+    custom_lumi=None,
+    load_data=False,
+    verbosity=0,
+):
+    # input .pkl files
+    plotDir = f"../../processor_output_files/{tag}_output_histograms/"
+    filenames = glob.glob(plotDir + "*histograms.pkl")
+
+    # separate the files into signal, background, and data
+    files_SUEP = [f for f in filenames if ("SUEP" in f) or ("ggHBSMpythia" in f)]
+    files_bkg = [
+        f
+        for f in filenames
+        if ("pythia8" in f) and ("SUEP" not in f) and ("ggHBSMpythia" not in f)
+    ]
+    files_data = [f for f in filenames if ("DoubleMuon" in f)]
+    if verbosity > 0:
+        print(files_bkg)
+
+    # load histograms and scale to lumi
+    plots_SUEP_2018 = load_samples(files_SUEP, year=2018, custom_lumi=custom_lumi)
+    plots_bkg_2018 = load_samples(files_bkg, year=2018, custom_lumi=custom_lumi)
+    if load_data:
+        plots_data_2018 = load_samples(files_data, year=2018, is_data=True)
+
+    if verbosity > 1:
+        print(plots_SUEP_2018)
+
+    # put everything in one dictionary
     plots = {}
-    with open(infile_name, "rb") as openfile:
-        while True:
-            try:
-                plots.update(pickle.load(openfile))
-            except EOFError:
-                break
+    for plot in plots_SUEP_2018:
+        plots[plot + "_2018"] = plots_SUEP_2018[plot]
+    for plot in plots_bkg_2018:
+        plots[plot + "_2018"] = plots_bkg_2018[plot]
+    if load_data:
+        for plot in plots_data_2018:
+            plots[plot + "_2018"] = plots_data_2018[plot]
+
     return plots
