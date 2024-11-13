@@ -4,6 +4,7 @@ import inspect
 import json
 import os
 import pickle
+from socket import if_nameindex
 import sys
 from typing import Optional, Union
 
@@ -49,12 +50,10 @@ def getXSection(dataset: str, year: str, path: Optional[str] = "data/") -> float
             * MC_xsecs[dataset]["kr"]
             * MC_xsecs[dataset]["br"]
         )
-
-    except (KeyError, FileNotFoundError) as e:
-        print(
+    except KeyError:
+        raise KeyError(
             f"WARNING: Could not find xsection for {dataset} in {filename}. Check dataset name and json file."
         )
-        return 1
 
 
 def setup_workflow(
@@ -95,7 +94,6 @@ def setup_workflow(
             "trigger": args.trigger,
             "debug": args.debug,
             "scouting": args.scouting,
-            "do_inf": args.doInf,
             "blind": True,
             "region": args.region,
         }
@@ -132,9 +130,9 @@ def get_main_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--output_location",
         default=None,
-        help="Prefix for the output file name. The file name will have the form: <prefix>_<sample>.hdf5. (default: %(default)s)",
+        help="Location for the output file. The file name will have the form: <output_location>/<sample>.pkl. (default: %(default)s)",
         required=False,
     )
     parser.add_argument(
@@ -186,12 +184,6 @@ def get_main_parser() -> argparse.ArgumentParser:
         default=250,
         help="The maximum number of nodes to adapt the cluster to. (default: %(default)s)",
     )
-    parser.add_argument(
-        "--voms",
-        default=None,
-        type=str,
-        help="Path to voms proxy, accessible to worker nodes. By default a copy will be made to $HOME.",
-    )
     # Debugging
     parser.add_argument(
         "--validate",
@@ -214,7 +206,7 @@ def get_main_parser() -> argparse.ArgumentParser:
         type=int,
         default=15000,
         metavar="N",
-        help="Number of events per process chunk",
+        help="Number of events per process chunk (default: %(default)s)",
     )
     parser.add_argument(
         "--max",
@@ -229,22 +221,32 @@ def get_main_parser() -> argparse.ArgumentParser:
         help="Parameters for mild scaleout. Use when the scheduler is empty.",
     )
     parser.add_argument(
-        "--memory", type=str, default="2GB", help="Change worker memory"
+        "--memory",
+        type=str,
+        default="2GB",
+        help="Change worker memory (default: %(default)s)",
     )
     parser.add_argument(
         "--isMC", action="store_true", help="Specify if the file is MC or data"
     )
-    parser.add_argument("--era", type=str, default="2018", help="Specify the year")
+    parser.add_argument(
+        "--era",
+        type=str,
+        default="2018",
+        help="Specify the year (default: %(default)s)",
+    )
     parser.add_argument(
         "--doSyst", action="store_true", help="Turn systematics on or off"
     )
     parser.add_argument(
         "--scouting", action="store_true", help="Turn processing for scouting on"
     )
-    parser.add_argument("--doInf", action="store_true", help="Turn inference on")
     parser.add_argument("--dataset", type=str, help="Dataset to find xsection")
     parser.add_argument(
-        "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
+        "--trigger",
+        type=str,
+        default="TripleMu",
+        help="Specify HLT trigger path (default: %(default)s)",
     )
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
     parser.add_argument(
@@ -434,28 +436,29 @@ def saveOutput(
             f"Scaling {sample} by {xsection:.2e} / {output['gensumweight'].value:.2e} = {scale:.2e}"
         )
 
-    # Save the output
-    outputName = ""
-    if args.output is not None:
-        outputName = f"{args.output}_"
-    outputName = f"{outputName}{sample}"
+    # Output name
+    output_name = f"{args.output_location}_output" if args.output_location else "output"
 
     # Save the cutflow (normalized to the gensumweight)
     if "cutflow" in output.keys():
-        cutflowName = f"{outputName}_cutflow.pkl"
+        if not os.path.exists(f"{output_name}_cutflow"):
+            os.makedirs(f"{output_name}_cutflow")
+        cutflow_name = f"{output_name}_cutflow/{sample}_cutflow.pkl"
         if args.isMC:
             output["cutflow"] *= scale
-        print(f"Saving the following cutflow to {cutflowName}")
-        pickle.dump(output["cutflow"], open(cutflowName, "wb"))
+        print(f"Saving the following cutflow to {cutflow_name}")
+        pickle.dump(output["cutflow"], open(cutflow_name, "wb"))
 
     # Save the histograms (normalized to the gensumweight)
     if "histograms" in output.keys():
-        histName = f"{outputName}_histograms.pkl"
+        if not os.path.exists(f"{output_name}_histograms"):
+            os.makedirs(f"{output_name}_histograms")
+        hist_name = f"{output_name}_histograms/{sample}_histograms.pkl"
         if args.isMC:
             for p in output["histograms"].keys():
                 output["histograms"][p] *= scale
-        print(f"Saving the following histograms to {histName}")
-        pickle.dump(output["histograms"], open(histName, "wb"))
+        print(f"Saving the following histograms to {hist_name}")
+        pickle.dump(output["histograms"], open(hist_name, "wb"))
 
 
 if __name__ == "__main__":
