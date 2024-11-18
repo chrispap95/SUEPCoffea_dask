@@ -352,7 +352,7 @@ def nativeExecutors(
 def getWeights(sample_dict: dict) -> Accumulatable:
     from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
-    genSumW_instance = GenSumWeightExtractor()
+    genSumW_instance = GenSumWeightExtractor(use_new_format=True)
     genSumW_executor = processor.IterativeExecutor()
     genSumW_run = processor.Runner(
         executor=genSumW_executor,

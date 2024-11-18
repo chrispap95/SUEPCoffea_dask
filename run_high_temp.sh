@@ -10,8 +10,8 @@ all=1
 signal=0
 background=0
 data=0
-tag=SR_high_temp
-blind=1 # 0 for unblinded, 1 for blinded
+tag=SR_high_temp_Nov2024
+blind=0 # 0 for unblinded, 1 for blinded
 
 while getopts 'sbdt:cw:' flag; do
   case "${flag}" in
@@ -46,13 +46,13 @@ if [ $background -eq 1 ]; then
     echo "Processing BKG SR..."
     python runner.py \
         --workflow SUEP_coffea_SR_high_temp -o "processor_output_files/${tag}_SR" \
-        --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
-        --executor futures --chunk 50000 --skimmed --trigger TripleMu --era 2018 --isMC
+        --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 \
+        --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
     echo "Processing BKG CR..."
     python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_CR" \
-        --json filelists/mc_collections/full_mc_skimmed_merged_new_trigger.json \
-        --executor futures --chunk 50000 --skimmed --trigger TripleMu --era 2018 --isMC
+        --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 \
+        --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
 fi
 
 if [ $data -eq 1 ]; then
@@ -60,12 +60,12 @@ if [ $data -eq 1 ]; then
         echo "Processing data SR..."
         python runner.py \
             --workflow SUEP_coffea_SR_high_temp -o "processor_output_files/${tag}_SR" \
-            --json filelists/data/data_Run2018A_5p3fb_unskimmed.json \
+            --json filelists/data/data_Run2018A_0p6fb_1file_unskimmed.json \
             --executor futures --chunk 50000 --trigger TripleMu --era 2018
     fi
     echo "Processing data CR..."
     python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_CR" \
-        --json filelists/data/data_Run2018A_5p3fb_unskimmed.json \
+        --json filelists/data/data_Run2018A_0p6fb_1file_unskimmed.json \
         --executor futures --chunk 50000 --trigger TripleMu --era 2018
 fi
