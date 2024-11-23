@@ -4,7 +4,6 @@ import inspect
 import json
 import os
 import pickle
-from socket import if_nameindex
 import sys
 from typing import Optional, Union
 
@@ -47,8 +46,8 @@ def getXSection(dataset: str, year: str, path: Optional[str] = "data/") -> float
 
         return (
             MC_xsecs[dataset]["xsec"]
-            * MC_xsecs[dataset]["kr"]
             * MC_xsecs[dataset]["br"]
+            / MC_xsecs[dataset]["eff"]
         )
     except KeyError:
         raise KeyError(

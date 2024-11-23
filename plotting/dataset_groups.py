@@ -69,6 +69,7 @@ dataset_groups_new = {
     "DY_M-50_inclusive_NLO": [
         r"DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     ],
+    "DY": ["DY_LHEFilterPtZ_NLO", "DY_M-10to50_inclusive_NLO"],
     "QCD_Pt_MuEnrichedPt5": [
         r"QCD_Pt-.*_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
     ],
@@ -81,6 +82,7 @@ dataset_groups_new = {
     "TTZ_NLO": [
         r"TTZTo(QQ|LL)_TuneCP5_13TeV.amcatnlo-pythia8",
     ],
+    "TTV": ["TTW_NLO", "TTZ_NLO"],
     "TTZToLLNuNu_M-10_NLO": [
         r"TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8",
     ],
@@ -119,7 +121,7 @@ dataset_groups_new = {
     "WJetsToLNu_inclusive_NLO": [
         r"WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     ],
-    "WJetsToLNu_total_inclusive": [
+    "WJets": [
         r"WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8",
         r"WJetsToLNu_HT-.*_TuneCP5_13TeV-madgraphMLM-pythia8",
     ],
@@ -138,12 +140,7 @@ dataset_groups_new = {
     "VVV_NLO": [
         r"(WWW|WWZ|ZZZ)(_4F)?_TuneCP5_13TeV-amcatnlo-pythia8",
     ],
-    "WH_HToBB_powheg": [
-        r"W(minus|plus)H_HToBB_WToLNu_M-125_TuneCP5_13TeV-powheg-pythia8",
-    ],
-    "ttH_powheg": [
-        r"ttHTo(Non)?bb_M125_TuneCP5_13TeV-powheg-pythia8",
-    ],
+    "VV+VVV": ["VV_NLO", "VVV_NLO"],
     "Higgs": [
         r"GluGluHToZZTo4L_M125_TuneCP5_13TeV_powheg2_minloHJJ_JHUGenV7011_pythia8",
         r"VBF_HToZZTo4L_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8",
@@ -154,5 +151,26 @@ dataset_groups_new = {
         r"ttH_HToZZ_4LFilter_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8",
         # r"ttHTo(Non)?bb_M125_TuneCP5_13TeV-powheg-pythia8",
         # r"VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8",
+    ],
+    "WH_HToBB_powheg": [
+        r"W(minus|plus)H_HToBB_WToLNu_M-125_TuneCP5_13TeV-powheg-pythia8",
+    ],
+    "ttH_powheg": [
+        r"ttHTo(Non)?bb_M125_TuneCP5_13TeV-powheg-pythia8",
+    ],
+    "GluGluHToZZTo4L": [
+        r"GluGluHToZZTo4L_M125_TuneCP5_13TeV_powheg2_minloHJJ_JHUGenV7011_pythia8",
+    ],
+    "VBF_HToZZTo4L": [
+        r"VBF_HToZZTo4L_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8",
+    ],
+    "ZH_HToZZ_4LFilter": [
+        r"ZH_HToZZ_4LFilter_M125_TuneCP5_13TeV_powheg2-minlo-HZJ_JHUGenV7011_pythia8",
+    ],
+    "WH_HToZZTo4L": [
+        r"W(minus|plus)H_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8",
+    ],
+    "WH_HToZZTo4L": [
+        r"W(minus|plus)H_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8",
     ],
 }

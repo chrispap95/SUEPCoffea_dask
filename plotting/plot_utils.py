@@ -3,7 +3,7 @@ import glob
 import re
 import pickle
 from typing import Optional
-from rich.pretty import pprint
+from rich.pretty import pprint  # type: ignore [import]
 
 import dataset_groups
 
