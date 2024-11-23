@@ -613,7 +613,7 @@
         "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/VBF_HToZZTo4L_M125_TuneCP5_13TeV_powheg2_JHUGenV7011_pythia8/merged_0.root"
     ],
     "WminusH_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8": [
-        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/WplusH_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8/merged_0.root"
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/WminusH_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8/merged_0.root"
     ],
     "WplusH_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8": [
         "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/WplusH_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8/merged_0.root"
