@@ -282,6 +282,10 @@ class SUEP_cluster(processor.ProcessorABC):
         elif "WJetsToLNu_TuneCP5" in dataset:
             events = events[self.ht(events) < 70]
 
+        # Keep only events with Zpt == 0 for the bug in LHEPt binned samples
+        if "DYJetsToLL_LHEFilterPtZ-0_MatchEWPDG20" in dataset:
+            events = events[events.LHE.Vpt == 0]
+
         weights = self.get_weights(events)
 
         # Fill the cutflow columns for trigger
