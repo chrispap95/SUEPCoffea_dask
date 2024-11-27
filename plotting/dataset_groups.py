@@ -69,7 +69,13 @@ dataset_groups_new = {
     "DY_M-50_inclusive_NLO": [
         r"DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     ],
-    "DY": ["DY_LHEFilterPtZ_NLO", "DY_M-10to50_inclusive_NLO"],
+    "DYToMuMu_M-10to50_NLO": [
+        r"DYJetsToMuMu_M-10to50_H2ErratumFix_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos",
+    ],
+    "DYToMuMu_M-50_NLO": [
+        r"DYJetsToMuMu_M-50_massWgtFix_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos",
+    ],
+    "DY": ["DY_LHEFilterPtZ_NLO", "DY_M-10to50_inclusive_LO"],
     "QCD_Pt_MuEnrichedPt5": [
         r"QCD_Pt-.*_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
     ],
