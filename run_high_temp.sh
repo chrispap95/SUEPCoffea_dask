@@ -40,6 +40,11 @@ if [ $signal -eq 1 ]; then
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_CR" \
         --json filelists/signal/SUEP_signal_central_2018_working.json \
         --executor futures --chunk 50000 --trigger TripleMu --era 2018 --isMC
+    echo "Processing signal VR..."
+    python runner.py \
+        --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_VR" \
+        --json filelists/signal/SUEP_signal_central_2018_working.json \
+        --executor futures --chunk 50000 --trigger TripleMu --era 2018 --isMC
 fi
 
 if [ $background -eq 1 ]; then
@@ -51,6 +56,11 @@ if [ $background -eq 1 ]; then
     echo "Processing BKG CR..."
     python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_CR" \
+        --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 \
+        --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
+    echo "Processing BKG VR..."
+    python runner.py \
+        --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_VR" \
         --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 \
         --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
 fi
