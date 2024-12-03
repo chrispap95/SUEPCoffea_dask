@@ -293,7 +293,7 @@ def daskExecutor(args: argparse.Namespace) -> processor.DaskExecutor:
         from lpcjobqueue import LPCCondorCluster  # type: ignore[import]
 
         cluster = LPCCondorCluster(
-            transfer_input_files="/srv/workflows/",
+            transfer_input_files=["/srv/workflows/", "/srv/data/"],
             shared_temp_directory="/tmp",
             memory=args.memory,
             worker_extra_args=[
@@ -493,6 +493,10 @@ if __name__ == "__main__":
 
     # Save the output
     for sample in sample_dict:
+        if sample not in output:
+            # NOTE: This is a temporary fix for the issue where the output dictionary is not populated.
+            print(f"WARNING: {sample} not in output dictionary. Skipping...")
+            continue
         if args.skimmed:
             weight = weights[sample]  # type: ignore[import]
             if not isinstance(weight, int):
