@@ -5,8 +5,8 @@ and recursively searches for files within each dataset.
 
 import argparse
 import json
-import subprocess
 import os
+import subprocess
 
 from tqdm import tqdm
 

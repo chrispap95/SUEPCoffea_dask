@@ -5,9 +5,8 @@ It then creates a dictionary with pairs of datasets and lists of files and write
 
 import argparse
 import json
-import re
-import subprocess
 import os
+import subprocess
 
 from rich.progress import track  # type: ignore [import]
 

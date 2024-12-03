@@ -1,11 +1,11 @@
 from typing import Optional
 
 import awkward as ak
+import fastjet
 import hist
 import numpy as np
 import vector  # type: ignore[import]
 from coffea import processor
-import fastjet
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON

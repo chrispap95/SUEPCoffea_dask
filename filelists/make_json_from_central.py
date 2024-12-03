@@ -1,5 +1,5 @@
 """
-This script reads a list of datasets from a text file and uses dasgoclient to get the locations 
+This script reads a list of datasets from a text file and uses dasgoclient to get the locations
 of the files for each dataset. It will write the locations of the files to a JSON file.
 """
 
