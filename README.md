@@ -34,7 +34,7 @@ voms-proxy-init -voms cms -rfc -valid 192:00
 If you want to open the jupyter notebooks, you can do the following instead:
 
 ```bash
-ssh -L 8989:localhost:8989 <username>@cmslpc-el9.fnal.gov 
+ssh -L localhost:8989:localhost:8989 <username>@cmslpc-el9.fnal.gov 
 cd directory/where/you/want/to/work/SUEPCoffea_dask
 source jupy.sh
 ```
@@ -74,6 +74,17 @@ To run the entire analysis, you can use the following script:
 ```bash
 ./run_full_analysis.sh -s -b
 ```
+
+When using the `--executor dask/lpc` option with the `runner.py` script, dask will be used to submit jobs to condor. In the `run_full_analysis.sh` script, dask is used for the processing of the low temperature SR. Dask offers a nice dashboard to monitor the execution progress. To access it, you need forward port 44890 from the same machine:
+
+```bash
+ssh -L localhost:44890:localhost:44890 <username>@cmslpc-el9.fnal.gov
+cd directory/where/you/want/to/work/SUEPCoffea_dask
+./shell coffeateam/coffea-base:0.7.22-py3.10
+./run_full_analysis.sh -s -b
+```
+
+Then, open a browser and go to `localhost:44890` (works only when processing `SR_low_temp`). If you forgot to forward the port, you can also forward it after the job has started but you need to ssh & forward to the same LPC machine.
 
 ## Plotting
 
