@@ -229,17 +229,17 @@ class SUEP_cluster(processor.ProcessorABC):
         ak15_inc_cluster = ak15_inc_cluster[at_least_two_tracks_per_cluster]
 
         # Order the reclustered jets by pT and keep only up to the top 2
-        jets_pt_order = ak.argsort(ak15_inc_jets.pt, axis=1, ascending=False)  # type: ignore [attr-defined]
+        jets_pt_order = ak.argsort(ak15_inc_jets.pt, axis=1, ascending=False)  # type: ignore[attr-defined]
         jets_pt_sorted = ak15_inc_jets[jets_pt_order]
         clusters_pt_sorted = ak15_inc_cluster[jets_pt_order]
-        jets_pt_sorted = jets_pt_sorted[:, :2]  # type: ignore [attr-defined]
-        clusters_pt_sorted = clusters_pt_sorted[:, :2]  # type: ignore [attr-defined]
+        jets_pt_sorted = jets_pt_sorted[:, :2]  # type: ignore[attr-defined]
+        clusters_pt_sorted = clusters_pt_sorted[:, :2]  # type: ignore[attr-defined]
 
         # Find
         nconst_pt_sorted = ak.num(clusters_pt_sorted, axis=-1)
         SUEP_cand_index = ak.argmax(nconst_pt_sorted, axis=1, keepdims=True)
-        SUEP_cand = ak.firsts(jets_pt_sorted[SUEP_cand_index])  # type: ignore [attr-defined]
-        SUEP_cluster = ak.firsts(clusters_pt_sorted[SUEP_cand_index])  # type: ignore [attr-defined]
+        SUEP_cand = ak.firsts(jets_pt_sorted[SUEP_cand_index])  # type: ignore[attr-defined]
+        SUEP_cluster = ak.firsts(clusters_pt_sorted[SUEP_cand_index])  # type: ignore[attr-defined]
 
         return SUEP_cand, SUEP_cluster
 
@@ -309,7 +309,7 @@ class SUEP_cluster(processor.ProcessorABC):
         muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
 
         # Find the pair closest to the Z mass
-        Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore [attr-defined]
+        Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore[attr-defined]
         closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_mass), axis=1)
         Z_cands = ak.firsts(Z_cands[ak.singletons(closest_to_peak)])
 

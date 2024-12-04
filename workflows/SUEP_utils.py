@@ -3,11 +3,11 @@ import math
 import awkward as ak
 import fastjet
 import numpy as np
-import vector  # type: ignore [import]
-from numba import njit  # type: ignore [import]
+import vector  # type: ignore[import]
+from numba import njit  # type: ignore[import]
 
 vector.register_awkward()
-ak.numba.register()
+ak.numba.register()  # type: ignore[attr-defined]
 
 
 def sphericity(particles, r):
@@ -93,7 +93,7 @@ def FastJetReclustering(tracks, r, min_pt):
     jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, r)
     cluster = fastjet.ClusterSequence(tracks, jetdef)
     ak_inclusive_jets = cluster.inclusive_jets(min_pt=min_pt)
-    ak_inclusive_cluster = cluster.constituents(min_pt=min_pt)
+    ak_inclusive_cluster = cluster.constituents(min_pt)
     return ak_inclusive_jets, ak_inclusive_cluster
 
 
@@ -153,7 +153,7 @@ def inter_isolation(leptons_1, leptons_2, dR=1.6):
     - leptons_2: array of all leptons in the events
     - dR: deltaR cut for isolation calculation
     """
-    a, b = ak.unzip(ak.cartesian([leptons_1, leptons_2]))
+    a, b = ak.unzip(ak.cartesian([leptons_1, leptons_2]))  # type: ignore[no-untyped-call]
     deltar_mask = a.deltaR(b) < dR
     return (ak.sum(b[deltar_mask].pt, axis=-1) - leptons_1.pt) / leptons_1.pt
 

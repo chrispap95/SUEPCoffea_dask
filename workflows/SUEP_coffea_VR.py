@@ -127,7 +127,7 @@ class SUEP_cluster(processor.ProcessorABC):
         muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
 
         # Find the pair closest to the Z mass
-        Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore [attr-defined]
+        Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore[attr-defined]
         closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_mass), axis=1)
         return ak.firsts(Z_cands[ak.singletons(closest_to_peak)])
 

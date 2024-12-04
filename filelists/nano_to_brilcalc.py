@@ -2,7 +2,7 @@ import json
 import sys
 from collections import defaultdict
 
-import ROOT  # type: ignore [import]
+import ROOT  # type: ignore[import]
 
 
 def create_lumi_json(filename, output_json="lumi_ranges.json"):

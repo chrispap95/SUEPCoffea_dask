@@ -8,7 +8,7 @@ import json
 import os
 import subprocess
 
-from rich.progress import track  # type: ignore [import]
+from rich.progress import track  # type: ignore[import]
 
 parser = argparse.ArgumentParser()
 parser.add_argument(

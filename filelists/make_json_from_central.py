@@ -7,7 +7,7 @@ import argparse
 import json
 import subprocess
 
-from rich.progress import track  # type: ignore [import]
+from rich.progress import track  # type: ignore[import]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
