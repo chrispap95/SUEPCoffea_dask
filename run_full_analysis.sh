@@ -34,7 +34,7 @@ if [ $signal -eq 1 ]; then
     python runner.py \
         --workflow SUEP_coffea_SR_high_temp -o "processor_output_files/${tag}_SR_high_temp" \
         --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 \
-        --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
+        --executor futures -j 8 --chunk 50000 --skimmed --trigger TripleMu --isMC
     echo "Processing signal SR low temp..."
     python runner.py \
         --workflow SUEP_coffea_SR_low_temp -o "processor_output_files/${tag}_SR_low_temp" \
@@ -44,12 +44,12 @@ if [ $signal -eq 1 ]; then
     python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_CR" \
         --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 \
-        --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
+        --executor futures -j 8 --chunk 50000 --skimmed --trigger TripleMu --isMC
     echo "Processing signal VR..."
     python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_VR" \
         --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 \
-        --executor futures --chunk 50000 --skimmed --trigger TripleMu --isMC
+        --executor futures -j 8 --chunk 50000 --skimmed --trigger TripleMu --isMC
 fi
 
 if [ $background -eq 1 ]; then
