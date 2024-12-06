@@ -6,7 +6,9 @@ from typing import Optional
 
 import dataset_groups
 import hist
+import matplotlib.gridspec as gridspec  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
+import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 from iminuit import Minuit
@@ -165,6 +167,7 @@ class Extrapolation:
     def __init__(self, plots: dict, verbose: Optional[bool] = False):
         self.plots = plots
         self.verbose = verbose
+        self.fit_results = {}
 
     def muon_func_log(self, x, loga, logb):
         """
@@ -186,9 +189,15 @@ class Extrapolation:
 
     def extrapolate(self):
         for region in self.find_extrapolatable_regions():
+            # Perform and evaluate the fit
             m = self.fit(region)
-            h0 = self.evaluate_fit(region, m)
-            self.plots[f"{region}_tight_extrapolation"] = h0
+            h_loose = self.evaluate_fit(f"{region}_loose", m)
+            h_tight = self.evaluate_fit(f"{region}_tight", m)
+
+            # Store the fit results and extrapolated histograms
+            self.fit_results[region] = m
+            self.plots[f"{region}_loose_extrapolation"] = h_loose
+            self.plots[f"{region}_tight_extrapolation"] = h_tight
 
     def find_extrapolatable_regions(self):
         return [
@@ -196,6 +205,17 @@ class Extrapolation:
             for region in self.plots
             if "tight" in region and "extrapolation" not in region
         ]
+
+    def sanitize_hist(self, h):
+        """
+        Remove bins with zero content.
+        """
+        zero_bins = np.where(h.values() == 0)[0]
+        if len(zero_bins) == 0:
+            return h
+        if (zero_bins[-1] - zero_bins[0]) != (len(zero_bins) - 1):
+            print("Warning: zero bins are not contiguous")
+        return h[: int(zero_bins[0])]
 
     def get_values(self, h):
         if isinstance(h, hist.Hist):
@@ -217,8 +237,11 @@ class Extrapolation:
         """
         Perform simultaneous Least Squares fit to the loose and tight regions.
         """
-        h_l = self.plots[f"{region}_loose"][1:4]
-        h_t = self.plots[f"{region}_tight"][0]
+        h_l = self.plots[f"{region}_loose"][:]
+        h_t = self.plots[f"{region}_tight"][:]
+
+        h_l = self.sanitize_hist(h_l)
+        h_t = self.sanitize_hist(h_t)
 
         # Convert histograms to log10 arrays.
         data_y_l = np.log10(self.get_values(h_l))
@@ -242,27 +265,32 @@ class Extrapolation:
         m.hesse()
 
         if self.verbose:
+            print(f"Fit results for {region}:")
             print(m)
 
         return m
+
+    def print_fit_results(self):
+        for region in self.fit_results:
+            print(f"Fit results for {region}:")
+            print(self.fit_results[region])
 
     def evaluate_fit(self, region, m):
         """
         This function accepts a Minuit fit result.
         It will output a histogram that represents an evaluation of the fit
         """
-        h0 = self.plots[f"{region}_tight"].copy().reset()
+        h0 = self.plots[region].copy().reset()
         x = h0.axes[0].edges[:-1]
-        params_tight = np.array(m.values["loga_t", "logb"])
-        cov_tight = np.array(
+        loga = "loga_t" if "tight" in region else "loga_l"
+        params = np.array(m.values[loga, "logb"])
+        cov = np.array(
             [
-                [m.covariance["loga_t", "loga_t"], m.covariance["loga_t", "logb"]],
-                [m.covariance["logb", "loga_t"], m.covariance["logb", "logb"]],
+                [m.covariance[loga, loga], m.covariance[loga, "logb"]],
+                [m.covariance["logb", loga], m.covariance["logb", "logb"]],
             ]
         )
-        logy, logycov = propagate(
-            lambda p: self.muon_func_log(x - 3, *p), params_tight, cov_tight
-        )
+        logy, logycov = propagate(lambda p: self.muon_func_log(x - 3, *p), params, cov)
         logyerr_prop = np.diag(logycov) ** 0.5
         y = 10**logy
         yerr_prop = np.log(10) * y * logyerr_prop
@@ -270,31 +298,22 @@ class Extrapolation:
             h0[i] = (y[i], yerr_prop[i] ** 2)
         return h0
 
-    def plot_fit(self, plots, values, covariance, histname="SR_high_temp_tight"):
-        h0 = plots[histname]
+    def plot_region(self, region, ax1, ax2, ax3):
+        plot_pre_fit = self.plots[f"{region}"]
+        plot_post_fit = self.plots[f"{region}_extrapolation"]
 
-        fig = plt.figure(figsize=(12, 12))
-        plt.subplots_adjust(bottom=0.15, left=0.17)
-        ax1 = plt.subplot2grid((5, 1), (0, 0), rowspan=3)
-        ax2 = plt.subplot2grid((5, 1), (3, 0), sharex=ax1)
-        ax3 = plt.subplot2grid((5, 1), (4, 0), sharex=ax1)
+        y = plot_post_fit.values()
+        yerr_prop = np.sqrt(plot_post_fit.variances())
 
-        x = np.arange(3, 8)
-        logy, logycov = propagate(
-            lambda p: self.muon_func_log(x - 4, *p), values, covariance
-        )
-        logyerr_prop = np.diag(logycov) ** 0.5
-
-        y = 10**logy
-        yerr_prop = np.log(10) * y * logyerr_prop
-
-        x_hatch = np.vstack((np.arange(3, 8), np.arange(4, 9))).reshape(
-            (-1,), order="F"
-        )
+        x_hatch = np.vstack(
+            (plot_pre_fit.axes[0].edges[:-1], plot_pre_fit.axes[0].edges[1:])
+        ).reshape((-1,), order="F")
         y_hatch = np.vstack((y, y)).reshape((-1,), order="F")
         y_hatch_unc = np.vstack((yerr_prop, yerr_prop)).reshape((-1,), order="F")
-        hep.histplot(h0, yerr=np.sqrt(h0.variances()), label="MC", ax=ax1)
-        hep.histplot(y, bins=np.arange(3, 9), label="fit", ax=ax1)
+        hep.histplot(
+            plot_pre_fit, yerr=np.sqrt(plot_pre_fit.variances()), label="MC", ax=ax1
+        )
+        hep.histplot(y, bins=plot_post_fit.axes[0].edges, label="fit", ax=ax1)
         ax1.fill_between(
             x=x_hatch,
             y1=y_hatch - y_hatch_unc,  # type: ignore[arg-type]
@@ -305,20 +324,23 @@ class Extrapolation:
             alpha=0.3,
             linewidth=0,
         )
+        ax1.set_title(region)
         ax1.legend()
         ax1.set_yscale("log")
         ax1.set_xlabel("")
         ax1.set_ylabel("Events")
+        ax1.set_ylim(1e-4, 1e8)
         ax1.set_xlim(2.8, 8.2)
-        # ax1.axes.xaxis.set_ticklabels([])
-        # ax1.set_xticklabels([])
+        ax1.xaxis.set_minor_locator(ticker.NullLocator())
+        ax1.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-        ratio = h0.values() / y
+        ratio = plot_pre_fit.values() / y
         ratio_err = np.sqrt(
-            (y**-2) * (h0.variances()) + (h0.values() ** 2 * y**-4) * (yerr_prop**2)
+            (y**-2) * (plot_pre_fit.variances())
+            + (plot_pre_fit.values() ** 2 * y**-4) * (yerr_prop**2)
         )
         ax2.errorbar(
-            h0.axes.centers[0],
+            plot_pre_fit.axes[0].centers,
             ratio,
             yerr=ratio_err,
             color="black",
@@ -330,15 +352,14 @@ class Extrapolation:
         ax2.set_ylabel("MC / fit")
         ax2.set_xlim(2.8, 8.2)
         ax2.set_ylim(0, 2)
-        # ax2.set_xticklabels([])
 
-        pulls = (h0.values() - y) / np.sqrt(h0.variances())
+        pulls = (plot_pre_fit.values() - y) / np.sqrt(plot_pre_fit.variances())
         pulls_up = np.where(pulls >= 0, pulls, 0)
         pulls_down = np.where(pulls < 0, pulls, 0)
 
-        x_hatch = np.vstack((np.arange(3, 8), np.arange(4, 9))).reshape(
-            (-1,), order="F"
-        )
+        x_hatch = np.vstack(
+            (plot_pre_fit.axes[0].edges[:-1], plot_pre_fit.axes[0].edges[1:])
+        ).reshape((-1,), order="F")
         y_hatch_up = np.vstack((pulls_up, pulls_up)).reshape((-1,), order="F")
         y_hatch_down = np.vstack((pulls_down, pulls_down)).reshape((-1,), order="F")
 
@@ -370,8 +391,68 @@ class Extrapolation:
         ax3.set_xlim(2.8, 8.2)
         ax3.set_ylim(-2.5, 2.5)
 
-        temp = ax1.get_xticklabels()
-        # ax1.set_xticklabels([])
-        ax3.set_xticklabels(temp)
+        for label in ax1.xaxis.get_ticklabels():
+            label.set_visible(False)
+        for label in ax2.xaxis.get_ticklabels():
+            label.set_visible(False)
 
+    def plot_fit(self, region):
+        region = (
+            region.replace("_tight", "")
+            .replace("_loose", "")
+            .replace("_extrapolation", "")
+        )
+
+        # Create figure
+        fig = plt.figure(figsize=(24, 12))
+
+        # Create two GridSpec layouts, one for left and one for right
+        # Each has 5 rows and 1 column
+        gs_left = gridspec.GridSpec(5, 1, left=0.08, right=0.47, bottom=0.15)
+        gs_right = gridspec.GridSpec(5, 1, left=0.53, right=0.92, bottom=0.15)
+
+        # Create left subplots
+        ax1_left = plt.subplot(gs_left[0:3, 0])  # Top 3 rows
+        ax2_left = plt.subplot(gs_left[3, 0], sharex=ax1_left)  # 4th row
+        ax3_left = plt.subplot(gs_left[4, 0], sharex=ax1_left)  # Bottom row
+
+        # Create right subplots
+        ax1_right = plt.subplot(gs_right[0:3, 0])  # Top 3 rows
+        ax2_right = plt.subplot(gs_right[3, 0], sharex=ax1_right)  # 4th row
+        ax3_right = plt.subplot(gs_right[4, 0], sharex=ax1_right)  # Bottom row
+
+        self.plot_region(f"{region}_loose", ax1_left, ax2_left, ax3_left)
+        self.plot_region(f"{region}_tight", ax1_right, ax2_right, ax3_right)
+
+        plt.tight_layout()
+        plt.show()
+
+    def plot_overlay(self, regions=["SR_high_temp", "SR_low_temp"]):
+        fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
+
+        for i, region in enumerate(regions):
+            ax = axes[i]
+            self.plots[f"{region}_loose"].plot(
+                yerr=np.sqrt(self.plots[f"{region}_loose"].variances()),
+                label="loose",
+                ax=ax,
+            )
+            self.plots[f"{region}_tight"].plot(
+                yerr=np.sqrt(self.plots[f"{region}_tight"].variances()),
+                label="tight",
+                ax=ax,
+            )
+            self.plots[f"{region}_tight_extrapolation"].plot(
+                yerr=np.sqrt(self.plots[f"{region}_tight_extrapolation"].variances()),
+                label="tight extr.",
+                ax=ax,
+            )
+            ax.set_title(region)
+            ax.set_yscale("log")
+            ax.set_ylim(1e-2, 1e8)
+            ax.xaxis.set_minor_locator(ticker.NullLocator())
+            ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+            ax.legend()
+
+        plt.tight_layout()
         plt.show()
