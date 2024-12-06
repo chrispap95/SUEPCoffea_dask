@@ -34,7 +34,7 @@ voms-proxy-init -voms cms -rfc -valid 192:00
 If you want to open the jupyter notebooks, you can do the following instead:
 
 ```bash
-ssh -L localhost:8989:localhost:8989 <username>@cmslpc-el9.fnal.gov 
+ssh -L localhost:8989:localhost:8989 <username>@cmslpc-el9.fnal.gov
 cd directory/where/you/want/to/work/SUEPCoffea_dask
 source jupy.sh
 ```
