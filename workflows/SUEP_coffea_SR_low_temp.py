@@ -429,14 +429,14 @@ class SUEP_cluster(processor.ProcessorABC):
         weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
         nMuon_SR_low_temp_tight = ak.num(muons_SR_low_temp_tight, axis=-1)
         output[dataset]["histograms"]["SR_low_temp_tight"].fill(
-            ak.where(nMuon_SR_low_temp_tight > 11, 11, nMuon_SR_low_temp_tight),
+            ak.where(nMuon_SR_low_temp_tight > 7, 7, nMuon_SR_low_temp_tight),
             weight=weights_SR_low_temp_tight,
         )
 
         weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
         nMuon_SR_low_temp_loose = ak.num(muons_SR_low_temp_loose, axis=-1)
         output[dataset]["histograms"]["SR_low_temp_loose"].fill(
-            ak.where(nMuon_SR_low_temp_loose > 11, 11, nMuon_SR_low_temp_loose),
+            ak.where(nMuon_SR_low_temp_loose > 7, 7, nMuon_SR_low_temp_loose),
             weight=weights_SR_low_temp_loose,
         )
         return
@@ -493,10 +493,10 @@ class SUEP_cluster(processor.ProcessorABC):
         ).Weight()
         histograms = {
             "SR_low_temp_tight": hist.Hist.new.Regular(
-                9, 3, 12, name="nMuon", label="nMuon"
+                5, 3, 8, name="nMuon", label="nMuon"
             ).Weight(),
             "SR_low_temp_loose": hist.Hist.new.Regular(
-                9, 3, 12, name="nMuon", label="nMuon"
+                5, 3, 8, name="nMuon", label="nMuon"
             ).Weight(),
         }
 
