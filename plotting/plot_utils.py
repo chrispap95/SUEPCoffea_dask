@@ -34,10 +34,14 @@ def lumi_Label(year: str) -> float:
 
 def find_lumi(
     infile_name: str,
-    auto_lumi: Optional[bool] = True,
-    year: Optional[str | None] = None,
+    auto_lumi: bool = True,
+    year: Optional[int | str] = None,
 ) -> float:
+    if isinstance(year, int):
+        year = str(year)
+
     if auto_lumi:
+        # NOTE: auto_lumi is broken for Nov2024 UL samples because of naming
         if "20UL16MiniAODv2" in infile_name:
             lumi = lumis["2016"]
         if "20UL17MiniAODv2" in infile_name:
@@ -46,7 +50,7 @@ def find_lumi(
             lumi = lumis["2016_apv"]
         if "20UL18" in infile_name:
             lumi = lumis["2018"]
-        if "SUEP-m" in infile_name or "SUEP_m" in infile_name:
+        if "SUEP" in infile_name:
             lumi = lumis["2018"]
         if "DoubleMuon" in infile_name:
             lumi = 1
@@ -59,15 +63,12 @@ def find_lumi(
 
 def load_samples(
     infile_names: list[str],
-    year: Optional[int | str | None] = None,
-    auto_lumi: Optional[bool | None] = None,
-    custom_lumi: Optional[float | None] = None,
-    is_data: Optional[bool | None] = False,
+    year: Optional[int | str] = None,
+    auto_lumi: bool = True,
+    custom_lumi: Optional[float] = None,
+    is_data: bool = False,
 ) -> dict:
-    if isinstance(year, int):
-        year = str(year)
-
-    plots_ = {}
+    plots = {}
     # Load histograms and scale to lumi
     for infile_name in infile_names:
         if not os.path.isfile(infile_name):
@@ -92,31 +93,31 @@ def load_samples(
         sample = infile_name.split("/")[-1].replace("_histograms.pkl", "")
 
         with open(infile_name, "rb") as f:
-            plots_[sample] = pickle.load(f)
-        for plot in plots_[sample]:
-            plots_[sample][plot] = plots_[sample][plot] * lumi
+            plots[sample] = pickle.load(f)
+        for plot in plots[sample]:
+            plots[sample][plot] = plots[sample][plot] * lumi
 
     # Create combined histograms
     for combined_dataset in dataset_groups.dataset_groups_new:
-        plots_[combined_dataset] = {}
+        plots[combined_dataset] = {}
         for pattern in dataset_groups.dataset_groups_new[combined_dataset]:
-            for sample in plots_:
+            for sample in plots:
                 if re.search(pattern, sample):
-                    for plot in plots_[sample]:
-                        if plot not in plots_[combined_dataset]:
-                            plots_[combined_dataset][plot] = plots_[sample][plot].copy()
+                    for plot in plots[sample]:
+                        if plot not in plots[combined_dataset]:
+                            plots[combined_dataset][plot] = plots[sample][plot].copy()
                         else:
-                            plots_[combined_dataset][plot] += plots_[sample][plot]
+                            plots[combined_dataset][plot] += plots[sample][plot]
 
-    return plots_
+    return plots
 
 
 def loader(
-    tag="test",
-    custom_lumi=None,
-    load_data=False,
-    verbosity=0,
-):
+    tag: str,
+    custom_lumi: Optional[float] = None,
+    load_data: bool = False,
+    verbosity: int = 0,
+) -> dict:
     # input .pkl files
     plot_dir = f"../../processor_output_files/{tag}_output_histograms/"
     filenames = glob.glob(plot_dir + "*histograms.pkl")
@@ -164,30 +165,33 @@ def loader(
 
 
 class Extrapolation:
-    def __init__(self, plots: dict, verbose: Optional[bool] = False):
+    def __init__(self, plots: dict) -> None:
         self.plots = plots
-        self.verbose = verbose
         self.fit_results = {}
 
-    def muon_func_log(self, x, loga, logb):
+    def muon_func_log(self, x: np.ndarray, loga: float, logb: float) -> np.ndarray:
         """
         This function is the log of a power law function: a * b^-n
         """
         return loga - x * logb
 
-    def muon_func_tight_log(self, x, loga_t, logb):
+    def muon_func_tight_log(
+        self, x: np.ndarray, loga_t: float, logb: float
+    ) -> np.ndarray:
         """
         Wrapper for muon_func_log. To be used in the fit for the tight region
         """
         return self.muon_func_log(x, loga_t, logb)
 
-    def muon_func_loose_log(self, x, loga_l, logb):
+    def muon_func_loose_log(
+        self, x: np.ndarray, loga_l: float, logb: float
+    ) -> np.ndarray:
         """
         Wrapper for muon_func_log. To be used in the fit for the loose region
         """
         return self.muon_func_log(x, loga_l, logb)
 
-    def extrapolate(self):
+    def extrapolate(self) -> None:
         for region in self.find_extrapolatable_regions():
             # Perform and evaluate the fit
             m = self.fit(region)
@@ -199,25 +203,34 @@ class Extrapolation:
             self.plots[f"{region}_loose_extrapolation"] = h_loose
             self.plots[f"{region}_tight_extrapolation"] = h_tight
 
-    def find_extrapolatable_regions(self):
+    def find_extrapolatable_regions(self) -> list[str]:
         return [
             region.replace("_tight", "")
             for region in self.plots
             if "tight" in region and "extrapolation" not in region
         ]
 
-    def sanitize_hist(self, h):
+    def sanitize_hist(
+        self, h: hist.Hist | hist.accumulators.WeightedSum
+    ) -> hist.Hist | hist.accumulators.WeightedSum:
         """
         Remove bins with zero content.
         """
-        zero_bins = np.where(h.values() == 0)[0]
-        if len(zero_bins) == 0:
+        if isinstance(h, hist.Hist):
+            zero_bins = np.where(h.values() == 0)[0]
+            if len(zero_bins) == 0:
+                return h
+            if (zero_bins[-1] - zero_bins[0]) != (len(zero_bins) - 1):
+                print("Warning: zero bins are not contiguous")
+            return h[: int(zero_bins[0])]
+        elif isinstance(h, hist.accumulators.WeightedSum):
+            if h.value == 0:
+                raise ValueError("Cannot fit a histogram with zero content")
             return h
-        if (zero_bins[-1] - zero_bins[0]) != (len(zero_bins) - 1):
-            print("Warning: zero bins are not contiguous")
-        return h[: int(zero_bins[0])]
+        else:
+            raise TypeError(f"{h} must be a hist.Hist or hist.accumulators.WeightedSum")
 
-    def get_values(self, h):
+    def get_values(self, h: hist.Hist | hist.accumulators.WeightedSum) -> np.ndarray:
         if isinstance(h, hist.Hist):
             return h.values()
         elif isinstance(h, hist.accumulators.WeightedSum):
@@ -225,7 +238,7 @@ class Extrapolation:
         else:
             raise TypeError(f"{h} must be a hist.Hist or hist.accumulators.WeightedSum")
 
-    def get_variances(self, h):
+    def get_variances(self, h: hist.Hist | hist.accumulators.WeightedSum) -> np.ndarray:
         if isinstance(h, hist.Hist):
             return h.variances()
         elif isinstance(h, hist.accumulators.WeightedSum):
@@ -233,7 +246,7 @@ class Extrapolation:
         else:
             raise TypeError(f"{h} must be a hist.Hist or hist.accumulators.WeightedSum")
 
-    def fit(self, region):
+    def fit(self, region: str, verbose: Optional[bool] = False) -> Minuit:
         """
         Perform simultaneous Least Squares fit to the loose and tight regions.
         """
@@ -264,18 +277,18 @@ class Extrapolation:
         m.migrad()
         m.hesse()
 
-        if self.verbose:
+        if verbose:
             print(f"Fit results for {region}:")
             print(m)
 
         return m
 
-    def print_fit_results(self):
+    def print_fit_results(self) -> None:
         for region in self.fit_results:
             print(f"Fit results for {region}:")
             print(self.fit_results[region])
 
-    def evaluate_fit(self, region, m):
+    def evaluate_fit(self, region: str, m: Minuit) -> hist.Hist:
         """
         This function accepts a Minuit fit result.
         It will output a histogram that represents an evaluation of the fit
@@ -283,13 +296,16 @@ class Extrapolation:
         h0 = self.plots[region].copy().reset()
         x = h0.axes[0].edges[:-1]
         loga = "loga_t" if "tight" in region else "loga_l"
-        params = np.array(m.values[loga, "logb"])
-        cov = np.array(
-            [
-                [m.covariance[loga, loga], m.covariance[loga, "logb"]],
-                [m.covariance["logb", loga], m.covariance["logb", "logb"]],
-            ]
-        )
+        params = np.array([m.values[loga], m.values["logb"]])
+        if m.covariance is not None:
+            cov = np.array(
+                [
+                    [m.covariance[loga, loga], m.covariance[loga, "logb"]],
+                    [m.covariance["logb", loga], m.covariance["logb", "logb"]],
+                ]
+            )
+        else:
+            raise ValueError("Covariance matrix is None")
         logy, logycov = propagate(lambda p: self.muon_func_log(x - 3, *p), params, cov)
         logyerr_prop = np.diag(logycov) ** 0.5
         y = 10**logy
@@ -298,7 +314,9 @@ class Extrapolation:
             h0[i] = (y[i], yerr_prop[i] ** 2)
         return h0
 
-    def plot_region(self, region, ax1, ax2, ax3):
+    def plot_region(
+        self, region: str, ax1: plt.Axes, ax2: plt.Axes, ax3: plt.Axes
+    ) -> None:
         plot_pre_fit = self.plots[f"{region}"]
         plot_post_fit = self.plots[f"{region}_extrapolation"]
 
@@ -396,7 +414,7 @@ class Extrapolation:
         for label in ax2.xaxis.get_ticklabels():
             label.set_visible(False)
 
-    def plot_fit(self, region):
+    def plot_fit(self, region: str) -> None:
         region = (
             region.replace("_tight", "")
             .replace("_loose", "")
@@ -427,7 +445,13 @@ class Extrapolation:
         plt.tight_layout()
         plt.show()
 
-    def plot_overlay(self, regions=["SR_high_temp", "SR_low_temp"]):
+    def plot_overlay(
+        self, regions: Optional[list] = ["SR_high_temp", "SR_low_temp"]
+    ) -> None:
+        if regions is None:
+            print("Warning: No regions specified")
+            return
+
         fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
 
         for i, region in enumerate(regions):
