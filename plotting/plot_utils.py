@@ -27,6 +27,9 @@ lumis = {
 
 
 def lumi_Label(year: str) -> float:
+    """
+    Return the luminosity in /fb for a given year.
+    """
     if year == "2016":
         return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
     return round(lumis[year] / 1000, 1)
@@ -37,6 +40,23 @@ def find_lumi(
     auto_lumi: bool = True,
     year: Optional[int | str] = None,
 ) -> float:
+    """
+    Find the luminosity for a given input file.
+
+    Parameters
+    ----------
+    infile_name : str
+        The name of the input file.
+    auto_lumi : bool
+        Automatically determine the luminosity based on the input file name.
+    year : int or str
+        The year to use for the luminosity. If not provided, use the auto_lumi option.
+
+    Returns
+    -------
+    float
+        The luminosity in /pb.
+    """
     if isinstance(year, int):
         year = str(year)
 
@@ -68,6 +88,27 @@ def load_samples(
     custom_lumi: Optional[float] = None,
     is_data: bool = False,
 ) -> dict:
+    """
+    Load histograms from a list of input files.
+
+    Parameters
+    ----------
+    infile_names : list
+        List of input file names.
+    year : int or str
+        The year to use for the luminosity.
+    auto_lumi : bool
+        Automatically determine the luminosity based on the input file name.
+    custom_lumi : float
+        Custom luminosity in /pb.
+    is_data : bool
+        Flag to indicate if the input is data.
+
+    Returns
+    -------
+    dict
+        Dictionary of histograms.
+    """
     plots = {}
     # Load histograms and scale to lumi
     for infile_name in infile_names:
@@ -80,6 +121,8 @@ def load_samples(
 
         # Set the lumi based on year or override using a custom value (in /pb).
         # Data shouldn't be scaled.
+        if year is not None:
+            auto_lumi = False
         lumi = find_lumi(
             infile_name,
             auto_lumi,
@@ -118,6 +161,26 @@ def loader(
     load_data: bool = False,
     verbosity: int = 0,
 ) -> dict:
+    """
+    Load histograms from the processor output files.
+
+    Parameters
+    ----------
+    tag : str
+        The tag used to identify the processor output files.
+        Will get the files from the directory: ../../processor_output_files/{tag}_output_histograms/
+    custom_lumi : float
+        Will use this luminosity (in /pb) if provided.
+    load_data : bool
+        Flag to indicate if data should be loaded.
+    verbosity : int
+        Verbosity level.
+
+    Returns
+    -------
+    dict
+        Dictionary of histograms.
+    """
     # input .pkl files
     plot_dir = f"../../processor_output_files/{tag}_output_histograms/"
     filenames = glob.glob(plot_dir + "*histograms.pkl")
@@ -165,6 +228,10 @@ def loader(
 
 
 class Extrapolation:
+    """
+    Class to perform extrapolation of histograms.
+    """
+
     def __init__(self, plots: dict) -> None:
         self.plots = plots
         self.fit_results = {}
@@ -191,12 +258,23 @@ class Extrapolation:
         """
         return self.muon_func_log(x, loga_l, logb)
 
-    def extrapolate(self) -> None:
+    def extrapolate(self, slice_hists: dict = {}, verbose: bool = False) -> None:
+        """
+        Perform extrapolation of histograms.
+
+        Parameters
+        ----------
+        slice_hists : dict
+            Dictionary of histogram keys and slice() objects that should be applied to
+            them if provided.
+        verbose : bool
+            Flag to indicate if the fit results should be printed.
+        """
         for region in self.find_extrapolatable_regions():
             # Perform and evaluate the fit
-            m = self.fit(region)
-            h_loose = self.evaluate_fit(f"{region}_loose", m)
-            h_tight = self.evaluate_fit(f"{region}_tight", m)
+            m = self.fit(region, slice_hists=slice_hists, verbose=verbose)
+            h_loose = self.evaluate_fit(f"{region}_loose", m, slice_hists=slice_hists)
+            h_tight = self.evaluate_fit(f"{region}_tight", m, slice_hists=slice_hists)
 
             # Store the fit results and extrapolated histograms
             self.fit_results[region] = m
@@ -214,7 +292,7 @@ class Extrapolation:
         self, h: hist.Hist | hist.accumulators.WeightedSum
     ) -> hist.Hist | hist.accumulators.WeightedSum:
         """
-        Remove bins with zero content.
+        Remove bins with zero content from histogram.
         """
         if isinstance(h, hist.Hist):
             zero_bins = np.where(h.values() == 0)[0]
@@ -246,12 +324,36 @@ class Extrapolation:
         else:
             raise TypeError(f"{h} must be a hist.Hist or hist.accumulators.WeightedSum")
 
-    def fit(self, region: str, verbose: Optional[bool] = False) -> Minuit:
+    def fit(self, region: str, slice_hists: dict, verbose: bool) -> Minuit:
         """
         Perform simultaneous Least Squares fit to the loose and tight regions.
+
+        Parameters
+        ----------
+        region : str
+            The region to fit. E.g. "SR_high_temp".
+        slice_hists : dict
+            Dictionary of histogram keys and slice() objects that should be applied to
+            them if provided.
+        verbose : bool
+            Flag to indicate if the fit results should be printed.
+
+        Returns
+        -------
+        Minuit
+            The Minuit fit result.
         """
-        h_l = self.plots[f"{region}_loose"][:]
-        h_t = self.plots[f"{region}_tight"][:]
+        if f"{region}_loose" in slice_hists:
+            slc_l = slice_hists[f"{region}_loose"]
+        else:
+            slc_l = slice(None)
+        if f"{region}_tight" in slice_hists:
+            slc_t = slice_hists[f"{region}_tight"]
+        else:
+            slc_t = slice(None)
+
+        h_l = self.plots[f"{region}_loose"][slc_l]
+        h_t = self.plots[f"{region}_tight"][slc_t]
 
         h_l = self.sanitize_hist(h_l)
         h_t = self.sanitize_hist(h_t)
@@ -288,13 +390,31 @@ class Extrapolation:
             print(f"Fit results for {region}:")
             print(self.fit_results[region])
 
-    def evaluate_fit(self, region: str, m: Minuit) -> hist.Hist:
+    def evaluate_fit(self, region: str, m: Minuit, slice_hists: dict) -> hist.Hist:
         """
         This function accepts a Minuit fit result.
-        It will output a histogram that represents an evaluation of the fit
+        It will output a histogram that represents an evaluation of the fit.
+
+        Parameters
+        ----------
+        region : str
+            The region to evaluate. E.g. "SR_high_temp".
+        m : Minuit
+            The Minuit fit result.
+        slice_hists : dict
+            Dictionary of histogram keys and slice() objects that were be applied to
+            the histograms when fitting. Needed to determine the x value to begin the
+            fit evaluation.
+
+        Returns
+        -------
+        hist.Hist
+            The evaluated histogram.
         """
         h0 = self.plots[region].copy().reset()
         x = h0.axes[0].edges[:-1]
+
+        # Extract the fit parameters and covariance matrix
         loga = "loga_t" if "tight" in region else "loga_l"
         params = np.array([m.values[loga], m.values["logb"]])
         if m.covariance is not None:
@@ -306,17 +426,33 @@ class Extrapolation:
             )
         else:
             raise ValueError("Covariance matrix is None")
-        logy, logycov = propagate(lambda p: self.muon_func_log(x - 3, *p), params, cov)
+
+        # Determine the x value to begin the fit
+        fit_x_begin = x[0]
+        if region in slice_hists:
+            fit_x_begin = slice_hists[region].start.imag
+
+        # Propagate the fit parameters and covariance matrix
+        logy, logycov = propagate(
+            lambda p: self.muon_func_log(x - fit_x_begin, *p), params, cov
+        )
         logyerr_prop = np.diag(logycov) ** 0.5
         y = 10**logy
         yerr_prop = np.log(10) * y * logyerr_prop
+
+        # Fill the histogram and return it
         for i in range(len(h0.values())):
             h0[i] = (y[i], yerr_prop[i] ** 2)
+
         return h0
 
     def plot_region(
         self, region: str, ax1: plt.Axes, ax2: plt.Axes, ax3: plt.Axes
     ) -> None:
+        """
+        Function to be called by plot_fit. Plots the region's MC histograms and extrapolations,
+        as well as the ratio and pulls.
+        """
         plot_pre_fit = self.plots[f"{region}"]
         plot_post_fit = self.plots[f"{region}_extrapolation"]
 
@@ -415,6 +551,15 @@ class Extrapolation:
             label.set_visible(False)
 
     def plot_fit(self, region: str) -> None:
+        """
+        Plot the region's MC histograms and extrapolations, as well as the ratio and pulls.
+        Will plot both the loose and tight regions side by side.
+
+        Parameters
+        ----------
+        region : str
+            The region to plot. E.g. "SR_high_temp".
+        """
         region = (
             region.replace("_tight", "")
             .replace("_loose", "")
@@ -448,6 +593,15 @@ class Extrapolation:
     def plot_overlay(
         self, regions: Optional[list] = ["SR_high_temp", "SR_low_temp"]
     ) -> None:
+        """
+        Plot an overlay of the histograms for the loose reion, the tight region,
+        and the extrapolation of the tight region for the specified regions.
+
+        Parameters
+        ----------
+        regions : list
+            List of regions to plot. E.g. ["SR_high_temp", "SR_low_temp"].
+        """
         if regions is None:
             print("Warning: No regions specified")
             return
