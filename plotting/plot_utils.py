@@ -1,7 +1,7 @@
-import glob
 import os
 import pickle
 import re
+from pathlib import Path
 from typing import Optional
 
 import dataset_groups
@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt  # type: ignore[import]
 import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
+import ROOT  # type: ignore[import]
+import uproot
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
 from jacobi import propagate  # type: ignore[import]
@@ -182,17 +184,22 @@ def loader(
         Dictionary of histograms.
     """
     # input .pkl files
-    plot_dir = f"../../processor_output_files/{tag}_output_histograms/"
-    filenames = glob.glob(plot_dir + "*histograms.pkl")
+    base_dir = Path(__file__).parent.parent
+    plot_dir = base_dir / "processor_output_files" / f"{tag}_output_histograms/"
+    filenames = list(plot_dir.glob("*histograms.pkl"))
 
     # separate the files into signal, background, and data
-    files_SUEP = [f for f in filenames if ("SUEP" in f) or ("ggHBSMpythia" in f)]
-    files_bkg = [
-        f
-        for f in filenames
-        if ("pythia8" in f) and ("SUEP" not in f) and ("ggHBSMpythia" not in f)
+    files_SUEP = [
+        str(f) for f in filenames if ("SUEP" in str(f)) or ("ggHBSMpythia" in str(f))
     ]
-    files_data = [f for f in filenames if ("DoubleMuon" in f)]
+    files_bkg = [
+        str(f)
+        for f in filenames
+        if ("pythia8" in str(f))
+        and ("SUEP" not in str(f))
+        and ("ggHBSMpythia" not in str(f))
+    ]
+    files_data = [str(f) for f in filenames if ("DoubleMuon" in str(f))]
     if verbosity > 0:
         pprint(files_bkg)
 
@@ -634,3 +641,68 @@ class Extrapolation:
 
         plt.tight_layout()
         plt.show()
+
+
+def convert_to_root(sample, plots_in, extrapolation=False):
+    """
+    Convert hist.Hist histograms to pyROOT histograms.
+
+    Parameters
+    ----------
+    sample : str
+        Name of the sample.
+    plots_in : dict
+        Dictionary of hist.Hist histograms.
+    extrapolation : bool
+        Flag to indicate if extrapolated histograms should be used.
+
+    Returns
+    -------
+    dict
+        Dictionary of pyROOT histograms.
+    """
+    suffix = ""
+    if extrapolation:
+        suffix = "_extrapolation"
+    plots_out = {}
+    plots_out["CR_QCD"] = uproot.to_writable(plots_in["CR_cb"]).to_pyroot()  # type: ignore[attr-defined]
+    h_CR_prompt = ROOT.TH1D(f"nMuon_CR_prompt_{sample}", "nMuon", 1, 2, 3)
+    h_CR_prompt.SetBinContent(1, plots_in["CR_prompt"][2j].value)
+    h_CR_prompt.SetBinError(1, np.sqrt(plots_in["CR_prompt"][2j].variance))
+    plots_out["CR_DY"] = h_CR_prompt.Clone()
+    h_SR_low_temp = ROOT.TH1D(f"nMuon_SR_low_temp_{sample}", "nMuon", 1, 7, 8)
+    h_SR_low_temp.SetBinContent(1, plots_in[f"SR_low_temp_tight{suffix}"][7j].value)
+    h_SR_low_temp.SetBinError(
+        1, np.sqrt(plots_in[f"SR_low_temp_tight{suffix}"][7j].variance)
+    )
+    plots_out["SR_low_temp"] = h_SR_low_temp.Clone()
+    h_SR_high_temp = ROOT.TH1D(f"nMuon_SR_high_temp_{sample}", "nMuon", 1, 7, 8)
+    h_SR_high_temp.SetBinContent(1, plots_in[f"SR_high_temp_tight{suffix}"][7j].value)
+    h_SR_high_temp.SetBinError(
+        1, np.sqrt(plots_in[f"SR_high_temp_tight{suffix}"][7j].variance)
+    )
+    plots_out["SR_high_temp"] = h_SR_high_temp.Clone()
+    return plots_out
+
+
+def export_histograms_to_root(plots, output_path, slice_hists=slice(None)):
+    """
+    Export hist.Hist histograms to a ROOT file, organized in TDirectories by region.
+    Negative bin entries are set to zero.
+
+    Parameters:
+    -----------
+    plots : dict
+        Nested dictionary containing hist.Hist objects
+    output_path : str
+        Name of the output directory for the ROOT files
+    slice_hists : slice
+        Slice object to apply to the histograms before exporting
+    """
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    for sample_name, regions in plots.items():
+        with uproot.recreate(os.path.join(output_path, sample_name + ".root")) as f:
+            for region_name, histogram in regions.items():
+                f[region_name] = uproot.from_pyroot(histogram)
