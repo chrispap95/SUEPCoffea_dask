@@ -685,7 +685,7 @@ def convert_to_root(sample, plots_in, extrapolation=False):
     return plots_out
 
 
-def export_histograms_to_root(plots, output_path, slice_hists=slice(None)):
+def export_histograms_to_root(plots, output_path):
     """
     Export hist.Hist histograms to a ROOT file, organized in TDirectories by region.
     Negative bin entries are set to zero.
@@ -696,13 +696,11 @@ def export_histograms_to_root(plots, output_path, slice_hists=slice(None)):
         Nested dictionary containing hist.Hist objects
     output_path : str
         Name of the output directory for the ROOT files
-    slice_hists : slice
-        Slice object to apply to the histograms before exporting
     """
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    for sample_name, regions in plots.items():
-        with uproot.recreate(os.path.join(output_path, sample_name + ".root")) as f:
+    with uproot.recreate(os.path.join(output_path, "output.root")) as f:
+        for sample_name, regions in plots.items():
             for region_name, histogram in regions.items():
-                f[region_name] = uproot.from_pyroot(histogram)
+                f[f"{region_name}/{sample_name}"] = uproot.from_pyroot(histogram)
