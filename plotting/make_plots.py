@@ -24,6 +24,12 @@ def parse_args():
         action="store_true",
         help="Load data",
     )
+    parser.add_argument(
+        "--dest",
+        type=str,
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Nov2024/CMSSW_11_3_4/src/auxiliaries/inputs/",
+        help="Destination directory for the ROOT files",
+    )
     return parser.parse_args()
 
 
@@ -107,5 +113,4 @@ if "__main__" in __name__:
     plot_utils.export_histograms_to_root(plots_for_export, "exports")
 
     # Copy to destination
-    destination = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Nov2024/CMSSW_11_3_4/src/auxiliaries/inputs/"
-    shutil.copytree("exports", destination, dirs_exist_ok=True)
+    shutil.copytree("exports", args.dest, dirs_exist_ok=True)
