@@ -1,24 +1,15 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 import hist
 import numpy as np
-import pandas as pd
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
 
-import workflows.SUEP_utils as SUEP_utils
-
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.pandas_accumulator import pandas_accumulator
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
+import workflows.SUEP_utils as SUEP_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -260,7 +251,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         # Apply HLT paths
         events = self.eventSelection(events)
@@ -271,12 +262,10 @@ class SUEP_cluster(processor.ProcessorABC):
         elif "WJetsToLNu_TuneCP5" in dataset:
             events = events[self.ht(events) < 70]
 
-        # Get the event weights and all the corrections
+        # Get the event weights
         weights = np.ones(len(events))
-        corrections = np.ones(len(events))
         if self.isMC:
             weights = events.genWeight
-            corrections = self.corrections(events)
 
         # Fill the cutflow columns for trigger
         output[dataset]["cutflow"].fill(
@@ -355,7 +344,6 @@ class SUEP_cluster(processor.ProcessorABC):
             dataset: {
                 "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
                 "histograms": histograms,
             },
         }

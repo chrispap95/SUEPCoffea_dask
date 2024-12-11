@@ -1,5 +1,3 @@
-from typing import Optional
-
 import awkward as ak
 import hist
 import numpy as np
@@ -7,9 +5,8 @@ import vector  # type: ignore[import]
 from coffea import processor
 
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.pileup_utils import pileup_weight
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -21,35 +18,15 @@ Z_width = 2.4952
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(
         self,
-        isMC: int,
-        era: str,
-        sample: str,
-        do_syst: bool,
-        syst_var: str,
-        weight_syst: bool,
-        flag: bool,
-        output_location: Optional[str],
-        accum: Optional[bool] = None,
-        trigger: Optional[str] = None,
-        blind: Optional[bool] = False,
-        debug: Optional[bool] = None,
+        isMC: bool,
+        era: str | int,
+        syst_var: str = "",
     ) -> None:
-        self._flag = flag
-        self.output_location = output_location
-        self.do_syst = do_syst
+        self.isMC = isMC
+        self.era = era if isinstance(era, str) else str(era)
+        self.syst_var = syst_var
+        self.syst_suffix = f"_sys_{syst_var}" if syst_var != "" else ""
         self.gensumweight = 1.0
-        self.era = era
-        self.isMC = bool(isMC)
-        self.sample = sample
-        self.syst_var, self.syst_suffix = (
-            (syst_var, f"_sys_{syst_var}") if do_syst and syst_var else ("", "")
-        )
-        self.weight_syst = weight_syst
-        self.prefixes = {"SUEP": "SUEP"}
-        self.accum = accum
-        self.trigger = trigger
-        self.blind = blind
-        self.debug = debug
 
     def eventSelection(self, events):
         """
@@ -99,11 +76,11 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(
+        pu_weights = systematics_utils.pileup_weight(
             self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
         )
         # L1 prefire weights
-        prefire_weights = GetPrefireWeights(events)
+        prefire_weights = systematics_utils.get_prefire_weights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
@@ -263,7 +240,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
 

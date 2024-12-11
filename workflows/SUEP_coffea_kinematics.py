@@ -1,26 +1,15 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 import hist
 import numpy as np
-import pandas as pd
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
 
-import workflows.SUEP_utils as SUEP_utils
-
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.pileup_utils import pileup_weight
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.pandas_accumulator import pandas_accumulator
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
+import workflows.SUEP_utils as SUEP_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -98,11 +87,11 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(
+        pu_weights = systematics_utils.pileup_weight(
             self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
         )
         # L1 prefire weights
-        prefire_weights = GetPrefireWeights(events)
+        prefire_weights = systematics_utils.get_prefire_weights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
@@ -186,7 +175,7 @@ class SUEP_cluster(processor.ProcessorABC):
         return events, muons
 
     def get_dark_photons(self, muons):
-        muon1, muon2 = ak.unzip(ak.combinations(muons, 2))
+        muon1, muon2 = ak.unzip(ak.combinations(muons, 2))  # type: ignore[assignment]
         os_mask = muon1.charge != muon2.charge
         muon1, muon2 = muon1[os_mask], muon2[os_mask]
         muon1_collection = ak.zip(
@@ -213,7 +202,7 @@ class SUEP_cluster(processor.ProcessorABC):
         return dark_photons
 
     def get_dark_mesons(self, dark_photons):
-        dark_photon_1, dark_photon_2 = ak.unzip(ak.combinations(dark_photons, 2))
+        dark_photon_1, dark_photon_2 = ak.unzip(ak.combinations(dark_photons, 2))  # type: ignore[assignment]
         dark_meson_cands = dark_photon_1 + dark_photon_2
         dark_mesons = dark_meson_cands[
             (dark_meson_cands.mass > 1) & (dark_meson_cands.mass < 10)
@@ -775,7 +764,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
 
@@ -1102,7 +1091,6 @@ class SUEP_cluster(processor.ProcessorABC):
             dataset: {
                 "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
                 "histograms": histograms,
             },
         }

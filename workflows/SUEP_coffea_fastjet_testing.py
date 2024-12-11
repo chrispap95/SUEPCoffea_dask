@@ -1,28 +1,18 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 
 # import hist.dask as hist
 import numpy as np
-import pandas as pd
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
+
+# Importing CMS corrections
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
-import workflows.ZH_utils as ZH_utils
-
-# Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.track_killing_utils import track_killing
-from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
@@ -325,12 +315,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC and self.scouting != 1:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
-        if self.trigger != "TripleMu":
-            events, electrons, muons = ZH_utils.selectByLeptons(
-                self, events, lepveto=True
-            )
         events = self.eventSelection(events)
 
         # make sure we have at least 3 muons with loose ID
@@ -354,8 +340,8 @@ class SUEP_cluster(processor.ProcessorABC):
             tracks, Cleaned_cands = self.getTracks(events)
 
         if self.isMC and do_syst:
-            tracks = track_killing(self, tracks)
-            Cleaned_cands = track_killing(self, Cleaned_cands)
+            tracks = systematics_utils.track_killing(self, tracks)
+            Cleaned_cands = systematics_utils.track_killing(self, Cleaned_cands)
 
         #####################################################################################
         # ---- FastJet reclustering
@@ -363,7 +349,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, minPt=150
+            tracks, r=1.5, min_pt=150
         )
 
         #####################################################################################
@@ -383,7 +369,6 @@ class SUEP_cluster(processor.ProcessorABC):
         output = {
             dataset: {
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
             },
         }
 

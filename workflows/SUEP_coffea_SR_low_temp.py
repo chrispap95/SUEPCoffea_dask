@@ -8,9 +8,8 @@ import vector  # type: ignore[import]
 from coffea import processor
 
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.pileup_utils import pileup_weight
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -458,7 +457,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
 

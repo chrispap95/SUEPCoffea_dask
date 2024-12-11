@@ -1,28 +1,16 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 import hist
-import numba as nb
+import numba as nb  # type: ignore[import]
 import numpy as np
-import pandas as pd
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
-from rich.pretty import pprint
-
-import workflows.SUEP_utils as SUEP_utils
 
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.pileup_utils import pileup_weight
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.pandas_accumulator import pandas_accumulator
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
+import workflows.SUEP_utils as SUEP_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -134,11 +122,11 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(
+        pu_weights = systematics_utils.pileup_weight(
             self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
         )
         # L1 prefire weights
-        prefire_weights = GetPrefireWeights(events)
+        prefire_weights = systematics_utils.get_prefire_weights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
@@ -226,7 +214,7 @@ class SUEP_cluster(processor.ProcessorABC):
         Will match muons to each jet after checking the delta_r between them.
         """
         dr_jets_to_muons = jets.metric_table(muons)
-        muons_per_jet = ak.unzip(ak.cartesian([jets, muons], nested=True))[1]
+        muons_per_jet = ak.unzip(ak.cartesian([jets, muons], nested=True))[1]  # type: ignore[assignment]
         muons_per_jet = muons_per_jet[dr_jets_to_muons < delta_r]
         return muons_per_jet
 
@@ -244,7 +232,7 @@ class SUEP_cluster(processor.ProcessorABC):
         Subtract the isolation of other muons from the isolation of the muon.
         """
         dR_muons = ak.fill_none(muons_for_iso.metric_table(muons_all), [], axis=0)
-        muons_for_iso_broadcasted, muons_in_cone = ak.unzip(
+        muons_for_iso_broadcasted, muons_in_cone = ak.unzip(  # type: ignore[assignment]
             ak.cartesian([muons_for_iso, muons_all], nested=True)
         )
         cone_size = self.mini_iso_cone_size(muons_for_iso_broadcasted)
@@ -703,7 +691,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
 
@@ -900,7 +888,6 @@ class SUEP_cluster(processor.ProcessorABC):
             dataset: {
                 "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
                 "histograms": histograms,
             },
         }

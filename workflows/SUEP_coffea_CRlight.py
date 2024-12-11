@@ -3,16 +3,12 @@ from typing import Optional
 import awkward as ak
 import hist
 import numpy as np
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
 
-# Importing SUEP specific functions
-import workflows.SUEP_utils as SUEP_utils
-
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.pileup_utils import pileup_weight
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -99,11 +95,11 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             return np.ones(len(events))
         # Pileup weights (need to be fed with integers)
-        pu_weights = pileup_weight(
+        pu_weights = systematics_utils.pileup_weight(
             self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
         )
         # L1 prefire weights
-        prefire_weights = GetPrefireWeights(events)
+        prefire_weights = systematics_utils.get_prefire_weights(events)
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
@@ -185,7 +181,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
 

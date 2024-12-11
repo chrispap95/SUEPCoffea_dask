@@ -1,25 +1,17 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 import hist
 import numpy as np
-import pandas as pd
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
+
+# Importing CMS corrections
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
-
-# Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
@@ -107,7 +99,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         # event selection
         jets = self.clean_jets(events.Jet)
@@ -189,7 +181,6 @@ class SUEP_cluster(processor.ProcessorABC):
             dataset: {
                 "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
                 "histograms": histograms,
             },
         }

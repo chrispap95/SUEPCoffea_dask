@@ -4,7 +4,7 @@ from typing import Optional
 import awkward as ak
 import hist
 import numpy as np
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
 
 # Set vector behavior
@@ -182,7 +182,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # # golden jsons for offline data
         # if not self.isMC:
-        #     events = applyGoldenJSON(self, events)
+        #     events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
 

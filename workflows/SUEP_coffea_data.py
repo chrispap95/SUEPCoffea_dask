@@ -1,25 +1,17 @@
-"""
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
-https://github.com/scikit-hep/fastjet
-Chad Freer and Luca Lavezzo, 2021
-"""
-
 from typing import Optional
 
 import awkward as ak
 import hist
 import numpy as np
-import pandas as pd
-import vector
+import vector  # type: ignore[import]
 from coffea import processor
+
+# Importing CMS corrections
+import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
-
-# Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
@@ -412,7 +404,7 @@ class SUEP_cluster(processor.ProcessorABC):
         dimuons = ak.combinations(
             muons, n=2, axis=-1, highlevel=True, with_name="Momentum4D"
         )
-        mu1, mu2 = ak.unzip(dimuons)
+        mu1, mu2 = ak.unzip(dimuons)  # type: ignore[type-defined]
         opposite_charges = mu1.charge != mu2.charge
         osdimuons = mu1[opposite_charges] + mu2[opposite_charges]
         nMuon_per_dm = ak.flatten(ak.broadcast_arrays(ak.num(muons), osdimuons.pt)[0])
@@ -544,7 +536,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # golden jsons for offline data
         if not self.isMC:
-            events = applyGoldenJSON(self, events)
+            events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.eventSelection(events)
         weights = np.ones(len(events))
@@ -873,7 +865,6 @@ class SUEP_cluster(processor.ProcessorABC):
             dataset: {
                 "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
                 "histograms": histograms,
             },
         }
