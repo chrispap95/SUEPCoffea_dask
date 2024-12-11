@@ -1,5 +1,3 @@
-from typing import Optional
-
 import awkward as ak
 import hist
 import numpy as np
@@ -10,9 +8,6 @@ from coffea import processor
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
 import workflows.CMS_corrections.systematics_utils as systematics_utils
 
-# Importing SUEP specific functions
-import workflows.SUEP_utils as SUEP_utils
-
 # Set vector behavior
 vector.register_awkward()
 
@@ -20,35 +15,15 @@ vector.register_awkward()
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(
         self,
-        isMC: int,
-        era: int,
-        sample: str,
-        do_syst: bool,
-        syst_var: str,
-        weight_syst: bool,
-        flag: bool,
-        output_location: Optional[str],
-        accum: Optional[bool] = None,
-        trigger: Optional[str] = None,
-        blind: Optional[bool] = False,
-        debug: Optional[bool] = None,
+        isMC: bool,
+        era: str | int,
+        syst_var: str = "",
     ) -> None:
-        self._flag = flag
-        self.output_location = output_location
-        self.do_syst = do_syst
+        self.isMC = isMC
+        self.era = era if isinstance(era, str) else str(era)
+        self.syst_var = syst_var
+        self.syst_suffix = f"_sys_{syst_var}" if syst_var != "" else ""
         self.gensumweight = 1.0
-        self.era = int(era)
-        self.isMC = bool(isMC)
-        self.sample = sample
-        self.syst_var, self.syst_suffix = (
-            (syst_var, f"_sys_{syst_var}") if do_syst and syst_var else ("", "")
-        )
-        self.weight_syst = weight_syst
-        self.prefixes = {"SUEP": "SUEP"}
-        self.accum = accum
-        self.trigger = trigger
-        self.blind = blind
-        self.debug = debug
 
     def eventSelection(self, events):
         """
