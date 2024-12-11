@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Nov2024/CMSSW_11_3_4/src/auxiliaries/inputs/",
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Nov2024/CMSSW_11_3_4/src/auxiliaries/input/",
         help="Destination directory for the ROOT files",
     )
     return parser.parse_args()
