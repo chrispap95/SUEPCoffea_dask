@@ -2,7 +2,7 @@ import awkward as ak
 import numpy as np
 
 
-def track_killing(self, tracks):
+def track_killing(tracks, era, scouting=False):
     """
     Drop 2.7%, 2.2%, and 2.1% of the tracks randomly at reco-level
     for charged-particles with 1 < pT < 20 GeV in simulation for 2016, 2017, and
@@ -10,12 +10,12 @@ def track_killing(self, tracks):
      For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
     """
 
-    if self.scouting:
+    if scouting:
         block1_percent = 0.05
         block2_percent = 0.01
     else:
         year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027}
-        block1_percent = year_percent[str(self.era)]
+        block1_percent = year_percent[str(era)]
         block2_percent = 0.01
 
     block1_indices = (tracks.pt > 1) & (tracks.pt < 20)
