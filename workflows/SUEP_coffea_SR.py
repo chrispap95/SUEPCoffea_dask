@@ -277,9 +277,9 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:
-            events = events[self.ht(events) >= 70]
+            events = events[events.LHE.HT >= 70]
         elif "WJetsToLNu_TuneCP5" in dataset:
-            events = events[self.ht(events) < 70]
+            events = events[events.LHE.HT < 70]
 
         weights = np.ones(len(events))
         if self.isMC:

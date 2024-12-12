@@ -11,8 +11,8 @@ import workflows.CMS_corrections.systematics_utils as systematics_utils
 # Set vector behavior
 vector.register_awkward()
 
-Z_mass = 91.1876
-Z_width = 2.4952
+Z_MASS = 91.1876
+Z_WIDTH = 2.4952
 
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -85,13 +85,6 @@ class SUEP_cluster(processor.ProcessorABC):
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
 
-    def ht(self, events):
-        """Calculate HT"""
-        jet_Cut = (events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)
-        jets = events.Jet[jet_Cut]
-
-        return ak.sum(jets.pt, axis=-1)
-
     def find_Z_candidates(self, events, muons):
         """
         Find the Z candidates by forming all possible pairs of OS muons
@@ -111,7 +104,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Find the pair closest to the Z mass
         Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore[attr-defined]
-        closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_mass), axis=1)
+        closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_MASS), axis=1)
         Z_cands = ak.firsts(Z_cands[ak.singletons(closest_to_peak)])
 
         return events, muons, Z_cands
@@ -164,7 +157,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events, muons_tight_cut
         )
         outside_mass_window_tight_cut = (
-            abs(Z_cands_tight_cut.mass - Z_mass) > 2 * Z_width
+            abs(Z_cands_tight_cut.mass - Z_MASS) > 2 * Z_WIDTH
         )
         events_tight_cut = events_tight_cut[outside_mass_window_tight_cut]
         muons_tight_cut = muons_tight_cut[outside_mass_window_tight_cut]
@@ -184,7 +177,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events, muons_loose_cut
         )
         outside_mass_window_loose_cut = (
-            abs(Z_cands_loose_cut.mass - Z_mass) > 2 * Z_width
+            abs(Z_cands_loose_cut.mass - Z_MASS) > 2 * Z_WIDTH
         )
         events_loose_cut = events_loose_cut[outside_mass_window_loose_cut]
         muons_loose_cut = muons_loose_cut[outside_mass_window_loose_cut]
@@ -246,9 +239,9 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:
-            events = events[self.ht(events) >= 70]
+            events = events[events.LHE.HT >= 70]
         elif "WJetsToLNu_TuneCP5" in dataset:
-            events = events[self.ht(events) < 70]
+            events = events[events.LHE.HT < 70]
 
         # Keep only events with Zpt == 0 for the bug in LHEPt binned samples
         if "DYJetsToLL_LHEFilterPtZ-0_MatchEWPDG20" in dataset:

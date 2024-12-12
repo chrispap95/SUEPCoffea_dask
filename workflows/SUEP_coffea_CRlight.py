@@ -82,11 +82,6 @@ class SUEP_cluster(processor.ProcessorABC):
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights
 
-    def ht(self, events):
-        jet_Cut = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
-        jets = events.Jet[jet_Cut]
-        return ak.sum(jets.pt, axis=-1)
-
     def muon_filter(self, events):
         """
         Filter events after the TripleMu trigger.
@@ -165,9 +160,9 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:
-            events = events[self.ht(events) >= 70]
+            events = events[events.LHE.HT >= 70]
         elif "WJetsToLNu_TuneCP5" in dataset:
-            events = events[self.ht(events) < 70]
+            events = events[events.LHE.HT < 70]
 
         weights = self.get_weights(events)
 
