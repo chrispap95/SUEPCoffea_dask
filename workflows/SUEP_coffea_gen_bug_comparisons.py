@@ -21,38 +21,43 @@ class SUEP_cluster(processor.ProcessorABC):
         self.syst_suffix = f"_sys_{syst_var}" if syst_var != "" else ""
         self.gensumweight = 1.0
 
-    def eventSelection(self, events):
+    def trigger_selection(self, events):
         """
         Applies trigger, returns events.
         """
-        trigger1 = np.ones(len(events), dtype=bool)
-        trigger2 = np.ones(len(events), dtype=bool)
-        trigger3 = np.ones(len(events), dtype=bool)
+        trigger = np.zeros(len(events), dtype=bool)
         if self.era in ["2016", "2016APV"]:
             if "TripleMu_5_3_3" in events.HLT.fields:
-                trigger1 = events.HLT.TripleMu_5_3_3 == 1
+                trigger = trigger | (events.HLT.TripleMu_5_3_3 == 1)
             if "TripleMu_5_3_3_DZ_Mass3p8" in events.HLT.fields:
-                trigger2 = events.HLT.TripleMu_5_3_3_DZ_Mass3p8 == 1
+                trigger = trigger | (events.HLT.TripleMu_5_3_3_DZ_Mass3p8 == 1)
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
         elif self.era == "2017":
             if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
-                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1)
             if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                trigger2 = events.HLT.TripleMu_10_5_5_DZ == 1
-        elif self.era in ["2018"]:
+                trigger = trigger | (events.HLT.TripleMu_10_5_5_DZ == 1)
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
+        elif self.era == "2018":
             if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
-                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1)
             if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
-                trigger2 = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1)
             if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                trigger3 = events.HLT.TripleMu_10_5_5_DZ == 1
+                trigger = trigger | (events.HLT.TripleMu_10_5_5_DZ == 1)
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
         elif self.era in ["2022", "2023"]:
             if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
-                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1)
             if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                trigger2 = events.HLT.TripleMu_10_5_5_DZ == 1
+                trigger = trigger | (events.HLT.TripleMu_10_5_5_DZ == 1)
+            if "TripleMu_12_10_5" in events.HLT.fields:
+                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
         else:
-            raise ValueError("Invalid era")
-        trigger = np.any(np.array([trigger1, trigger2, trigger3]).T, axis=-1)
+            raise ValueError(f"Invalid era: {self.era}")
         events = events[trigger]
         return events
 
@@ -156,7 +161,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # if not self.isMC:
         #     events = golden_json_utils.apply_golden_JSON(events, self.era)
 
-        events = self.eventSelection(events)
+        events = self.trigger_selection(events)
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:
