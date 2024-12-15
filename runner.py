@@ -83,18 +83,9 @@ def setup_workflow(
         params = {
             "isMC": args.isMC,
             "era": args.era,
-            "do_syst": args.doSyst,
-            "syst_var": "",
+            "do_syst": args.do_syst,
             "sample": sample_dict,
-            "weight_syst": False,
-            "flag": False,
-            "output_location": os.getcwd(),
-            "accum": args.executor,
-            "trigger": args.trigger,
             "debug": args.debug,
-            "scouting": args.scouting,
-            "blind": True,
-            "region": args.region,
         }
 
         # Check if the parameters are valid for the workflow
@@ -235,7 +226,7 @@ def get_main_parser() -> argparse.ArgumentParser:
         help="Specify the year (default: %(default)s)",
     )
     parser.add_argument(
-        "--doSyst", action="store_true", help="Turn systematics on or off"
+        "--do_syst", action="store_true", help="Turn systematics on or off"
     )
     parser.add_argument(
         "--scouting", action="store_true", help="Turn processing for scouting on"

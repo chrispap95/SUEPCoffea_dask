@@ -3,7 +3,7 @@ import numpy as np
 import uproot
 
 
-def pileup_weight(era, nTrueInt, sys=""):
+def pileup_weight(events, era, syst=""):
     """
     Function to get the pileup weights for a given era and systematic variation
     The pileup weights are calculated as the ratio of the data distribution to the MC distribution
@@ -32,9 +32,9 @@ def pileup_weight(era, nTrueInt, sys=""):
     f_data = uproot.open(f"data/pileup/PileupHistogram-UL{era}-100bins_withVar.root")
 
     variation = ""
-    if "PU_reweight_up" in sys:
+    if "PU_reweight_up" in syst:
         variation = "_plus"
-    elif "PU_reweight_down" in sys:
+    elif "PU_reweight_down" in syst:
         variation = "_minus"
 
     hist_MC = f_MC["pu_mc"].to_numpy()  # type: ignore[no-untyped-call]
@@ -45,28 +45,82 @@ def pileup_weight(era, nTrueInt, sys=""):
         norm_data, hist_MC[0], out=np.ones_like(norm_data), where=hist_MC[0] != 0
     )
 
+    nTrueInt = ak.values_astype(events.Pileup.nTrueInt, np.int32)
+
     return weights[nTrueInt]
 
 
-def get_prefire_weights(events, syst=""):
-    if syst == "L1Prefire_up":
-        return events.L1PreFiringWeight.Up
-    if syst == "L1Prefire_down":
-        return events.L1PreFiringWeight.Dn
-    return events.L1PreFiringWeight.Nom
-
-
 def get_PS_weights(events, syst):
-    if syst == "ISR_up":
-        return events.PSWeight[:, 0]
-    elif syst == "ISR_down":
-        return events.PSWeight[:, 2]
-    elif syst == "FSR_up":
-        return events.PSWeight[:, 1]
-    elif syst == "FSR_down":
-        return events.PSWeight[:, 3]
+    """
+    Get the parton shower variation weights. Available options are:
+        - ISR_up
+        - ISR_down
+        - FSR_up
+        - FSR_down
+    """
+    PSWeights = np.ones(len(events))
+    if len(events.PSWeight[0]) > 3:
+        if syst == "ISR_up":
+            PSWeights = events.PSWeight[:, 0]
+        elif syst == "ISR_down":
+            PSWeights = events.PSWeight[:, 2]
+        elif syst == "FSR_up":
+            PSWeights = events.PSWeight[:, 1]
+        elif syst == "FSR_down":
+            PSWeights = events.PSWeight[:, 3]
+        else:
+            raise RuntimeError(f"Unknown PSWeight systematic: {syst}")
+    return PSWeights
+
+
+def get_pdf_variations(events, syst):
+    """
+    Get the matrix element PDF variations. Only available if there is LHE info.
+    """
+    pdf_vars = np.ones(len(events))
+    if "LHEPdfWeight" not in events.fields:
+        return pdf_vars
+    if len(events.LHEPdfWeight[0]) == 0:
+        return pdf_vars
+    if syst == "up":
+        pdf_vars = 1 + ak.std(events.LHEPdfWeight, axis=1) / ak.mean(
+            events.LHEPdfWeight, axis=1
+        )
+    elif syst == "down":
+        pdf_vars = 1 - ak.std(events.LHEPdfWeight, axis=1) / ak.mean(
+            events.LHEPdfWeight, axis=1
+        )
     else:
-        raise RuntimeError(f"Unknown PSWeight systematic: {syst}")
+        raise RuntimeError(f"Unknown PDF systematic: {syst}")
+    return pdf_vars
+
+
+def get_scale_variations(events, syst=""):
+    """
+    Get the variations for scale of renormalization, mu_R, and scale of factorization, mu_F.
+    Only available if there is LHE info. Up variation is 2x the nominal value, down is 0.5x.
+    Available options are:
+        - MuRUp
+        - MuRDown
+        - MuFUp
+        - MuFDown
+    """
+    pdf_vars = np.ones(len(events))
+    if "LHEScaleWeight" in events.fields:
+        return pdf_vars
+    if len(events.LHEScaleWeight[0]) == 0:
+        return pdf_vars
+    if syst == "MuRUp":
+        pdf_vars = events.LHEScaleWeight[:, 7]
+    elif syst == "MuRDown":
+        pdf_vars = events.LHEScaleWeight[:, 1]
+    elif syst == "MuFUp":
+        pdf_vars = events.LHEScaleWeight[:, 5]
+    elif syst == "MuFDown":
+        pdf_vars = events.LHEScaleWeight[:, 3]
+    else:
+        raise RuntimeError(f"Unknown scale variation systematic: {syst}")
+    return pdf_vars
 
 
 def track_killing(tracks, era, scouting=False):

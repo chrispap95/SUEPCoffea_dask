@@ -3,9 +3,11 @@ import hist
 import numpy as np
 import vector  # type: ignore[import]
 from coffea import processor
+from coffea.analysis_tools import Weights
 
 # Importing CMS corrections
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.muon_sf_utils as muon_sf_utils
 import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Set vector behavior
@@ -20,12 +22,11 @@ class SUEP_cluster(processor.ProcessorABC):
         self,
         isMC: bool,
         era: str | int,
-        syst_var: str = "",
+        do_syst: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
-        self.syst_var = syst_var
-        self.syst_suffix = f"_sys_{syst_var}" if syst_var != "" else ""
+        self.do_syst = do_syst
         self.gensumweight = 1.0
 
     def trigger_selection(self, events):
@@ -69,17 +70,64 @@ class SUEP_cluster(processor.ProcessorABC):
         return events
 
     def get_weights(self, events):
+        weights = Weights(len(events))
         if not self.isMC:
-            return np.ones(len(events))
-        # Pileup weights (need to be fed with integers)
-        pu_weights = systematics_utils.pileup_weight(
-            self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
+            return weights
+
+        # Generator weights
+        weights.add("genWeight", events.genWeight)
+
+        # Pileup weights
+        weights.add(
+            "PUReweight",
+            weight=systematics_utils.pileup_weight(events, self.era),
+            weightUp=systematics_utils.pileup_weight(events, self.era, syst="up"),
+            weightDown=systematics_utils.pileup_weight(events, self.era, syst="down"),
         )
+
         # L1 prefire weights
-        prefire_weights = systematics_utils.get_prefire_weights(events)
-        # Trigger scale factors
-        # To be implemented
-        return events.genWeight * pu_weights * prefire_weights
+        weights.add(
+            "L1PreFire",
+            weight=events.L1PreFiringWeight.Nom,
+            weightUp=events.L1PreFiringWeight.Up,
+            weightDown=events.L1PreFiringWeight.Dn,
+        )
+
+        # Parton shower weights
+        weights.add(
+            "ISR",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_PS_weights(events, syst="ISR_up"),
+            weightDown=systematics_utils.get_PS_weights(events, syst="ISR_down"),
+        )
+        weights.add(
+            "FSR",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_PS_weights(events, syst="FSR_up"),
+            weightDown=systematics_utils.get_PS_weights(events, syst="FSR_down"),
+        )
+
+        # Matrix element PDF and scale weights
+        weights.add(
+            "LHEPdf",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_pdf_variations(events, syst="up"),
+            weightDown=systematics_utils.get_pdf_variations(events, syst="down"),
+        )
+        weights.add(
+            "LHEScaleMuR",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_scale_variations(events, syst="MuRUp"),
+            weightDown=systematics_utils.get_scale_variations(events, syst="MuRDown"),
+        )
+        weights.add(
+            "LHEScaleMuF",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_scale_variations(events, syst="MuFUp"),
+            weightDown=systematics_utils.get_scale_variations(events, syst="MuFDown"),
+        )
+
+        return weights
 
     def find_Z_candidates(self, events, muons):
         """
@@ -198,18 +246,67 @@ class SUEP_cluster(processor.ProcessorABC):
         ) = self.apply_SR_high_temp(events_)
 
         weights_SR_high_temp_tight = self.get_weights(events_SR_high_temp_tight)
+        weights_SR_high_temp_tight.add(
+            "MuonSF",
+            weight=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_SR_high_temp_tight, syst=""),
+                axis=-1,
+            ),
+            weightUp=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_SR_high_temp_tight, syst="up"),
+                axis=-1,
+            ),
+            weightDown=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_SR_high_temp_tight, syst="down"),
+                axis=-1,
+            ),
+        )
         nMuon_SR_high_temp_tight = ak.num(muons_SR_high_temp_tight, axis=-1)
         output[dataset]["histograms"]["SR_high_temp_tight"].fill(
             ak.where(nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight),
-            weight=weights_SR_high_temp_tight,
+            weight=weights_SR_high_temp_tight.weight(),
         )
+        if self.do_syst:
+            for syst in weights_SR_high_temp_tight.variations:
+                output[dataset]["histograms"][f"SR_high_temp_tight_{syst}"] = (
+                    output[dataset]["histograms"]["SR_high_temp_tight"].copy().reset()
+                )
+                output[dataset]["histograms"][f"SR_high_temp_tight_{syst}"].fill(
+                    ak.where(nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight),
+                    weight=weights_SR_high_temp_tight.weight(syst),
+                )
 
         weights_SR_high_temp_loose = self.get_weights(events_SR_high_temp_loose)
+        weights_SR_high_temp_loose.add(
+            "MuonSF",
+            weight=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_SR_high_temp_loose, syst=""),
+                axis=-1,
+            ),
+            weightUp=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_SR_high_temp_loose, syst="up"),
+                axis=-1,
+            ),
+            weightDown=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_SR_high_temp_loose, syst="down"),
+                axis=-1,
+            ),
+        )
         nMuon_SR_high_temp_loose = ak.num(muons_SR_high_temp_loose, axis=-1)
         output[dataset]["histograms"]["SR_high_temp_loose"].fill(
             ak.where(nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose),
-            weight=weights_SR_high_temp_loose,
+            weight=weights_SR_high_temp_loose.weight(),
         )
+        if self.do_syst:
+            for syst in weights_SR_high_temp_loose.variations:
+                output[dataset]["histograms"][f"SR_high_temp_loose_{syst}"] = (
+                    output[dataset]["histograms"]["SR_high_temp_loose"].copy().reset()
+                )
+                output[dataset]["histograms"][f"SR_high_temp_loose_{syst}"].fill(
+                    ak.where(nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose),
+                    weight=weights_SR_high_temp_loose.weight(syst),
+                )
+
         return
 
     def analysis(self, events, output):
@@ -225,7 +322,7 @@ class SUEP_cluster(processor.ProcessorABC):
         weights = self.get_weights(events)
 
         # Fill the cutflow columns for all
-        output[dataset]["cutflow"].fill(len(events) * ["all"], weight=weights)
+        output[dataset]["cutflow"].fill(len(events) * ["all"], weight=weights.weight())
 
         # golden jsons for offline data
         if not self.isMC:
@@ -248,7 +345,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Fill the cutflow columns for trigger
         output[dataset]["cutflow"].fill(
             len(events) * ["trigger"],
-            weight=weights,
+            weight=weights.weight(),
         )
 
         self.fill_histograms(events, output)
@@ -279,7 +376,7 @@ class SUEP_cluster(processor.ProcessorABC):
             },
         }
 
-        # gen weights
+        # gen weights sum
         if self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
             output[dataset]["gensumweight"].add(self.gensumweight)
