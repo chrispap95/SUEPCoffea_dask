@@ -74,7 +74,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
         )
         # L1 prefire weights
-        prefire_weights = systematics_utils.get_prefire_weights(events)
+        prefire_weights = events.L1PreFiringWeight.Nom
         # Trigger scale factors
         # To be implemented
         return events.genWeight * pu_weights * prefire_weights

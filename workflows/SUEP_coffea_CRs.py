@@ -3,9 +3,11 @@ import hist
 import numpy as np
 import vector  # type: ignore[import]
 from coffea import processor
+from coffea.analysis_tools import Weights
 
 # Importing CMS corrections
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
+import workflows.CMS_corrections.muon_sf_utils as muon_sf_utils
 import workflows.CMS_corrections.systematics_utils as systematics_utils
 
 # Set vector behavior
@@ -17,12 +19,11 @@ class SUEP_cluster(processor.ProcessorABC):
         self,
         isMC: bool,
         era: str | int,
-        syst_var: str = "",
+        do_syst: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
-        self.syst_var = syst_var
-        self.syst_suffix = f"_sys_{syst_var}" if syst_var != "" else ""
+        self.do_syst = do_syst
         self.gensumweight = 1.0
 
     def trigger_selection(self, events):
@@ -66,17 +67,64 @@ class SUEP_cluster(processor.ProcessorABC):
         return events
 
     def get_weights(self, events):
+        weights = Weights(len(events))
         if not self.isMC:
-            return np.ones(len(events))
-        # Pileup weights (need to be fed with integers)
-        pu_weights = systematics_utils.pileup_weight(
-            self.era, ak.values_astype(events.Pileup.nTrueInt, np.int32)
+            return weights
+
+        # Generator weights
+        weights.add("genWeight", events.genWeight)
+
+        # Pileup weights
+        weights.add(
+            "PUReweight",
+            weight=systematics_utils.pileup_weight(events, self.era),
+            weightUp=systematics_utils.pileup_weight(events, self.era, syst="up"),
+            weightDown=systematics_utils.pileup_weight(events, self.era, syst="down"),
         )
+
         # L1 prefire weights
-        prefire_weights = systematics_utils.get_prefire_weights(events)
-        # Trigger scale factors
-        # To be implemented
-        return events.genWeight * pu_weights * prefire_weights
+        weights.add(
+            "L1PreFire",
+            weight=events.L1PreFiringWeight.Nom,
+            weightUp=events.L1PreFiringWeight.Up,
+            weightDown=events.L1PreFiringWeight.Dn,
+        )
+
+        # Parton shower weights
+        weights.add(
+            "ISR",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_PS_weights(events, syst="ISR_up"),
+            weightDown=systematics_utils.get_PS_weights(events, syst="ISR_down"),
+        )
+        weights.add(
+            "FSR",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_PS_weights(events, syst="FSR_up"),
+            weightDown=systematics_utils.get_PS_weights(events, syst="FSR_down"),
+        )
+
+        # Matrix element PDF and scale weights
+        weights.add(
+            "LHEPdf",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_pdf_variations(events, syst="up"),
+            weightDown=systematics_utils.get_pdf_variations(events, syst="down"),
+        )
+        weights.add(
+            "LHEScaleMuR",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_scale_variations(events, syst="MuRUp"),
+            weightDown=systematics_utils.get_scale_variations(events, syst="MuRDown"),
+        )
+        weights.add(
+            "LHEScaleMuF",
+            weight=np.ones(len(events)),
+            weightUp=systematics_utils.get_scale_variations(events, syst="MuFUp"),
+            weightDown=systematics_utils.get_scale_variations(events, syst="MuFDown"),
+        )
+
+        return weights
 
     def muon_filter(self, events):
         """
@@ -202,24 +250,96 @@ class SUEP_cluster(processor.ProcessorABC):
 
         events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
         weights_CR_prompt = self.get_weights(events_CR_prompt)
+        weights_CR_prompt.add(
+            "MuonSF",
+            weight=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_prompt, syst=""),
+                axis=-1,
+            ),
+            weightUp=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_prompt, syst="up"),
+                axis=-1,
+            ),
+            weightDown=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_prompt, syst="down"),
+                axis=-1,
+            ),
+        )
         output[dataset]["histograms"]["CR_prompt"].fill(
             ak.num(muons_CR_prompt, axis=-1),
             weight=weights_CR_prompt,
         )
+        if self.do_syst:
+            for syst in weights_CR_prompt.variations:
+                output[dataset]["histograms"][f"CR_prompt_{syst}"] = (
+                    output[dataset]["histograms"]["CR_prompt"].copy().reset()
+                )
+                output[dataset]["histograms"][f"CR_prompt_{syst}"].fill(
+                    ak.num(muons_CR_prompt, axis=-1),
+                    weight=weights_CR_prompt.weight(syst),
+                )
 
         events_CR_light, muons_CR_light = self.apply_CR_light(events_)
         weights_CR_light = self.get_weights(events_CR_light)
+        weights_CR_light.add(
+            "MuonSF",
+            weight=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_light, syst=""),
+                axis=-1,
+            ),
+            weightUp=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_light, syst="up"),
+                axis=-1,
+            ),
+            weightDown=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_light, syst="down"),
+                axis=-1,
+            ),
+        )
         output[dataset]["histograms"]["CR_light"].fill(
             ak.num(muons_CR_light, axis=-1),
             weight=weights_CR_light,
         )
+        if self.do_syst:
+            for syst in weights_CR_light.variations:
+                output[dataset]["histograms"][f"CR_light_{syst}"] = (
+                    output[dataset]["histograms"]["CR_light"].copy().reset()
+                )
+                output[dataset]["histograms"][f"CR_light_{syst}"].fill(
+                    ak.num(muons_CR_light, axis=-1),
+                    weight=weights_CR_light.weight(syst),
+                )
 
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
         weights_CR_cb = self.get_weights(events_CR_cb)
+        weights_CR_cb.add(
+            "MuonSF",
+            weight=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_cb, syst=""),
+                axis=-1,
+            ),
+            weightUp=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_cb, syst="up"),
+                axis=-1,
+            ),
+            weightDown=ak.prod(
+                muon_sf_utils.muon_scale_factors(muons_CR_cb, syst="down"),
+                axis=-1,
+            ),
+        )
         output[dataset]["histograms"]["CR_cb"].fill(
             ak.num(muons_CR_cb, axis=-1),
             weight=weights_CR_cb,
         )
+        if self.do_syst:
+            for syst in weights_CR_cb.variations:
+                output[dataset]["histograms"][f"CR_cb_{syst}"] = (
+                    output[dataset]["histograms"]["CR_cb"].copy().reset()
+                )
+                output[dataset]["histograms"][f"CR_cb_{syst}"].fill(
+                    ak.num(muons_CR_cb, axis=-1),
+                    weight=weights_CR_cb.weight(syst),
+                )
 
         return
 
@@ -236,7 +356,7 @@ class SUEP_cluster(processor.ProcessorABC):
         weights = self.get_weights(events)
 
         # Fill the cutflow columns for all
-        output[dataset]["cutflow"].fill(len(events) * ["all"], weight=weights)
+        output[dataset]["cutflow"].fill(len(events) * ["all"], weight=weights.weight())
 
         # golden jsons for offline data
         if not self.isMC:
@@ -259,7 +379,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Fill the cutflow columns for trigger
         output[dataset]["cutflow"].fill(
             len(events) * ["trigger"],
-            weight=weights,
+            weight=weights.weight(),
         )
 
         self.fill_histograms(events, output)
