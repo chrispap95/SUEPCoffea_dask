@@ -106,20 +106,23 @@ def get_scale_variations(events, syst=""):
         - MuFDown
     """
     pdf_vars = np.ones(len(events))
-    if "LHEScaleWeight" in events.fields:
+    if "LHEScaleWeight" not in events.fields:
         return pdf_vars
-    if len(events.LHEScaleWeight[0]) == 0:
-        return pdf_vars
-    if syst == "MuRUp":
-        pdf_vars = events.LHEScaleWeight[:, 7]
-    elif syst == "MuRDown":
-        pdf_vars = events.LHEScaleWeight[:, 1]
-    elif syst == "MuFUp":
-        pdf_vars = events.LHEScaleWeight[:, 5]
-    elif syst == "MuFDown":
-        pdf_vars = events.LHEScaleWeight[:, 3]
-    else:
-        raise RuntimeError(f"Unknown scale variation systematic: {syst}")
+    if any(ak.num(events.LHEScaleWeight) > 8):
+        ones = ak.from_numpy(np.ones((len(events), 9)))
+        LHEScaleWeight = ak.where(
+            ak.num(events.LHEScaleWeight) == 9, events.LHEScaleWeight, ones
+        )
+        if syst == "MuRUp":
+            pdf_vars = LHEScaleWeight[:, 7]  # type: ignore[index]
+        elif syst == "MuRDown":
+            pdf_vars = LHEScaleWeight[:, 1]  # type: ignore[index]
+        elif syst == "MuFUp":
+            pdf_vars = LHEScaleWeight[:, 5]  # type: ignore[index]
+        elif syst == "MuFDown":
+            pdf_vars = LHEScaleWeight[:, 3]  # type: ignore[index]
+        else:
+            raise RuntimeError(f"Unknown scale variation systematic: {syst}")
     return pdf_vars
 
 
