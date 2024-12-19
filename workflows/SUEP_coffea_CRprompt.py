@@ -124,36 +124,36 @@ class SUEP_processor(SUEP_common.SUEP_base):
         if len(events_) == 0:
             return
 
-        events_CR_light, muons_CR_light = self.apply_CR_light(events_)
-        if len(events_CR_light) > 0:
-            weights_CR_light = self.get_weights(events_CR_light)
-            weights_CR_light.add(
+        events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
+        if len(events_CR_prompt) > 0:
+            weights_CR_prompt = self.get_weights(events_CR_prompt)
+            weights_CR_prompt.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_light, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_light, syst="up"),
+                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, syst="up"),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_light, syst="down"),
+                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, syst="down"),
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["CR_light"].fill(
-                ak.num(muons_CR_light, axis=-1),
-                weight=weights_CR_light.weight(),
+            output[dataset]["histograms"]["CR_prompt"].fill(
+                ak.num(muons_CR_prompt, axis=-1),
+                weight=weights_CR_prompt.weight(),
             )
             if self.do_syst:
-                for syst in weights_CR_light.variations:
-                    output[dataset]["histograms"][f"CR_light_{syst}"] = (
-                        output[dataset]["histograms"]["CR_light"].copy().reset()
+                for syst in weights_CR_prompt.variations:
+                    output[dataset]["histograms"][f"CR_prompt_{syst}"] = (
+                        output[dataset]["histograms"]["CR_prompt"].copy().reset()
                     )
-                    output[dataset]["histograms"][f"CR_light_{syst}"].fill(
-                        ak.num(muons_CR_light, axis=-1),
-                        weight=weights_CR_light.weight(syst),
+                    output[dataset]["histograms"][f"CR_prompt_{syst}"].fill(
+                        ak.num(muons_CR_prompt, axis=-1),
+                        weight=weights_CR_prompt.weight(syst),
                     )
 
         return
@@ -209,7 +209,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             label="cutflow",
         ).Weight()
         histograms = {
-            "CR_light": hist.Hist.new.Regular(
+            "CR_prompt": hist.Hist.new.Regular(
                 4, 1, 5, name="nMuon", label="nMuon"
             ).Weight(),
         }
