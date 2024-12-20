@@ -23,11 +23,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
         isMC: bool,
         era: str | int,
         do_syst: bool = False,
+        do_rochester: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
         self.do_syst = do_syst
         self.gensumweight = 1.0
+        self.do_rochester = do_rochester
 
     def sphericity_eigenvalues(self, particles, r):
         """
@@ -174,9 +176,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events = events[filter_empty_events]
         muons = muons[filter_empty_events]
 
-        muons = muon_sf_utils.muon_scale_factors(
-            events, muons, self.era, self.isMC, var="nominal"
-        )
+        if self.do_rochester:
+            muons = muon_sf_utils.muon_scale_factors(
+                events, muons, self.era, self.isMC, var="nominal"
+            )
 
         # Apply basic muon cuts
         clean_muons = (

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import awkward as ak
 import correctionlib  # type: ignore[import]
 import numpy as np
@@ -17,11 +15,8 @@ def muon_efficiencies(muons, syst=""):
     n_muons = ak.num(muons)
 
     # medium pt muons
-    low_pt_json_file = (
-        Path(__file__).parent.parent.parent
-        / "data/muon_corrections/low_pt_muons/muon_JPsi.json"
-    )
-    low_pt_corrs = correctionlib.CorrectionSet.from_file(str(low_pt_json_file))
+    low_pt_json_file = "data/muon_corrections/low_pt_muons/muon_JPsi.json"
+    low_pt_corrs = correctionlib.CorrectionSet.from_file(low_pt_json_file)
     low_pt_muon_corr_id = low_pt_corrs["NUM_MediumID_DEN_TrackerMuons"]
     low_pt_muon_corr_eff = low_pt_corrs["NUM_TrackerMuons_DEN_genTracks"]
 
@@ -29,11 +24,8 @@ def muon_efficiencies(muons, syst=""):
     low_pt_muon_eff = low_pt_muon_corr_eff.evaluate(muons_flat.eta, muons_flat.pt, var)
 
     # medium pt muons
-    medium_pt_json_file = (
-        Path(__file__).parent.parent.parent
-        / "data/muon_corrections/medium_pt_muons/muon_Z.json"
-    )
-    medium_pt_corrs = correctionlib.CorrectionSet.from_file(str(medium_pt_json_file))
+    medium_pt_json_file = "data/muon_corrections/medium_pt_muons/muon_Z.json"
+    medium_pt_corrs = correctionlib.CorrectionSet.from_file(medium_pt_json_file)
     medium_pt_muon_corr_id = medium_pt_corrs["NUM_MediumID_DEN_TrackerMuons"]
     medium_pt_muon_corr_eff = medium_pt_corrs["NUM_TrackerMuons_DEN_genTracks"]
     # muon_corr_iso = correctionlib.CorrectionSet.from_file(json_file)["NUM_LooseRelIso_DEN_LooseID"]
@@ -61,13 +53,9 @@ def muon_scale_factors(events, muons, era, is_mc=False, var="nominal"):
         era = "2016a"
     elif era == "2016":
         era = "2016b"
-    rochester_file = (
-        Path(__file__).parent.parent.parent
-        / f"data/muon_corrections/roccor.Run2.v5/RoccoR{era}UL.txt"
-    )
+    rochester_file = f"data/muon_corrections/roccor.Run2.v5/RoccoR{era}UL.txt"
     rochester_data = txt_converters.convert_rochester_file(
-        str(rochester_file),
-        loaduncs=True,
+        rochester_file, loaduncs=True
     )
     rochester = rochester_lookup.rochester_lookup(rochester_data)
 

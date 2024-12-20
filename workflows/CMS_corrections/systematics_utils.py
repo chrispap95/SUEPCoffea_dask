@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import awkward as ak
 import correctionlib
 import numpy as np
@@ -169,9 +167,7 @@ def track_killing(tracks, era):
 
 
 def higgs_reweight(higgs_pt, variation="nominal"):
-    json_file = (
-        Path(__file__).parent.parent.parent / "data/higgs_reweight/higgs_reweight.json"
-    )
-    higgs_reweight_corrset = correctionlib.CorrectionSet.from_file(str(json_file))
+    json_file = "data/higgs_reweight/higgs_reweight.json"
+    higgs_reweight_corrset = correctionlib.CorrectionSet.from_file(json_file)
     higgs_pt_reweight_corr = higgs_reweight_corrset["Higgs_pt_reweighting"]
     return higgs_pt_reweight_corr.evaluate(higgs_pt, variation)

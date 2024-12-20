@@ -21,11 +21,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
         isMC: bool,
         era: str | int,
         do_syst: bool = False,
+        do_rochester: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
         self.do_syst = do_syst
         self.gensumweight = 1.0
+        self.do_rochester = do_rochester
 
     def apply_VR(self, events):
         """
@@ -34,9 +36,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 1], muons[ak.num(muons) > 1]
 
-        muons = muon_sf_utils.muon_scale_factors(
-            events, muons, self.era, self.isMC, var="nominal"
-        )
+        if self.do_rochester:
+            muons = muon_sf_utils.muon_scale_factors(
+                events, muons, self.era, self.isMC, var="nominal"
+            )
 
         # Apply basic muon cuts
         clean_muons = (
@@ -48,7 +51,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons = muons[clean_muons]
 
         # VR selection
-        Z_cands = self.find_Z_candidates(events, muons)
+        events, muons, Z_cands = self.find_Z_candidates(events, muons)
         in_mass_window = abs(Z_cands.mass - Z_MASS) < 2 * Z_WIDTH  # type: ignore[attr-defined]
         muons = muons[in_mass_window]
         events = events[in_mass_window]

@@ -15,11 +15,13 @@ class SUEP_base(processor.ProcessorABC):
         isMC: bool,
         era: str | int,
         do_syst: bool = False,
+        do_rochester: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
         self.do_syst = do_syst
         self.gensumweight = 1.0
+        self.do_rochester = do_rochester
 
     def trigger_selection(self, events):
         """
@@ -154,9 +156,10 @@ class SUEP_base(processor.ProcessorABC):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
-        muons = muon_sf_utils.muon_scale_factors(
-            events, muons, self.era, self.isMC, var="nominal"
-        )
+        if self.do_rochester:
+            muons = muon_sf_utils.muon_scale_factors(
+                events, muons, self.era, self.isMC, var="nominal"
+            )
 
         clean_muons = (
             (muons.mediumId)

@@ -88,6 +88,7 @@ def setup_workflow(
             "isMC": args.isMC,
             "era": args.era,
             "do_syst": args.do_syst,
+            "do_rochester": args.do_rochester,
             "sample": sample_dict,
             "debug": args.debug,
         }
@@ -114,7 +115,6 @@ def get_main_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run analysis on baconbits files using processor coffea files"
     )
-    # Inputs
     parser.add_argument(
         "-w",
         "--workflow",
@@ -136,8 +136,6 @@ def get_main_parser() -> argparse.ArgumentParser:
         default="filelist/SUEP_files_simple.json",
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
-
-    # Scale out
     parser.add_argument(
         "--executor",
         choices=[
@@ -178,7 +176,6 @@ def get_main_parser() -> argparse.ArgumentParser:
         default=250,
         help="The maximum number of nodes to adapt the cluster to. (default: %(default)s)",
     )
-    # Debugging
     parser.add_argument(
         "--validate",
         action="store_true",
@@ -229,11 +226,9 @@ def get_main_parser() -> argparse.ArgumentParser:
         default="2018",
         help="Specify the year (default: %(default)s)",
     )
+    parser.add_argument("--do_syst", action="store_true", help="Turn systematics on")
     parser.add_argument(
-        "--do_syst", action="store_true", help="Turn systematics on or off"
-    )
-    parser.add_argument(
-        "--scouting", action="store_true", help="Turn processing for scouting on"
+        "--do_rochester", action="store_true", help="Turn Rochester corrections on"
     )
     parser.add_argument("--dataset", type=str, help="Dataset to find xsection")
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
