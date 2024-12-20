@@ -1,0 +1,399 @@
+{
+    "schema_version": 2,
+    "description": "Higgs pt reweighting according to Table 1 from https://cds.cern.ch/record/2669113/files/LHCHXSWG-2019-002.pdf. Nominal weights and uncertainties are provided. 'nominal', 'up', and 'down'. Please note the different meanings of the input labels.    \n 'nominal'  : Nominal central reweight value    \n 'up'   : Up variation    \n 'down' : Down variation",
+    "corrections": [
+        {
+            "name": "Higgs_pt_reweighting",
+            "description": "Higgs_pt_reweighting",
+            "version": 2,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Higgs pt"
+                },
+                {
+                    "name": "reweight",
+                    "type": "string",
+                    "description": "Choose nominal reweight or one of the uncertainties"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output reweight (nominal) or uncertainty"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    0.0,
+                    400.0,
+                    450.0,
+                    500.0,
+                    550.0,
+                    600.0,
+                    650.0,
+                    700.0,
+                    750.0,
+                    800.0,
+                    850.0,
+                    900.0,
+                    950.0,
+                    1000.0,
+                    1050.0,
+                    1100.0,
+                    1150.0,
+                    1200.0,
+                    1250.0,
+                    Infinity
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.25
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.365
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.25
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.365
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.25
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.36125
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1125
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.25
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.36
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1125
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.25
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.36
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1125
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.3454
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34664
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34664
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34664
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.1036
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34788
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.0912
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34664
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.0912
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "reweight",
+                        "content": [
+                            {
+                                "key": "nominal",
+                                "value": 1.24
+                            },
+                            {
+                                "key": "up",
+                                "value": 1.34664
+                            },
+                            {
+                                "key": "down",
+                                "value": 1.0912
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        }
+    ]
+}
