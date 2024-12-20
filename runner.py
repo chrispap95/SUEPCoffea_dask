@@ -5,13 +5,17 @@ import json
 import os
 import pickle
 import sys
+import warnings
 from typing import Optional, Union
 
 from coffea import nanoevents, processor
 from coffea.processor import Accumulatable
 from rich import pretty  # type: ignore[import]
 
-from workflows.SUEP_coffea_SR_high_temp import SUEP_cluster
+from workflows.SUEP_coffea_SR_high_temp import SUEP_processor
+
+# Suppress warnings - fixes issue with progress tracking after coffea v.0.7.23
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -57,7 +61,7 @@ def getXSection(dataset: str, year: str, path: Optional[str] = "data/") -> float
 
 def setup_workflow(
     workflow_name: str, args: argparse.Namespace, sample_dict: dict
-) -> SUEP_cluster:
+) -> SUEP_processor:
     """
     Dynamically import and setup workflow from the workflow name
 
@@ -76,8 +80,8 @@ def setup_workflow(
         # Import the module
         module = importlib.import_module(module_name)
 
-        # Get the SUEP_cluster class from the module
-        workflow_class = getattr(module, "SUEP_cluster")
+        # Get the SUEP_processor class from the module
+        workflow_class = getattr(module, "SUEP_processor")
 
         # Default list of all parameters
         params = {
@@ -102,7 +106,7 @@ def setup_workflow(
         raise ImportError(f"Could not import workflow '{workflow_name}'. Error: {e}")
     except AttributeError as e:
         raise AttributeError(
-            f"Workflow module '{workflow_name}' must contain a 'SUEP_cluster' class. Error: {e}"
+            f"Workflow module '{workflow_name}' must contain a 'SUEP_processor' class. Error: {e}"
         )
 
 
@@ -232,16 +236,7 @@ def get_main_parser() -> argparse.ArgumentParser:
         "--scouting", action="store_true", help="Turn processing for scouting on"
     )
     parser.add_argument("--dataset", type=str, help="Dataset to find xsection")
-    parser.add_argument(
-        "--trigger",
-        type=str,
-        default="TripleMu",
-        help="Specify HLT trigger path (default: %(default)s)",
-    )
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
-    parser.add_argument(
-        "--region", type=str, default="", help="Specify the region to run on"
-    )
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     parser.add_argument("--check_hlt", action="store_true", help="Check HLT paths")
@@ -314,6 +309,8 @@ def daskExecutor(args: argparse.Namespace) -> processor.DaskExecutor:
         client.register_plugin(SettingSitePath("/workflows/"))
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
+        shutil.make_archive("data", "zip", base_dir="data")
+        client.upload_file("data.zip")
 
         print("Waiting for at least one worker...")
         client.wait_for_workers(1)
@@ -376,7 +373,7 @@ def checkHLTpaths(sample_dict: dict) -> Accumulatable:
 
 
 def execute(
-    args: argparse.Namespace, processor_instance: SUEP_cluster, sample_dict: dict
+    args: argparse.Namespace, processor_instance: SUEP_processor, sample_dict: dict
 ) -> Accumulatable:
     """
     Main function to execute the workflow
