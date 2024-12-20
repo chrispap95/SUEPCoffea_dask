@@ -48,7 +48,7 @@ def muon_scale_factors(events, muons, era, is_data=False):
     elif era == "2016":
         era = "2016b"
     rochester_data = txt_converters.convert_rochester_file(
-        f"data/muon_corrections/medium_pt_muons/roccor.Run2.v5/RoccoR{era}UL.txt",
+        f"data/muon_corrections/roccor.Run2.v5/RoccoR{era}UL.txt",
         loaduncs=True,
     )
     rochester = rochester_lookup.rochester_lookup(rochester_data)
