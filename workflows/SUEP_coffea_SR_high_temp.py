@@ -31,20 +31,24 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
+        muons = muon_sf_utils.muon_scale_factors(
+            events, muons, self.era, self.isMC, var="nominal"
+        )
+
         # Apply basic muon cuts
         clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
         )
 
         # Tight SR selection
         tight_cut = (
-            (events.Muon.pt < 45)
-            & (events.Muon.ip3d < 0.008)
-            & (events.Muon.miniPFRelIso_all < 0.65)
-            & ((events.Muon.miniPFRelIso_all - events.Muon.miniPFRelIso_chg) < 0.5)
+            (muons.pt < 45)
+            & (muons.ip3d < 0.008)
+            & (muons.miniPFRelIso_all < 0.65)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
         )
         muons_tight_cut = muons[clean_muons & tight_cut]
         events_tight_cut, muons_tight_cut, Z_cands_tight_cut = self.find_Z_candidates(
@@ -62,9 +66,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Loose SR selection
         loose_cut = (
-            (events.Muon.ip3d < 0.1)
-            & (events.Muon.miniPFRelIso_all < 10)
-            & ((events.Muon.miniPFRelIso_all - events.Muon.miniPFRelIso_chg) < 10)
+            (muons.ip3d < 0.1)
+            & (muons.miniPFRelIso_all < 10)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 10)
         )
         muons_loose_cut = muons[clean_muons & loose_cut]
         events_loose_cut, muons_loose_cut, Z_cands_loose_cut = self.find_Z_candidates(

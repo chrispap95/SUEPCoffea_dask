@@ -3,7 +3,7 @@ import numpy as np
 from coffea import processor
 from coffea.analysis_tools import Weights
 
-from workflows.CMS_corrections import systematics_utils
+from workflows.CMS_corrections import muon_sf_utils, systematics_utils
 
 Z_MASS = 91.1876
 Z_WIDTH = 2.4952
@@ -154,11 +154,15 @@ class SUEP_base(processor.ProcessorABC):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
+        muons = muon_sf_utils.muon_scale_factors(
+            events, muons, self.era, self.isMC, var="nominal"
+        )
+
         clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
         )
         muons = muons[clean_muons]
         select_by_muons_low = ak.num(muons, axis=-1) > 2

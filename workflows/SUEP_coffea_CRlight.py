@@ -24,39 +24,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
         self.do_syst = do_syst
         self.gensumweight = 1.0
 
-    def apply_CR_prompt(self, events):
-        """
-        Apply the CR_prompt selection to the events.
-        """
-        muons = events.Muon
-        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
-
-        # Apply basic muon cuts
-        clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
-        )
-
-        # Apply extra very tight cuts for CR_prompt
-        prompt_muons = (
-            (events.Muon.pt > 25)
-            & (events.Muon.miniPFRelIso_all < 0.1)
-            & (abs(events.Muon.dxy) < 0.005)
-            & (abs(events.Muon.dz) < 0.01)
-            & (abs(events.Muon.ip3d < 0.008))
-        )
-        muons = muons[clean_muons & prompt_muons]
-
-        # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_high = ak.num(muons, axis=-1) < 5
-        select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_high & select_by_muons_low]
-        muons = muons[select_by_muons_high & select_by_muons_low]
-
-        return events, muons
-
     def apply_CR_light(self, events):
         """
         Apply the CR_light selection to the events.
@@ -64,50 +31,27 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
+        muons = muon_sf_utils.muon_scale_factors(
+            events, muons, self.era, self.isMC, var="nominal"
+        )
+
         # Apply basic muon cuts
         clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
         )
 
         # Apply extra very tight cuts for CR_light
         prompt_muons = (
-            (abs(events.Muon.dxy) <= 0.02)
-            & (abs(events.Muon.dz) <= 0.1)
-            & (abs(events.Muon.ip3d) <= 0.02)
+            (abs(muons.dxy) <= 0.02)
+            & (abs(muons.dz) <= 0.1)
+            & (abs(muons.ip3d) <= 0.02)
         )
-        non_isolated_muons = events.Muon.miniPFRelIso_all > 0.65
+        non_isolated_muons = muons.miniPFRelIso_all > 0.65
         light_muons = prompt_muons & non_isolated_muons
         muons = muons[clean_muons & light_muons]
-
-        # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_high = ak.num(muons, axis=-1) < 5
-        select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_high & select_by_muons_low]
-        muons = muons[select_by_muons_high & select_by_muons_low]
-
-        return events, muons
-
-    def apply_CR_cb(self, events):
-        """
-        Apply the CR_cb selection to the events.
-        """
-        muons = events.Muon
-        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
-
-        # Apply basic muon cuts
-        clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
-        )
-
-        # Apply extra very tight cuts for CR_cb
-        cb_muons = (abs(events.Muon.dxy) >= 0.01) & (abs(events.Muon.dxy) <= 0.2)
-        muons = muons[clean_muons & cb_muons]
 
         # Make sure there is at least one muon in the event after the cuts
         select_by_muons_high = ak.num(muons, axis=-1) < 5

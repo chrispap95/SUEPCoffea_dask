@@ -34,12 +34,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 1], muons[ak.num(muons) > 1]
 
+        muons = muon_sf_utils.muon_scale_factors(
+            events, muons, self.era, self.isMC, var="nominal"
+        )
+
         # Apply basic muon cuts
         clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
         )
         muons = muons[clean_muons]
 

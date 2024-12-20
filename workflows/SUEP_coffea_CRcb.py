@@ -31,16 +31,20 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
 
+        muons = muon_sf_utils.muon_scale_factors(
+            events, muons, self.era, self.isMC, var="nominal"
+        )
+
         # Apply basic muon cuts
         clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
         )
 
         # Apply extra very tight cuts for CR_cb
-        cb_muons = (abs(events.Muon.dxy) >= 0.01) & (abs(events.Muon.dxy) <= 0.2)
+        cb_muons = (abs(muons.dxy) >= 0.01) & (abs(muons.dxy) <= 0.2)
         muons = muons[clean_muons & cb_muons]
 
         # Make sure there is at least one muon in the event after the cuts

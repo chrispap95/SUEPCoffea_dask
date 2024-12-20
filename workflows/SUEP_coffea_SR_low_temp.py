@@ -174,16 +174,20 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events = events[filter_empty_events]
         muons = muons[filter_empty_events]
 
+        muons = muon_sf_utils.muon_scale_factors(
+            events, muons, self.era, self.isMC, var="nominal"
+        )
+
         # Apply basic muon cuts
         clean_muons = (
-            (events.Muon.mediumId)
-            & (events.Muon.pt > 3)
-            & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
         )
 
         # Tight SR: selection for muons
-        tight_cut = (events.Muon.pt < 35) & (events.Muon.ip3d < 0.008)
+        tight_cut = (muons.pt < 35) & (muons.ip3d < 0.008)
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
