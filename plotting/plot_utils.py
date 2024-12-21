@@ -1,6 +1,7 @@
 import os
 import pickle
 import re
+from logging import warning
 from pathlib import Path
 from typing import Optional
 
@@ -240,6 +241,14 @@ class Extrapolation:
     """
 
     def __init__(self, plots: dict) -> None:
+        """
+        Initialize the class.
+
+        Parameters
+        ----------
+        plots : dict
+            Dictionary of histograms.
+        """
         self.plots = plots
         self.fit_results = {}
 
@@ -265,7 +274,9 @@ class Extrapolation:
         """
         return self.muon_func_log(x, loga_l, logb)
 
-    def extrapolate(self, slice_hists: dict = {}, verbose: bool = False) -> None:
+    def extrapolate(
+        self, slice_hists: dict = {}, syst: str = "", verbose: bool = False
+    ) -> None:
         """
         Perform extrapolation of histograms.
 
@@ -274,25 +285,61 @@ class Extrapolation:
         slice_hists : dict
             Dictionary of histogram keys and slice() objects that should be applied to
             them if provided.
+        syst : str
+            The systematic variation to use.
         verbose : bool
             Flag to indicate if the fit results should be printed.
         """
-        for region in self.find_extrapolatable_regions():
+        if not syst.startswith("_") and syst != "":
+            syst = f"_{syst}"
+        for region in self.find_extrapolatable_regions(syst):
             # Perform and evaluate the fit
-            m = self.fit(region, slice_hists=slice_hists, verbose=verbose)
-            h_loose = self.evaluate_fit(f"{region}_loose", m, slice_hists=slice_hists)
-            h_tight = self.evaluate_fit(f"{region}_tight", m, slice_hists=slice_hists)
+            m = self.fit(region, slice_hists=slice_hists, syst=syst, verbose=verbose)
+            h_loose = self.evaluate_fit(
+                f"{region}_loose", m, slice_hists=slice_hists, syst=syst
+            )
+            h_tight = self.evaluate_fit(
+                f"{region}_tight", m, slice_hists=slice_hists, syst=syst
+            )
 
             # Store the fit results and extrapolated histograms
-            self.fit_results[region] = m
-            self.plots[f"{region}_loose_extrapolation"] = h_loose
-            self.plots[f"{region}_tight_extrapolation"] = h_tight
+            self.fit_results[f"{region}{syst}"] = m
+            self.plots[f"{region}_loose_extrapolation{syst}"] = h_loose
+            self.plots[f"{region}_tight_extrapolation{syst}"] = h_tight
 
-    def find_extrapolatable_regions(self) -> list[str]:
+    def find_syst_variations(self) -> None:
+        syst_variations = set()
+        for region in self.plots:
+            if "_tight_" in region:
+                syst_variations.add(
+                    region.split("_tight_")[-1]
+                    .replace("extrapolation", "")
+                    .replace("_", "")
+                )
+        self.syst_variations = list(syst_variations)
+        return
+
+    def get_syst_variations(self) -> list[str]:
+        if not hasattr(self, "syst_variations"):
+            self.find_syst_variations()
+        return self.syst_variations
+
+    def fit_syst_variations(self, slice_hists: dict, verbose: bool):
+        """
+        Perform the extrapolation for all systematic variations of a region.
+        """
+        for syst_var in self.get_syst_variations():
+            if verbose and syst_var != "":
+                print(f"Extrapolating {syst_var}")
+            elif verbose:
+                print("Extrapolating nominal")
+            self.extrapolate(slice_hists=slice_hists, syst=syst_var, verbose=verbose)
+
+    def find_extrapolatable_regions(self, syst: str) -> list[str]:
         return [
-            region.replace("_tight", "")
+            region.replace("_tight", "").replace("_extrapolation", "").replace(syst, "")
             for region in self.plots
-            if "tight" in region and "extrapolation" not in region
+            if region.endswith(f"tight{syst}")
         ]
 
     def sanitize_hist(
@@ -331,7 +378,7 @@ class Extrapolation:
         else:
             raise TypeError(f"{h} must be a hist.Hist or hist.accumulators.WeightedSum")
 
-    def fit(self, region: str, slice_hists: dict, verbose: bool) -> Minuit:
+    def fit(self, region: str, slice_hists: dict, syst: str, verbose: bool) -> Minuit:
         """
         Perform simultaneous Least Squares fit to the loose and tight regions.
 
@@ -342,6 +389,8 @@ class Extrapolation:
         slice_hists : dict
             Dictionary of histogram keys and slice() objects that should be applied to
             them if provided.
+        syst : str
+            The systematic variation to use.
         verbose : bool
             Flag to indicate if the fit results should be printed.
 
@@ -350,17 +399,23 @@ class Extrapolation:
         Minuit
             The Minuit fit result.
         """
-        if f"{region}_loose" in slice_hists:
+        if f"{region}_loose{syst}" in slice_hists:
+            slc_l = slice_hists[f"{region}_loose{syst}"]
+        elif f"{region}_loose" in slice_hists:
+            warning(f"Using {region}_loose slice for {region}_loose{syst}")
             slc_l = slice_hists[f"{region}_loose"]
         else:
             slc_l = slice(None)
-        if f"{region}_tight" in slice_hists:
+        if f"{region}_tight{syst}" in slice_hists:
+            slc_t = slice_hists[f"{region}_tight{syst}"]
+        elif f"{region}_tight" in slice_hists:
+            warning(f"Using {region}_tight slice for {region}_tight{syst}")
             slc_t = slice_hists[f"{region}_tight"]
         else:
             slc_t = slice(None)
 
-        h_l = self.plots[f"{region}_loose"][slc_l]
-        h_t = self.plots[f"{region}_tight"][slc_t]
+        h_l = self.plots[f"{region}_loose{syst}"][slc_l]
+        h_t = self.plots[f"{region}_tight{syst}"][slc_t]
 
         h_l = self.sanitize_hist(h_l)
         h_t = self.sanitize_hist(h_t)
@@ -387,7 +442,7 @@ class Extrapolation:
         m.hesse()
 
         if verbose:
-            print(f"Fit results for {region}:")
+            print(f"Fit results for {region}{syst}:")
             print(m)
 
         return m
@@ -397,7 +452,9 @@ class Extrapolation:
             print(f"Fit results for {region}:")
             print(self.fit_results[region])
 
-    def evaluate_fit(self, region: str, m: Minuit, slice_hists: dict) -> hist.Hist:
+    def evaluate_fit(
+        self, region: str, m: Minuit, slice_hists: dict, syst: str
+    ) -> hist.Hist:
         """
         This function accepts a Minuit fit result.
         It will output a histogram that represents an evaluation of the fit.
@@ -412,6 +469,8 @@ class Extrapolation:
             Dictionary of histogram keys and slice() objects that were be applied to
             the histograms when fitting. Needed to determine the x value to begin the
             fit evaluation.
+        syst : str
+            The systematic variation to use.
 
         Returns
         -------
@@ -436,7 +495,9 @@ class Extrapolation:
 
         # Determine the x value to begin the fit
         fit_x_begin = x[0]
-        if region in slice_hists:
+        if f"{region}_{syst}" in slice_hists:
+            fit_x_begin = slice_hists[f"{region}_{syst}"].start.imag
+        elif region in slice_hists:
             fit_x_begin = slice_hists[region].start.imag
 
         # Propagate the fit parameters and covariance matrix
@@ -454,14 +515,19 @@ class Extrapolation:
         return h0
 
     def plot_region(
-        self, region: str, ax1: plt.Axes, ax2: plt.Axes, ax3: plt.Axes
+        self, region: str, syst: str, ax1: plt.Axes, ax2: plt.Axes, ax3: plt.Axes
     ) -> None:
         """
         Function to be called by plot_fit. Plots the region's MC histograms and extrapolations,
         as well as the ratio and pulls.
         """
         plot_pre_fit = self.plots[f"{region}"]
-        plot_post_fit = self.plots[f"{region}_extrapolation"]
+        post_fit_name = (
+            f"{region}_extrapolation"
+            if syst == ""
+            else f"{region.replace(syst, '')}_extrapolation{syst}"
+        )
+        plot_post_fit = self.plots[post_fit_name]
 
         y = plot_post_fit.values()
         yerr_prop = np.sqrt(plot_post_fit.variances())
@@ -557,7 +623,7 @@ class Extrapolation:
         for label in ax2.xaxis.get_ticklabels():
             label.set_visible(False)
 
-    def plot_fit(self, region: str) -> None:
+    def plot_fit(self, region: str, syst: str = "") -> None:
         """
         Plot the region's MC histograms and extrapolations, as well as the ratio and pulls.
         Will plot both the loose and tight regions side by side.
@@ -567,10 +633,14 @@ class Extrapolation:
         region : str
             The region to plot. E.g. "SR_high_temp".
         """
+        if not syst.startswith("_") and syst != "":
+            syst = f"_{syst}"
+
         region = (
             region.replace("_tight", "")
             .replace("_loose", "")
             .replace("_extrapolation", "")
+            .replace(syst, "")
         )
 
         # Create figure
@@ -591,14 +661,14 @@ class Extrapolation:
         ax2_right = plt.subplot(gs_right[3, 0], sharex=ax1_right)  # 4th row
         ax3_right = plt.subplot(gs_right[4, 0], sharex=ax1_right)  # Bottom row
 
-        self.plot_region(f"{region}_loose", ax1_left, ax2_left, ax3_left)
-        self.plot_region(f"{region}_tight", ax1_right, ax2_right, ax3_right)
+        self.plot_region(f"{region}_loose{syst}", syst, ax1_left, ax2_left, ax3_left)
+        self.plot_region(f"{region}_tight{syst}", syst, ax1_right, ax2_right, ax3_right)
 
         plt.tight_layout()
         plt.show()
 
     def plot_overlay(
-        self, regions: Optional[list] = ["SR_high_temp", "SR_low_temp"]
+        self, regions: Optional[list] = ["SR_high_temp", "SR_low_temp"], syst: str = ""
     ) -> None:
         """
         Plot an overlay of the histograms for the loose reion, the tight region,
@@ -613,22 +683,27 @@ class Extrapolation:
             print("Warning: No regions specified")
             return
 
+        if not syst.startswith("_") and syst != "":
+            syst = f"_{syst}"
+
         fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
 
         for i, region in enumerate(regions):
             ax = axes[i]
-            self.plots[f"{region}_loose"].plot(
-                yerr=np.sqrt(self.plots[f"{region}_loose"].variances()),
+            self.plots[f"{region}_loose{syst}"].plot(
+                yerr=np.sqrt(self.plots[f"{region}_loose{syst}"].variances()),
                 label="loose",
                 ax=ax,
             )
-            self.plots[f"{region}_tight"].plot(
-                yerr=np.sqrt(self.plots[f"{region}_tight"].variances()),
+            self.plots[f"{region}_tight{syst}"].plot(
+                yerr=np.sqrt(self.plots[f"{region}_tight{syst}"].variances()),
                 label="tight",
                 ax=ax,
             )
-            self.plots[f"{region}_tight_extrapolation"].plot(
-                yerr=np.sqrt(self.plots[f"{region}_tight_extrapolation"].variances()),
+            self.plots[f"{region}_tight_extrapolation{syst}"].plot(
+                yerr=np.sqrt(
+                    self.plots[f"{region}_tight_extrapolation{syst}"].variances()
+                ),
                 label="tight extr.",
                 ax=ax,
             )
