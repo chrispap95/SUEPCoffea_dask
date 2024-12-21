@@ -33,9 +33,9 @@ def pileup_weight(events, era, syst=""):
     f_data = uproot.open(f"data/pileup/PileupHistogram-UL{era}-100bins_withVar.root")
 
     variation = ""
-    if "PU_reweight_up" in syst:
+    if "up" in syst:
         variation = "_plus"
-    elif "PU_reweight_down" in syst:
+    elif "down" in syst:
         variation = "_minus"
 
     hist_MC = f_MC["pu_mc"].to_numpy()  # type: ignore[no-untyped-call]
