@@ -48,34 +48,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
         # VR selection
         muons = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.3)]
 
-        # # Extra selections
-        # # add promptness, pt, and tight isolation cuts
-        # muons_tight = muons[
-        #     muons.mediumPromptId & (muons.pt > 30) & (muons.miniPFRelIso_all < 0.1)
-        # ]
-
-        # # Make sure there muons with both charges available
-        # # NOTE: I need to reapply this because I want to add more selections to the muons
-        # enough_muons = (ak.sum(muons_tight.charge == 1, axis=-1) > 0) & (
-        #     ak.sum(muons_tight.charge == -1, axis=-1) > 0
-        # )
-        # muons_tight = muons_tight[enough_muons]
-        # muons = muons[enough_muons]
-        # events = events[enough_muons]
-
-        # # VR selection
-        # # Select the hardest opposite sign muon pair
-        # muons1 = muons_tight[muons_tight.charge == 1]
-        # muons2 = muons_tight[muons_tight.charge == -1]
-        # muons1 = ak.firsts(muons1)
-        # muons2 = ak.firsts(muons2)
-
-        # # Hardest pair
-        # Z_cands = muons1 + muons2
-        # in_mass_window = abs(Z_cands.mass - Z_MASS) < 2 * Z_WIDTH
-        # muons = muons[in_mass_window]
-        # events = events[in_mass_window]
-
         # Make sure there is at least one muon in the event after the cuts
         select_by_muons_low = ak.num(muons, axis=-1) > 0
         events = events[select_by_muons_low]
@@ -230,15 +202,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),
-            # "sph_vs_nMuon": hist.Hist.new.Regular(
-            #     50,
-            #     0,
-            #     1,
-            #     name="sph",
-            #     label="sph",
-            # )
-            # .Regular(5, 3, 8, name="nMuon", label="nMuon")
-            # .Weight(),
         }
 
         output = {
