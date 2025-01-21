@@ -50,18 +50,20 @@ class SUEP_processor(SUEP_common.SUEP_base):
         )
         muons = muons[clean_muons]
 
-        # VR selection
-        events, muons, Z_cands = self.find_Z_candidates(events, muons)
-        in_mass_window = abs(Z_cands.mass - Z_MASS) < 2 * Z_WIDTH  # type: ignore[attr-defined]
-        muons = muons[in_mass_window]
-        events = events[in_mass_window]
+        # Make sure we are the trigger plateau
+        events, muons = events[ak.num(muons) > 2], muons[ak.num(muons) > 2]
 
-        # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_low]
-        muons = muons[select_by_muons_low]
+        # Form loose VR & make sure there is at least one muon in the event after the cuts
+        muons_VR_loose = muons[(muons.ip3d > 0.008) & (muons.miniPFRelIso_all > 0.2)]
+        events_VR_loose = events[ak.num(muons_VR_loose, axis=-1) > 0]
+        muons_VR_loose = muons_VR_loose[ak.num(muons_VR_loose, axis=-1) > 0]
 
-        return events, muons
+        # Form tight VR & make sure there is at least one muon in the event after the cuts
+        muons_VR_tight = muons[(muons.ip3d > 0.015) & (muons.miniPFRelIso_all > 0.5)]
+        events_VR_tight = events[ak.num(muons_VR_tight, axis=-1) > 0]
+        muons_VR_tight = muons_VR_tight[ak.num(muons_VR_tight, axis=-1) > 0]
+
+        return events_VR_tight, events_VR_loose, muons_VR_tight, muons_VR_loose
 
     def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
@@ -70,37 +72,68 @@ class SUEP_processor(SUEP_common.SUEP_base):
         if len(events_) == 0:
             return
 
-        events_VR, muons_VR = self.apply_VR(events_)
-        if len(events_VR) > 0:
-            weights_VR = self.get_weights(events_VR)
-            weights_VR.add(
+        events_VR_tight, events_VR_loose, muons_VR_tight, muons_VR_loose = (
+            self.apply_VR(events_)
+        )
+        if len(events_VR_tight) > 0:
+            weights_VR_tight = self.get_weights(events_VR_tight)
+            weights_VR_loose = self.get_weights(events_VR_loose)
+            weights_VR_tight.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_VR_tight, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR, syst="up"),
+                    muon_sf_utils.muon_efficiencies(muons_VR_tight, syst="up"),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR, syst="down"),
+                    muon_sf_utils.muon_efficiencies(muons_VR_tight, syst="down"),
                     axis=-1,
                 ),
             )
-            nMuon_VR = ak.num(muons_VR, axis=-1)
-            output[dataset]["histograms"]["VR"].fill(
-                ak.where(nMuon_VR > 7, 7, nMuon_VR),
-                weight=weights_VR.weight(),
+            weights_VR_loose.add(
+                "MuonSF",
+                weight=ak.prod(
+                    muon_sf_utils.muon_efficiencies(muons_VR_loose, syst=""),
+                    axis=-1,
+                ),
+                weightUp=ak.prod(
+                    muon_sf_utils.muon_efficiencies(muons_VR_loose, syst="up"),
+                    axis=-1,
+                ),
+                weightDown=ak.prod(
+                    muon_sf_utils.muon_efficiencies(muons_VR_loose, syst="down"),
+                    axis=-1,
+                ),
+            )
+            nMuon_VR_tight = ak.num(muons_VR_tight, axis=-1)
+            nMuon_VR_loose = ak.num(muons_VR_loose, axis=-1)
+            output[dataset]["histograms"]["VR_tight"].fill(
+                ak.where(nMuon_VR_tight > 7, 7, nMuon_VR_tight),
+                weight=weights_VR_tight.weight(),
+            )
+            output[dataset]["histograms"]["VR_loose"].fill(
+                ak.where(nMuon_VR_loose > 7, 7, nMuon_VR_loose),
+                weight=weights_VR_loose.weight(),
             )
             if self.do_syst:
-                for syst in weights_VR.variations:
-                    output[dataset]["histograms"][f"VR_{syst}"] = (
-                        output[dataset]["histograms"]["VR"].copy().reset()
+                for syst in weights_VR_tight.variations:
+                    output[dataset]["histograms"][f"VR_tight_{syst}"] = (
+                        output[dataset]["histograms"]["VR_tight"].copy().reset()
                     )
-                    output[dataset]["histograms"][f"VR_{syst}"].fill(
-                        ak.where(nMuon_VR > 7, 7, nMuon_VR),
-                        weight=weights_VR.weight(syst),
+                    output[dataset]["histograms"][f"VR_tight_{syst}"].fill(
+                        ak.where(nMuon_VR_tight > 7, 7, nMuon_VR_tight),
+                        weight=weights_VR_tight.weight(syst),
+                    )
+                for syst in weights_VR_loose.variations:
+                    output[dataset]["histograms"][f"VR_loose_{syst}"] = (
+                        output[dataset]["histograms"]["VR_loose"].copy().reset()
+                    )
+                    output[dataset]["histograms"][f"VR_loose_{syst}"].fill(
+                        ak.where(nMuon_VR_loose > 7, 7, nMuon_VR_loose),
+                        weight=weights_VR_loose.weight(syst),
                     )
 
         return
@@ -156,8 +189,11 @@ class SUEP_processor(SUEP_common.SUEP_base):
             label="cutflow",
         ).Weight()
         histograms = {
-            "VR": hist.Hist.new.Regular(
-                10, 0, 10, name="nMuon", label="nMuon"
+            "VR_tight": hist.Hist.new.Regular(
+                5, 3, 8, name="nMuon", label="nMuon"
+            ).Weight(),
+            "VR_loose": hist.Hist.new.Regular(
+                5, 3, 8, name="nMuon", label="nMuon"
             ).Weight(),
         }
 
