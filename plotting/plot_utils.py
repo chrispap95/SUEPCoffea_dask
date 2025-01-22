@@ -310,9 +310,9 @@ class Extrapolation:
     def find_syst_variations(self) -> None:
         syst_variations = set()
         for region in self.plots:
-            if "_tight_" in region:
+            if "_tight" in region:
                 syst_variations.add(
-                    region.split("_tight_")[-1]
+                    region.split("_tight")[-1]
                     .replace("extrapolation", "")
                     .replace("_", "")
                 )
