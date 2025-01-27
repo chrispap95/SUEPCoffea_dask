@@ -1,7 +1,7 @@
+import logging
 import os
 import pickle
 import re
-from logging import warning
 from pathlib import Path
 from typing import Optional
 
@@ -18,6 +18,7 @@ from iminuit import Minuit
 from iminuit.cost import LeastSquares
 from jacobi import propagate  # type: ignore[import]
 from rich.pretty import pprint  # type: ignore[import]
+from rich.progress import track  # type: ignore[import]
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
@@ -402,14 +403,14 @@ class Extrapolation:
         if f"{region}_loose{syst}" in slice_hists:
             slc_l = slice_hists[f"{region}_loose{syst}"]
         elif f"{region}_loose" in slice_hists:
-            warning(f"Using {region}_loose slice for {region}_loose{syst}")
+            logging.warning(f"Using {region}_loose slice for {region}_loose{syst}")
             slc_l = slice_hists[f"{region}_loose"]
         else:
             slc_l = slice(None)
         if f"{region}_tight{syst}" in slice_hists:
             slc_t = slice_hists[f"{region}_tight{syst}"]
         elif f"{region}_tight" in slice_hists:
-            warning(f"Using {region}_tight slice for {region}_tight{syst}")
+            logging.warning(f"Using {region}_tight slice for {region}_tight{syst}")
             slc_t = slice_hists[f"{region}_tight"]
         else:
             slc_t = slice(None)
@@ -718,7 +719,9 @@ class Extrapolation:
         plt.show()
 
 
-def convert_to_root(sample, plots_in, extrapolation=False):
+def convert_to_root(
+    sample, plots_in, extrapolation=False, do_syst=False, verbose=False
+):
     """
     Convert hist.Hist histograms to pyROOT histograms.
 
@@ -730,6 +733,10 @@ def convert_to_root(sample, plots_in, extrapolation=False):
         Dictionary of hist.Hist histograms.
     extrapolation : bool
         Flag to indicate if extrapolated histograms should be used.
+    do_syst : bool
+        Flag to indicate if systematic variations should be used.
+    verbose : bool
+        Flag to indicate if the systematic variations should be printed.
 
     Returns
     -------
@@ -740,23 +747,58 @@ def convert_to_root(sample, plots_in, extrapolation=False):
     if extrapolation:
         suffix = "_extrapolation"
     plots_out = {}
-    plots_out["CR_QCD"] = uproot.to_writable(plots_in["CR_cb"]).to_pyroot()  # type: ignore[attr-defined]
-    h_CR_prompt = ROOT.TH1D(f"nMuon_CR_prompt_{sample}", "nMuon", 1, 2, 3)
-    h_CR_prompt.SetBinContent(1, plots_in["CR_prompt"][2j].value)
-    h_CR_prompt.SetBinError(1, np.sqrt(plots_in["CR_prompt"][2j].variance))
-    plots_out["CR_DY"] = h_CR_prompt.Clone()
-    h_SR_low_temp = ROOT.TH1D(f"nMuon_SR_low_temp_{sample}", "nMuon", 1, 7, 8)
-    h_SR_low_temp.SetBinContent(1, plots_in[f"SR_low_temp_tight{suffix}"][7j].value)
-    h_SR_low_temp.SetBinError(
-        1, np.sqrt(plots_in[f"SR_low_temp_tight{suffix}"][7j].variance)
-    )
-    plots_out["SR_low_temp"] = h_SR_low_temp.Clone()
-    h_SR_high_temp = ROOT.TH1D(f"nMuon_SR_high_temp_{sample}", "nMuon", 1, 7, 8)
-    h_SR_high_temp.SetBinContent(1, plots_in[f"SR_high_temp_tight{suffix}"][7j].value)
-    h_SR_high_temp.SetBinError(
-        1, np.sqrt(plots_in[f"SR_high_temp_tight{suffix}"][7j].variance)
-    )
-    plots_out["SR_high_temp"] = h_SR_high_temp.Clone()
+
+    systematic_vars = {""}
+    for region in plots_in:
+        if do_syst and f"SR_high_temp_tight{suffix}_" in region:
+            systematic_vars.add(region.replace(f"SR_high_temp_tight{suffix}", ""))
+
+    systematic_vars = list(systematic_vars)
+    if verbose:
+        print("Systematic variations:")
+        print(systematic_vars)
+
+    for syst in systematic_vars:
+        CR_cb_plot = (
+            plots_in["CR_cb"]
+            if f"CR_cb{syst}" not in plots_in
+            else plots_in[f"CR_cb{syst}"]
+        )
+        plots_out[f"CR_QCD{syst}"] = uproot.to_writable(CR_cb_plot).to_pyroot()  # type: ignore[attr-defined]
+        plots_out[f"CR_QCD{syst}"].SetName(f"nMuon_CR_QCD{syst}_{sample}")
+
+        CR_prompt_plot = (
+            plots_in["CR_prompt"]
+            if f"CR_prompt{syst}" not in plots_in
+            else plots_in[f"CR_prompt{syst}"]
+        )
+        h_CR_prompt = ROOT.TH1D(f"nMuon_CR_DY{syst}_{sample}", "nMuon", 1, 2, 3)
+        h_CR_prompt.SetBinContent(1, CR_prompt_plot[2j].value)
+        h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
+        plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
+
+        SR_low_temp_plot = (
+            plots_in[f"SR_low_temp_tight{suffix}"]
+            if f"SR_low_temp_tight{suffix}{syst}" not in plots_in
+            else plots_in[f"SR_low_temp_tight{suffix}{syst}"]
+        )
+        h_SR_low_temp = ROOT.TH1D(f"nMuon_SR_low_temp{syst}_{sample}", "nMuon", 1, 7, 8)
+        h_SR_low_temp.SetBinContent(1, SR_low_temp_plot[7j].value)
+        h_SR_low_temp.SetBinError(1, np.sqrt(SR_low_temp_plot[7j].variance))
+        plots_out[f"SR_low_temp{syst}"] = h_SR_low_temp.Clone()
+
+        SR_high_temp_plot = (
+            plots_in[f"SR_high_temp_tight{suffix}"]
+            if f"SR_high_temp_tight{suffix}{syst}" not in plots_in
+            else plots_in[f"SR_high_temp_tight{suffix}{syst}"]
+        )
+        h_SR_high_temp = ROOT.TH1D(
+            f"nMuon_SR_high_temp{syst}_{sample}", "nMuon", 1, 7, 8
+        )
+        h_SR_high_temp.SetBinContent(1, SR_high_temp_plot[7j].value)
+        h_SR_high_temp.SetBinError(1, np.sqrt(SR_high_temp_plot[7j].variance))
+        plots_out[f"SR_high_temp{syst}"] = h_SR_high_temp.Clone()
+
     return plots_out
 
 
@@ -776,6 +818,6 @@ def export_histograms_to_root(plots, output_path):
         os.makedirs(output_path)
 
     with uproot.recreate(os.path.join(output_path, "output.root")) as f:
-        for sample_name, regions in plots.items():
+        for sample_name, regions in track(plots.items(), description="Exporting..."):
             for region_name, histogram in regions.items():
                 f[f"{region_name}/{sample_name}"] = uproot.from_pyroot(histogram)

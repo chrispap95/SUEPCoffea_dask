@@ -1,7 +1,11 @@
 import argparse
+import logging
 import shutil
 
 import plot_utils
+
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def parse_args():
@@ -9,7 +13,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Nov2024",
+        default="full_analysis_Dec2024",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -41,25 +45,14 @@ if "__main__" in __name__:
     plots_CR = plot_utils.loader(
         tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=args.data
     )
-    plots_VR = plot_utils.loader(
-        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=args.data
-    )
-    plots_SR_low_temp = plot_utils.loader(
-        tag=f"{args.tag}_SR_low_temp", custom_lumi=args.lumi, load_data=args.data
-    )
-    plots_SR_high_temp = plot_utils.loader(
-        tag=f"{args.tag}_SR_high_temp", custom_lumi=args.lumi, load_data=args.data
+    plots_SR = plot_utils.loader(
+        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=args.data
     )
     plots = {}
     for dataset in plots_CR:
         # Note: need to fix this to be mergeable even when data for SR is missing! (blinded...)
         # This merges two dicts!
-        plots[dataset] = (
-            plots_CR[dataset]
-            | plots_VR[dataset]
-            | plots_SR_low_temp[dataset]
-            | plots_SR_high_temp[dataset]
-        )
+        plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
     print("Done!", flush=True)
 
     print("Fit and extrapolation...", end=" ", flush=True)
@@ -73,10 +66,7 @@ if "__main__" in __name__:
     }
 
     qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
-    qcd_extrapolation.extrapolate(slice_hists=slice_hists)
-    # qcd_extrapolation.plot_overlay()
-    # qcd_extrapolation.plot_fit("SR_low_temp")
-    # qcd_extrapolation.plot_fit("SR_high_temp")
+    qcd_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     # DY extrapolation
     # Slice the first bin out where needed for fit stability
@@ -87,36 +77,36 @@ if "__main__" in __name__:
         "SR_high_temp_tight": slice(3j, None),
     }
     dy_extrapolation = plot_utils.Extrapolation(plots["DY_2018"])
-    dy_extrapolation.extrapolate(slice_hists=slice_hists)
-    # dy_extrapolation.plot_overlay()
-    # dy_extrapolation.plot_fit("SR_low_temp")
-    # dy_extrapolation.plot_fit("SR_high_temp")
+    dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
     print("Done!", flush=True)
 
-    print("Converting to ROOT and exporting...", end=" ", flush=True)
+    print("Converting to ROOT...", end=" ", flush=True)
     # Prepare plots for export
     plots_for_export = {}
 
     # Add signal
     signal_models = [model for model in plots if "SUEP" in model]
     for model in signal_models:
-        plots_for_export[model] = plot_utils.convert_to_root(model, plots[model])
+        plots_for_export[model] = plot_utils.convert_to_root(
+            model, plots[model], do_syst=True
+        )
 
     # QCD bkg
     plots_for_export["QCD_13TeV_2018"] = plot_utils.convert_to_root(
         "QCD_Pt_MuEnrichedPt5_2018",
         plots["QCD_Pt_MuEnrichedPt5_2018"],
         extrapolation=True,
+        do_syst=True,
     )
 
     # DY bkg
     plots_for_export["DY_13TeV_2018"] = plot_utils.convert_to_root(
-        "DY_2018", plots["DY_2018"], extrapolation=True
+        "DY_2018", plots["DY_2018"], extrapolation=True, do_syst=True
     )
+    print("Done!", flush=True)
 
     # Export histograms to ROOT files
     plot_utils.export_histograms_to_root(plots_for_export, "exports")
 
     # Copy to destination
     shutil.copytree("exports", args.dest, dirs_exist_ok=True)
-    print("Done!", flush=True)
