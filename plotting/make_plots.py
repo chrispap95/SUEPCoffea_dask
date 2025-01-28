@@ -106,7 +106,7 @@ if "__main__" in __name__:
     print("Done!", flush=True)
 
     # Export histograms to ROOT files
-    plot_utils.export_histograms_to_root(plots_for_export, "exports")
+    plot_utils.export_histograms_to_root(plots_for_export, "exports", add_null_obs=True)
 
     # Copy to destination
     shutil.copytree("exports", args.dest, dirs_exist_ok=True)

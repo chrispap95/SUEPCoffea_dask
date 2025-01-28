@@ -802,7 +802,7 @@ def convert_to_root(
     return plots_out
 
 
-def export_histograms_to_root(plots, output_path):
+def export_histograms_to_root(plots, output_path, add_null_obs=False):
     """
     Export hist.Hist histograms to a ROOT file, organized in TDirectories by region.
     Negative bin entries are set to zero.
@@ -826,7 +826,6 @@ def export_histograms_to_root(plots, output_path):
     with uproot.recreate(os.path.join(output_path, "output.root")) as f:
         for sample_name, regions in track(plots.items(), description="Exporting..."):
             for region_name, histogram in regions.items():
-                # Need to move systematic from region name to sample name
                 syst_name = ""
                 for syst in systematics:
                     if syst in region_name:
@@ -837,3 +836,12 @@ def export_histograms_to_root(plots, output_path):
                 f[f"{region_name}/{sample_name}{syst_name}_13TeV_2018"] = (
                     uproot.from_pyroot(histogram)
                 )
+                if add_null_obs and syst_name == "" and sample_name == "QCD":
+                    null_hist = histogram.Clone()
+                    null_hist.Reset()
+                    null_hist.SetName(
+                        null_hist.GetName().replace("QCD_Pt_MuEnrichedPt5", "data_obs")
+                    )
+                    f[f"{region_name}/data_obs_13TeV_2018"] = uproot.from_pyroot(
+                        null_hist
+                    )
