@@ -3,7 +3,6 @@ import os
 import warnings
 
 import matplotlib as mpl  # type: ignore[import]
-import matplotlib.gridspec as gridspec  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
 import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
