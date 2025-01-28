@@ -817,7 +817,23 @@ def export_histograms_to_root(plots, output_path):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
+    systematics = [
+        syst.replace("SR_high_temp", "")
+        for syst in plots["QCD_13TeV_2018"]
+        if "SR_high_temp_" in syst
+    ]
+
     with uproot.recreate(os.path.join(output_path, "output.root")) as f:
         for sample_name, regions in track(plots.items(), description="Exporting..."):
             for region_name, histogram in regions.items():
-                f[f"{region_name}/{sample_name}"] = uproot.from_pyroot(histogram)
+                # Need to move systematic from region name to sample name
+                syst_name = ""
+                for syst in systematics:
+                    if syst in region_name:
+                        region_name = region_name.replace(syst, "")
+                        syst_name = syst
+                        break
+                sample_name = sample_name.replace("_13TeV_2018", "")
+                f[f"{region_name}/{sample_name}{syst_name}_13TeV_2018"] = (
+                    uproot.from_pyroot(histogram)
+                )
