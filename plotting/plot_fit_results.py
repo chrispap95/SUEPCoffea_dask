@@ -6,30 +6,12 @@ import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
 import mplhep as hep
 import plot_utils
-from cycler import cycler  # type: ignore[import]
 from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
 warnings.filterwarnings("ignore")
-
-# Color palette for 10 colors
-cmap_petroff_6 = ["#5790fc", "#f89c20", "#e42536", "#964a8b", "#9c9ca1", "#7a21dd"]
-cmap_petroff_10 = [
-    "#3f90da",
-    "#ffa90e",
-    "#bd1f01",
-    "#94a4a2",
-    "#832db6",
-    "#a96b59",
-    "#e76300",
-    "#b9ac70",
-    "#717581",
-    "#92dadd",
-]
-CMS = {"axes.prop_cycle": cycler("color", cmap_petroff_10)}
-plt.style.use(CMS)
 
 
 def parse_args():
