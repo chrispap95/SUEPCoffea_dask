@@ -44,7 +44,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def plot_region(args, plots, region):
+def plot_VR(args, plots, region):
     extrapolation = "extrapolation" in region
     region = region.replace("_extrapolation", "")
     extrapolation_tag = ""
@@ -57,15 +57,17 @@ def plot_region(args, plots, region):
         ("WJets_2018", "WJets"),
         ("VV+VVV_2018", "VV+VVV"),
         ("TT_powheg_2018", "TT"),
-        ("DY_2018", f"DY{extrapolation_tag}"),
+        ("DY_2018", "DY"),
         ("QCD_Pt_MuEnrichedPt5_2018", f"QCD{extrapolation_tag}"),
     ]
 
     signal_processes = [
-        "GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi4.000_T16.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018",
+        # The following are signal samples with contamination in VR
+        "GluGluToSUEP_mS500.000_mPhi2.000_T8.000_modehadronic_13TeV_2018",
+        "GluGluToSUEP_mS1000.000_mPhi2.000_T4.000_modeleptonic_13TeV_2018",
+        "GluGluToSUEP_mS1000.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
+        "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
+        "GluGluToSUEP_mS500.000_mPhi8.000_T2.000_modeleptonic_13TeV_2018",
     ]
     if "low_temp" in region:
         signal_processes = [
@@ -140,22 +142,13 @@ def plot_region(args, plots, region):
         ax=ax,
     )
 
-    if "SR" in region:
-        plt.vlines(x=7, color="red", ymin=1e-3, ymax=1e6, lw=4)
-        plt.annotate(
-            "",
-            xy=(7.5, 1e5),
-            xytext=(7, 1e5),
-            arrowprops=dict(facecolor="red", shrink=0),
-        )
-
     hep.cms.label(llabel="Preliminary", data=True, lumi=55, ax=ax)
 
     region_loc = (ax.get_xlim()[1] + ax.get_xlim()[0]) * 0.5
     plt.text(
         region_loc,
         2e5,
-        region.replace("temp", "T").replace("prompt", "DY").replace("cb", "QCD"),
+        region.replace("temp", "T"),
         ha="center",
         weight="bold",
     )
@@ -182,55 +175,29 @@ if "__main__" == __name__:
 
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
-    plots_CR = plot_utils.loader(
-        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=False
+    plots = plot_utils.loader(
+        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=False
     )
-    plots_SR = plot_utils.loader(
-        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=False
-    )
-    plots = {}
-    for dataset in plots_CR:
-        # Note: need to fix this to be mergeable even when data for SR is missing! (blinded...)
-        # This merges two dicts!
-        plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
     print("Done!", flush=True)
 
     print("Fit and extrapolation...", end=" ", flush=True)
     # QCD extrapolation
     # Slice the first bin out where needed for fit stability
     slice_hists = {
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
+        "VR_loose": slice(3j, None),
+        "VR_tight": slice(3j, None),
     }
 
     qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
-    # DY extrapolation
-    # Slice the first bin out where needed for fit stability
-    slice_hists = {
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
-    }
-    dy_extrapolation = plot_utils.Extrapolation(plots["DY_2018"])
-    dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
     print("Done!", flush=True)
 
     # Plot regions
     regions = [
-        "CR_light",
-        "CR_prompt",
-        "CR_cb",
-        "SR_low_temp_loose",
-        "SR_low_temp_tight",
-        "SR_low_temp_tight_extrapolation",
-        "SR_high_temp_loose",
-        "SR_high_temp_tight",
-        "SR_high_temp_tight_extrapolation",
+        "VR_loose",
+        "VR_tight",
+        "VR_tight_extrapolation",
     ]
     for region in track(regions):
-        plot_region(args, plots, region)
+        plot_VR(args, plots, region)
