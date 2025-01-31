@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 
 def color_value(value):
     try:
-        if float(value) > 0.5:
+        if float(value) > 0.15:
             return f"{Fore.RED}{value}{Style.RESET_ALL}"
         return value
     except (ValueError, TypeError):
