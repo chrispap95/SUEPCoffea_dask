@@ -689,8 +689,7 @@ class Extrapolation:
 
         fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
 
-        for i, region in enumerate(regions):
-            ax = axes[i]
+        for region, ax in zip(regions, axes):
             self.plots[f"{region}_loose{syst}"].plot(
                 yerr=np.sqrt(self.plots[f"{region}_loose{syst}"].variances()),
                 label="loose",
@@ -777,32 +776,36 @@ def convert_to_root(
         h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
         plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
 
-        SR_low_temp_plot = (
-            plots_in[f"SR_low_temp_tight{suffix}"]
-            if f"SR_low_temp_tight{suffix}{syst}" not in plots_in
-            else plots_in[f"SR_low_temp_tight{suffix}{syst}"]
-        )
-        h_SR_low_temp = ROOT.TH1D(f"nMuon_SR_low_temp{syst}_{sample}", "nMuon", 1, 7, 8)
-        h_SR_low_temp.SetBinContent(1, SR_low_temp_plot[7j].value)
-        h_SR_low_temp.SetBinError(1, np.sqrt(SR_low_temp_plot[7j].variance))
-        plots_out[f"SR_low_temp{syst}"] = h_SR_low_temp.Clone()
+        if f"SR_low_temp_tight{suffix}" in plots_in:
+            SR_low_temp_plot = (
+                plots_in[f"SR_low_temp_tight{suffix}"]
+                if f"SR_low_temp_tight{suffix}{syst}" not in plots_in
+                else plots_in[f"SR_low_temp_tight{suffix}{syst}"]
+            )
+            h_SR_low_temp = ROOT.TH1D(
+                f"nMuon_SR_low_temp{syst}_{sample}", "nMuon", 1, 7, 8
+            )
+            h_SR_low_temp.SetBinContent(1, SR_low_temp_plot[7j].value)
+            h_SR_low_temp.SetBinError(1, np.sqrt(SR_low_temp_plot[7j].variance))
+            plots_out[f"SR_low_temp{syst}"] = h_SR_low_temp.Clone()
 
-        SR_high_temp_plot = (
-            plots_in[f"SR_high_temp_tight{suffix}"]
-            if f"SR_high_temp_tight{suffix}{syst}" not in plots_in
-            else plots_in[f"SR_high_temp_tight{suffix}{syst}"]
-        )
-        h_SR_high_temp = ROOT.TH1D(
-            f"nMuon_SR_high_temp{syst}_{sample}", "nMuon", 1, 7, 8
-        )
-        h_SR_high_temp.SetBinContent(1, SR_high_temp_plot[7j].value)
-        h_SR_high_temp.SetBinError(1, np.sqrt(SR_high_temp_plot[7j].variance))
-        plots_out[f"SR_high_temp{syst}"] = h_SR_high_temp.Clone()
+        if f"SR_high_temp_tight{suffix}" in plots_in:
+            SR_high_temp_plot = (
+                plots_in[f"SR_high_temp_tight{suffix}"]
+                if f"SR_high_temp_tight{suffix}{syst}" not in plots_in
+                else plots_in[f"SR_high_temp_tight{suffix}{syst}"]
+            )
+            h_SR_high_temp = ROOT.TH1D(
+                f"nMuon_SR_high_temp{syst}_{sample}", "nMuon", 1, 7, 8
+            )
+            h_SR_high_temp.SetBinContent(1, SR_high_temp_plot[7j].value)
+            h_SR_high_temp.SetBinError(1, np.sqrt(SR_high_temp_plot[7j].variance))
+            plots_out[f"SR_high_temp{syst}"] = h_SR_high_temp.Clone()
 
     return plots_out
 
 
-def export_histograms_to_root(plots, output_path, add_null_obs=False):
+def export_histograms_to_root(plots, output_path, output_name="output.root"):
     """
     Export hist.Hist histograms to a ROOT file, organized in TDirectories by region.
     Negative bin entries are set to zero.
@@ -823,7 +826,7 @@ def export_histograms_to_root(plots, output_path, add_null_obs=False):
         if "SR_high_temp_" in syst
     ]
 
-    with uproot.recreate(os.path.join(output_path, "output.root")) as f:
+    with uproot.recreate(os.path.join(output_path, output_name)) as f:
         for sample_name, regions in track(plots.items(), description="Exporting..."):
             for region_name, histogram in regions.items():
                 syst_name = ""
@@ -836,12 +839,12 @@ def export_histograms_to_root(plots, output_path, add_null_obs=False):
                 f[f"{region_name}/{sample_name}{syst_name}_13TeV_2018"] = (
                     uproot.from_pyroot(histogram)
                 )
-                if add_null_obs and syst_name == "" and sample_name == "QCD":
-                    null_hist = histogram.Clone()
-                    null_hist.Reset()
-                    null_hist.SetName(
-                        null_hist.GetName().replace("QCD_Pt_MuEnrichedPt5", "data_obs")
-                    )
-                    f[f"{region_name}/data_obs_13TeV_2018"] = uproot.from_pyroot(
-                        null_hist
-                    )
+                # if add_null_obs and syst_name == "" and sample_name == "QCD":
+                #     null_hist = histogram.Clone()
+                #     null_hist.Reset()
+                #     null_hist.SetName(
+                #         null_hist.GetName().replace("QCD_Pt_MuEnrichedPt5", "data_obs")
+                #     )
+                #     f[f"{region_name}/data_obs_13TeV_2018"] = uproot.from_pyroot(
+                #         null_hist
+                #     )

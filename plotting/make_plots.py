@@ -1,5 +1,6 @@
 import argparse
 import logging
+import math
 import shutil
 
 import plot_utils
@@ -29,6 +30,17 @@ def parse_args():
         help="Load data",
     )
     parser.add_argument(
+        "--unblind",
+        action="store_true",
+        help="Unblind the SRs",
+    )
+    parser.add_argument(
+        "--signal_scale",
+        type=float,
+        default=0.001,
+        help="Scale signal by this factor. Can be used to scale r value in combine. This is the inverse of the scaling of the signal strength.",
+    )
+    parser.add_argument(
         "--dest",
         type=str,
         default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Nov2024/CMSSW_11_3_4/src/auxiliaries/input/",
@@ -48,14 +60,36 @@ if "__main__" in __name__:
     plots_SR = plot_utils.loader(
         tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=args.data
     )
+
+    # Make sure the SR is blinded if needed
+    if not args.unblind:
+        for dataset in [d for d in plots_CR if "DoubleMuon" in d]:
+            plots_SR[dataset] = {}
+            for region in [
+                "SR_high_temp_tight",
+                "SR_high_temp_loose",
+                "SR_low_temp_tight",
+                "SR_low_temp_loose",
+            ]:
+                plots_SR[dataset][region] = (
+                    plots_SR["QCD_Pt_MuEnrichedPt5_2018"][region].copy().reset()
+                )
+
+    # Merge CR and SR plots into one dictionary
     plots = {}
     for dataset in plots_CR:
-        # Note: need to fix this to be mergeable even when data for SR is missing! (blinded...)
-        # This merges two dicts!
         plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
+
+    # Scale signal
+    if not math.isclose(args.signal_scale, 1.0):
+        for model in [model for model in plots if "SUEP" in model]:
+            for plot in plots[model]:
+                plots[model][plot] *= args.signal_scale
+
     print("Done!", flush=True)
 
     print("Fit and extrapolation...", end=" ", flush=True)
+
     # QCD extrapolation
     # Slice the first bin out where needed for fit stability
     slice_hists = {
@@ -81,6 +115,7 @@ if "__main__" in __name__:
     print("Done!", flush=True)
 
     print("Converting to ROOT...", end=" ", flush=True)
+
     # Prepare plots for export
     plots_for_export = {}
 
@@ -103,10 +138,24 @@ if "__main__" in __name__:
     plots_for_export["DY_13TeV_2018"] = plot_utils.convert_to_root(
         "DY_2018", plots["DY_2018"], extrapolation=True, do_syst=True
     )
+
+    # Data
+    if args.data:
+        plots_for_export["data_obs_13TeV_2018"] = plot_utils.convert_to_root(
+            "DoubleMuon_2018", plots["DoubleMuon_2018"]
+        )
     print("Done!", flush=True)
 
     # Export histograms to ROOT files
-    plot_utils.export_histograms_to_root(plots_for_export, "exports", add_null_obs=True)
+    output_name = "SUEP"
+    if not math.isclose(args.signal_scale, 1.0):
+        output_name += f"_signal_scale{args.signal_scale}"
+
+    plot_utils.export_histograms_to_root(
+        plots_for_export,
+        output_path="exports",
+        output_name=f"{output_name}.root",
+    )
 
     # Copy to destination
     shutil.copytree("exports", args.dest, dirs_exist_ok=True)

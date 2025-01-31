@@ -54,6 +54,7 @@ dataset_groups_old = {
 
 
 dataset_groups_new = {
+    "DoubleMuon": [r"DoubleMuon_Run2018(A|B|C|D)-UL2018_MiniAODv2_GT36-v1_MINIAOD"],
     "DY_NJets_LO": [
         r"DY(1|2|3|4)JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
     ],
