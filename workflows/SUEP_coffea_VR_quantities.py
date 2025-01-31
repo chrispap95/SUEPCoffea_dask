@@ -32,11 +32,17 @@ class SUEP_processor(SUEP_common.SUEP_base):
         Apply the VR selection to the events.
         """
         muons = events.Muon
+        events, muons = events[ak.num(muons) > 1], muons[ak.num(muons) > 1]
+
+        if self.do_rochester:
+            muons = muon_sf_utils.muon_scale_factors(
+                events, muons, self.era, self.isMC, var="nominal"
+            )
 
         # Apply basic muon cuts
         clean_muons = (
             (muons.mediumId)
-            & (muons.pt > 3)
+            & (muons.pt > 5)
             & (abs(muons.eta) < 2.4)
             & (abs(muons.dz) < 0.2)
         )
@@ -45,15 +51,32 @@ class SUEP_processor(SUEP_common.SUEP_base):
         # Make sure we are the trigger plateau
         events, muons = events[ak.num(muons) > 2], muons[ak.num(muons) > 2]
 
-        # VR selection
-        muons = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.3)]
+        # print("nEvents checkpoint 1: ", len(events))
+        # print("nMuon:", ak.num(muons))
 
-        # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_low]
-        muons = muons[select_by_muons_low]
+        # Form loose VR & make sure there is at least one muon in the event after the cuts
+        muons_VR_loose = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.2)]
+        events_VR_loose = events[ak.num(muons_VR_loose, axis=-1) > 0]
+        muons_VR_loose = muons_VR_loose[ak.num(muons_VR_loose, axis=-1) > 0]
 
-        return events, muons
+        # print("nEvents checkpoint 2: ", len(events))
+        # print("nMuon:", ak.num(muons))
+
+        # Cut on the max OS dimuon mass
+        muons1 = muons_VR_loose[muons_VR_loose.charge == 1]
+        muons2 = muons_VR_loose[muons_VR_loose.charge == -1]
+        enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+        muons1 = muons1[enough_muons]
+        muons2 = muons2[enough_muons]
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
+        # print(ak.max(os_dimuons.mass, axis=-1))
+        events_VR_loose = events_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        muons_VR_loose = muons_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+
+        # print("nEvents checkpoint 3: ", len(events_VR_loose))
+
+        return events_VR_loose, muons_VR_loose
 
     def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
@@ -67,6 +90,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_VR = self.get_weights(events_VR).weight()
             nMuon_VR = ak.num(muons_VR, axis=-1)
             nMuon_VR = ak.where(nMuon_VR > 7, 7, nMuon_VR)
+
+            # Filling some basic quantities, first.
             output[dataset]["histograms"]["muon_pt_vs_nMuon"].fill(
                 ak.flatten(muons_VR.pt),
                 ak.flatten(ak.broadcast_arrays(muons_VR.pt, nMuon_VR)[1]),
@@ -83,6 +108,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weight=ak.flatten(ak.broadcast_arrays(muons_VR.pt, weights_VR)[1]),
             )
 
+            # Filling the dimuon/Z_cand mass histograms
             muons1 = muons_VR[muons_VR.charge == 1]
             muons2 = muons_VR[muons_VR.charge == -1]
             enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
@@ -95,11 +121,35 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weight=weights_VR[enough_muons],
             )
 
-            events_VR, muons_VR, Z_cands = self.find_Z_candidates(events_VR, muons_VR)
+            events_VR_Zcand, muons_VR_Zcand, Z_cands = self.find_Z_candidates(
+                events_VR, muons_VR
+            )
             output[dataset]["histograms"]["dimuon_mass_best_vs_nMuon"].fill(
                 Z_cands.mass,
-                ak.num(muons_VR),
-                weight=self.get_weights(events_VR).weight(),
+                ak.num(muons_VR_Zcand),
+                weight=self.get_weights(events_VR_Zcand).weight(),
+            )
+
+            # print("nMuon:", ak.num(muons_VR))
+            muons1 = muons_VR[muons_VR.charge == 1]
+            muons2 = muons_VR[muons_VR.charge == -1]
+            enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+            muons1 = muons1[enough_muons]
+            muons2 = muons2[enough_muons]
+            nMuon_VR = nMuon_VR[enough_muons]
+            weights_VR = weights_VR[enough_muons]
+            muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+            os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
+            # print(ak.max(os_dimuons.mass, axis=-1))
+            output[dataset]["histograms"]["dimuon_mass_all_vs_nMuon"].fill(
+                ak.flatten(os_dimuons.mass),
+                ak.flatten(ak.broadcast_arrays(os_dimuons.mass, nMuon_VR)[1]),
+                weight=ak.flatten(ak.broadcast_arrays(os_dimuons.mass, weights_VR)[1]),
+            )
+            output[dataset]["histograms"]["dimuon_mass_max_vs_nMuon"].fill(
+                ak.max(os_dimuons.mass, axis=-1),
+                nMuon_VR,
+                weight=weights_VR,
             )
 
         return
@@ -166,8 +216,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             .Weight(),
             "muon_ip3d_vs_nMuon": hist.Hist.new.Regular(
                 50,
-                0.01,
-                1,
+                0.005,
+                0.5,
                 name="muon_ip3d",
                 label="muon_ip3d",
                 transform=hist.axis.transform.log,
@@ -176,8 +226,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             .Weight(),
             "muon_iso_vs_nMuon": hist.Hist.new.Regular(
                 50,
-                1e-3,
-                10,
+                1e-1,
+                20,
                 name="muon_iso",
                 label="muon_iso",
                 transform=hist.axis.transform.log,
@@ -199,6 +249,24 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 200,
                 name="dimuon_mass_best",
                 label="dimuon_mass_best",
+            )
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
+            "dimuon_mass_all_vs_nMuon": hist.Hist.new.Regular(
+                50,
+                0,
+                100,
+                name="dimuon_mass_all",
+                label="dimuon_mass_all",
+            )
+            .Regular(5, 3, 8, name="nMuon", label="nMuon")
+            .Weight(),
+            "dimuon_mass_max_vs_nMuon": hist.Hist.new.Regular(
+                50,
+                0,
+                100,
+                name="dimuon_mass_max",
+                label="dimuon_mass_max",
             )
             .Regular(5, 3, 8, name="nMuon", label="nMuon")
             .Weight(),

@@ -44,7 +44,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         # Apply basic muon cuts
         clean_muons = (
             (muons.mediumId)
-            & (muons.pt > 3)
+            & (muons.pt > 5)
             & (abs(muons.eta) < 2.4)
             & (abs(muons.dz) < 0.2)
         )
@@ -54,14 +54,36 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events, muons = events[ak.num(muons) > 2], muons[ak.num(muons) > 2]
 
         # Form loose VR & make sure there is at least one muon in the event after the cuts
-        muons_VR_loose = muons[(muons.ip3d > 0.008) & (muons.miniPFRelIso_all > 0.2)]
+        muons_VR_loose = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.2)]
         events_VR_loose = events[ak.num(muons_VR_loose, axis=-1) > 0]
         muons_VR_loose = muons_VR_loose[ak.num(muons_VR_loose, axis=-1) > 0]
 
+        # Cut on the max OS dimuon mass
+        muons1 = muons_VR_loose[muons_VR_loose.charge == 1]
+        muons2 = muons_VR_loose[muons_VR_loose.charge == -1]
+        enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+        muons1 = muons1[enough_muons]
+        muons2 = muons2[enough_muons]
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
+        events_VR_loose = events_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        muons_VR_loose = muons_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+
         # Form tight VR & make sure there is at least one muon in the event after the cuts
-        muons_VR_tight = muons[(muons.ip3d > 0.015) & (muons.miniPFRelIso_all > 0.5)]
+        muons_VR_tight = muons[(muons.ip3d > 0.02) & (muons.miniPFRelIso_all > 0.4)]
         events_VR_tight = events[ak.num(muons_VR_tight, axis=-1) > 0]
         muons_VR_tight = muons_VR_tight[ak.num(muons_VR_tight, axis=-1) > 0]
+
+        # Cut on the max OS dimuon mass
+        muons1 = muons_VR_tight[muons_VR_tight.charge == 1]
+        muons2 = muons_VR_tight[muons_VR_tight.charge == -1]
+        enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+        muons1 = muons1[enough_muons]
+        muons2 = muons2[enough_muons]
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
+        events_VR_tight = events_VR_tight[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        muons_VR_tight = muons_VR_tight[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
 
         return events_VR_tight, events_VR_loose, muons_VR_tight, muons_VR_loose
 
