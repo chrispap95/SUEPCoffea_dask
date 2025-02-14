@@ -1,3 +1,12 @@
+"""
+Let's put the entire validation here.
+I would like to have the following plots:
+ - fit results plots both for QCD and data
+ - overlay plots with data and QCD for both extrapolations as well and with a ratio plot for QCD/data
+
+Total of 3 + 3 = 6 plots for the fit results and
+"""
+
 import argparse
 import os
 import warnings
@@ -6,6 +15,7 @@ import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
 import mplhep as hep
 import plot_utils
+from numpy import add
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
@@ -61,35 +71,33 @@ if "__main__" == __name__:
     qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
-    data_extrapolation = plot_utils.Extrapolation(plots["DoubleMuon_2018"])
+    data_extrapolation = plot_utils.Extrapolation(
+        plots["DoubleMuon_2018"], is_data=True
+    )
     data_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     print("Done!", flush=True)
 
-    qcd_extrapolation.plot_fit("VR")
+    qcd_extrapolation.plot_fit("VR", add_label=True)
     plt.text(4, 1e6, "QCD", fontsize=20, ha="center")
-    hep.cms.label(llabel="Preliminary", data=False, lumi=55)
     plt.tight_layout()
     plt.savefig(f"{args.dest}/plot_fit_VR_qcd.pdf")
     plt.close()
 
-    qcd_extrapolation.plot_overlay(regions=["VR"])
+    qcd_extrapolation.plot_overlay(regions=["VR"], add_label=True)
     plt.text(4, 1e6, "QCD", fontsize=20, ha="center")
-    hep.cms.label(llabel="Preliminary", data=False, lumi=55)
     plt.tight_layout()
     plt.savefig(f"{args.dest}/fit_overlay_qcd.pdf")
     plt.close()
 
-    data_extrapolation.plot_fit("VR")
+    data_extrapolation.plot_fit("VR", add_label=True)
     plt.text(4, 1e6, "Data", fontsize=20, ha="center")
-    hep.cms.label(llabel="Preliminary", data=True, lumi=55)
     plt.tight_layout()
     plt.savefig(f"{args.dest}/plot_fit_VR_data.pdf")
     plt.close()
 
-    data_extrapolation.plot_overlay(regions=["VR"])
+    data_extrapolation.plot_overlay(regions=["VR"], add_label=True)
     plt.text(4, 1e6, "Data", fontsize=20, ha="center")
-    hep.cms.label(llabel="Preliminary", data=True, lumi=55)
     plt.tight_layout()
     plt.savefig(f"{args.dest}/fit_overlay_data.pdf")
     plt.close()

@@ -36,12 +36,32 @@ def parse_args():
         "If not provided, the luminosity will be determined automatically for the year.",
     )
     parser.add_argument(
+        "--data",
+        action="store_true",
+        help="Plot data points in the regions. Default is False.",
+    )
+    parser.add_argument(
         "--dest",
         type=str,
         default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/regions_plots",
         help="Destination directory to save the plots",
     )
     return parser.parse_args()
+
+
+y_ranges = {
+    "CR_cb": (10, 1e11),
+    "CR_light": (10, 1e11),
+    "CR_prompt": (10, 1e11),
+    "SR_high_temp_loose_extrapolation": (1e-2, 1e12),
+    "SR_high_temp_loose": (1e-2, 1e12),
+    "SR_high_temp_tight_extrapolation": (1e-2, 1e12),
+    "SR_high_temp_tight": (1e-2, 1e12),
+    "SR_low_temp_loose_extrapolation": (1e-2, 1e14),
+    "SR_low_temp_loose": (1e-2, 1e14),
+    "SR_low_temp_tight_extrapolation": (1e-2, 1e14),
+    "SR_low_temp_tight": (1e-2, 1e14),
+}
 
 
 def plot_region(args, plots, region):
@@ -52,7 +72,7 @@ def plot_region(args, plots, region):
         extrapolation_tag = "+extr."
     mc_processes = [
         ("Higgs_2018", "Higgs"),
-        # ('TTV_2018', 'TTV'),
+        ("TTV_2018", "TTV"),
         ("ST_NLO_2018", "ST"),
         ("WJets_2018", "WJets"),
         ("VV+VVV_2018", "VV+VVV"),
@@ -60,6 +80,7 @@ def plot_region(args, plots, region):
         ("DY_2018", f"DY{extrapolation_tag}"),
         ("QCD_Pt_MuEnrichedPt5_2018", f"QCD{extrapolation_tag}"),
     ]
+    data_name = ("DoubleMuon_2018", "Data")
 
     signal_processes = [
         "GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_13TeV_2018",
@@ -90,7 +111,7 @@ def plot_region(args, plots, region):
         h_signal = plots[process][region]
         hists_signal.append(h_signal)
 
-    fig, ax = plt.subplots(figsize=(12.5, 11))
+    fig, ax = plt.subplots(figsize=(13.5, 11))
 
     hep.histplot(
         hists_mc,
@@ -125,6 +146,19 @@ def plot_region(args, plots, region):
         zorder=2,
     )
 
+    if args.data and region in plots[data_name[0]]:
+        hep.histplot(
+            plots[data_name[0]][region],
+            label=[data_name[1]],
+            histtype="errorbar",
+            mec="black",
+            mfc="black",
+            ecolor="black",
+            markersize=15,
+            lw=3,
+            ax=ax,
+        )
+
     hep.histplot(
         hists_signal,
         yerr=[np.sqrt(h.variances()) for h in hists_signal],
@@ -149,27 +183,27 @@ def plot_region(args, plots, region):
             arrowprops=dict(facecolor="red", shrink=0),
         )
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=55, ax=ax)
+    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax)
 
-    region_loc = (ax.get_xlim()[1] + ax.get_xlim()[0]) * 0.5
+    if extrapolation:
+        region = f"{region}_extrapolation"
     plt.text(
-        region_loc,
-        2e5,
+        0.5,
+        0.67,
         region.replace("temp", "T").replace("prompt", "DY").replace("cb", "QCD"),
         ha="center",
         weight="bold",
+        transform=ax.transAxes,
     )
 
     plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
     plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    plt.ylim(1e-3, 1e11)
+    plt.ylim(y_ranges[region])
     plt.yscale("log")
-    plt.legend(ncol=2)
+    plt.legend(ncol=3)
     plt.xlabel(r"$n_{muon}$")
     plt.ylabel("events")
     plt.tight_layout()
-    if extrapolation:
-        region = f"{region}_extrapolation"
     plt.savefig(f"{args.dest}/{region}.pdf")
     plt.close()
 
@@ -183,15 +217,18 @@ if "__main__" == __name__:
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
     plots_CR = plot_utils.loader(
-        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=False
+        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=args.data
     )
     plots_SR = plot_utils.loader(
-        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=False
+        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=args.data
     )
     plots = {}
-    for dataset in plots_CR:
-        # Note: need to fix this to be mergeable even when data for SR is missing! (blinded...)
-        # This merges two dicts!
+    all_datasets = set(plots_CR.keys()) | set(plots_SR.keys())
+    for dataset in list(all_datasets):
+        if dataset not in plots_CR:
+            plots_CR[dataset] = {}
+        if dataset not in plots_SR:
+            plots_SR[dataset] = {}
         plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
     print("Done!", flush=True)
 
@@ -226,9 +263,11 @@ if "__main__" == __name__:
         "CR_prompt",
         "CR_cb",
         "SR_low_temp_loose",
+        "SR_low_temp_loose_extrapolation",
         "SR_low_temp_tight",
         "SR_low_temp_tight_extrapolation",
         "SR_high_temp_loose",
+        "SR_high_temp_loose_extrapolation",
         "SR_high_temp_tight",
         "SR_high_temp_tight_extrapolation",
     ]

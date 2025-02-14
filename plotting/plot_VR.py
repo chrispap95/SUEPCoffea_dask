@@ -36,12 +36,46 @@ def parse_args():
         "If not provided, the luminosity will be determined automatically for the year.",
     )
     parser.add_argument(
+        "--data",
+        action="store_true",
+        help="Plot data as well. Default is False.",
+    )
+    parser.add_argument(
+        "--ratio",
+        action="store_true",
+        help="Plot the ratio of the data to the total background. "
+        "Has an effect only when --data is passed as well. Default is False.",
+    )
+    parser.add_argument(
+        "--normalize",
+        action="store_true",
+        help="Normalize the QCD to the data. Default is False.",
+    )
+    parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/regions_plots",
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/vr_plots",
         help="Destination directory to save the plots",
     )
     return parser.parse_args()
+
+
+def calculate_k_factor(plots):
+    mc_processes = [
+        "Higgs_2018",
+        "ST_NLO_2018",
+        "WJets_2018",
+        "VV+VVV_2018",
+        "TT_powheg_2018",
+        "DY_2018",
+    ]
+    non_QCD_bkg = plots["DY_2018"]["VR_loose"].copy().reset()
+    for process in mc_processes:
+        non_QCD_bkg += plots[process]["VR_loose"]
+    k_factor = (
+        plots["DoubleMuon_2018"]["VR_loose"][0].value - non_QCD_bkg[0].value
+    ) / plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_loose"][0].value
+    return k_factor
 
 
 def plot_VR(args, plots, region):
@@ -52,7 +86,7 @@ def plot_VR(args, plots, region):
         extrapolation_tag = "+extr."
     mc_processes = [
         ("Higgs_2018", "Higgs"),
-        # ('TTV_2018', 'TTV'),
+        ("TTV_2018", "TTV"),
         ("ST_NLO_2018", "ST"),
         ("WJets_2018", "WJets"),
         ("VV+VVV_2018", "VV+VVV"),
@@ -60,22 +94,16 @@ def plot_VR(args, plots, region):
         ("DY_2018", "DY"),
         ("QCD_Pt_MuEnrichedPt5_2018", f"QCD{extrapolation_tag}"),
     ]
+    data_name = ("DoubleMuon_2018", "Data")
 
+    # The following are signal samples with contamination in VR
     signal_processes = [
-        # The following are signal samples with contamination in VR
         "GluGluToSUEP_mS500.000_mPhi2.000_T8.000_modehadronic_13TeV_2018",
         "GluGluToSUEP_mS1000.000_mPhi2.000_T4.000_modeleptonic_13TeV_2018",
         "GluGluToSUEP_mS1000.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
         "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
         "GluGluToSUEP_mS500.000_mPhi8.000_T2.000_modeleptonic_13TeV_2018",
     ]
-    if "low_temp" in region:
-        signal_processes = [
-            "GluGluToSUEP_mS125.000_mPhi4.000_T1.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
-        ]
 
     hists_mc = []
     hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][region].copy().reset()
@@ -92,7 +120,7 @@ def plot_VR(args, plots, region):
         h_signal = plots[process][region]
         hists_signal.append(h_signal)
 
-    fig, ax = plt.subplots(figsize=(12.5, 11))
+    fig, ax = plt.subplots(figsize=(13.5, 11))
 
     hep.histplot(
         hists_mc,
@@ -127,12 +155,26 @@ def plot_VR(args, plots, region):
         zorder=2,
     )
 
+    if args.data and region in plots[data_name[0]]:
+        hep.histplot(
+            plots[data_name[0]][region],
+            label=[data_name[1]],
+            histtype="errorbar",
+            mec="black",
+            mfc="black",
+            ecolor="black",
+            markersize=15,
+            lw=3,
+            ax=ax,
+        )
+
     hep.histplot(
         hists_signal,
         yerr=[np.sqrt(h.variances()) for h in hists_signal],
         label=[
             s.replace("GluGluTo", "")
             .replace(".000", "")
+            .replace(".250", ".25")
             .replace("mode", "")
             .replace("_13TeV_2018", "")
             for s in signal_processes
@@ -142,27 +184,27 @@ def plot_VR(args, plots, region):
         ax=ax,
     )
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=55, ax=ax)
+    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax)
 
-    region_loc = (ax.get_xlim()[1] + ax.get_xlim()[0]) * 0.5
+    if extrapolation:
+        region = f"{region}_extrapolation"
     plt.text(
-        region_loc,
-        2e5,
+        0.5,
+        0.67,
         region.replace("temp", "T"),
         ha="center",
         weight="bold",
+        transform=ax.transAxes,
     )
 
     plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
     plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    plt.ylim(1e-3, 1e11)
+    plt.ylim(1e-2, 1e10)
     plt.yscale("log")
-    plt.legend(ncol=2)
+    plt.legend(ncol=3)
     plt.xlabel(r"$n_{muon}$")
     plt.ylabel("events")
     plt.tight_layout()
-    if extrapolation:
-        region = f"{region}_extrapolation"
     plt.savefig(f"{args.dest}/{region}.pdf")
     plt.close()
 
@@ -176,9 +218,19 @@ if "__main__" == __name__:
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
     plots = plot_utils.loader(
-        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=False
+        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=args.data
     )
     print("Done!", flush=True)
+
+    # Apply k-factor to QCD
+    if args.data and args.normalize:
+        print("Calculate and apply k-factor to QCD...", end=" ", flush=True)
+        k_factor = calculate_k_factor(plots)
+        for plot in plots["QCD_Pt_MuEnrichedPt5_2018"]:
+            plots["QCD_Pt_MuEnrichedPt5_2018"][plot] = (
+                k_factor * plots["QCD_Pt_MuEnrichedPt5_2018"][plot]
+            )
+        print(f"k_QCD = {k_factor:.2f}  Done!", flush=True)
 
     print("Fit and extrapolation...", end=" ", flush=True)
     # QCD extrapolation
@@ -196,6 +248,7 @@ if "__main__" == __name__:
     # Plot regions
     regions = [
         "VR_loose",
+        "VR_loose_extrapolation",
         "VR_tight",
         "VR_tight_extrapolation",
     ]

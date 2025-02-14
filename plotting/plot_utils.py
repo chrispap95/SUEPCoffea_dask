@@ -25,8 +25,8 @@ lumis = {
     "2016_apv": 19497.914,
     "2016": 16810.813,
     "2017": 41471.589,
-    # NOTE: 2018 lumi is only for the main trigger path
-    "2018": 54540.000,
+    # NOTE: Only 2018 lumi has been properly calculated
+    "2018": 59795.400422,
 }
 
 
@@ -146,16 +146,17 @@ def load_samples(
 
     # Create combined histograms
     for combined_dataset in dataset_groups.dataset_groups_new:
-        plots[combined_dataset] = {}
+        temp_dict = {}
         for pattern in dataset_groups.dataset_groups_new[combined_dataset]:
             for sample in plots:
                 if re.search(pattern, sample):
                     for plot in plots[sample]:
-                        if plot not in plots[combined_dataset]:
-                            plots[combined_dataset][plot] = plots[sample][plot].copy()
+                        if plot not in temp_dict:
+                            temp_dict[plot] = plots[sample][plot].copy()
                         else:
-                            plots[combined_dataset][plot] += plots[sample][plot]
-
+                            temp_dict[plot] += plots[sample][plot]
+        if len(temp_dict) > 0:
+            plots[combined_dataset] = temp_dict.copy()
     return plots
 
 
@@ -189,19 +190,19 @@ def loader(
     base_dir = Path(__file__).parent.parent
     plot_dir = base_dir / "processor_output_files" / f"{tag}_output_histograms/"
     filenames = list(plot_dir.glob("*histograms.pkl"))
+    basenames = [str(f.name) for f in filenames]
 
     # separate the files into signal, background, and data
     files_SUEP = [
-        str(f) for f in filenames if ("SUEP" in str(f)) or ("ggHBSMpythia" in str(f))
+        str(plot_dir / b) for b in basenames if ("SUEP" in b) or ("ggHBSMpythia" in b)
     ]
     files_bkg = [
-        str(f)
-        for f in filenames
-        if ("pythia8" in str(f))
-        and ("SUEP" not in str(f))
-        and ("ggHBSMpythia" not in str(f))
+        str(plot_dir / b)
+        for b in basenames
+        if ("pythia8" in b) and ("SUEP" not in b) and ("ggHBSMpythia" not in b)
     ]
-    files_data = [str(f) for f in filenames if ("DoubleMuon" in str(f))]
+    files_data = [str(plot_dir / b) for b in basenames if ("DoubleMuon" in b)]
+
     if verbosity > 0:
         pprint(files_bkg)
 
@@ -241,7 +242,7 @@ class Extrapolation:
     Class to perform extrapolation of histograms.
     """
 
-    def __init__(self, plots: dict) -> None:
+    def __init__(self, plots: dict, is_data: bool = False) -> None:
         """
         Initialize the class.
 
@@ -252,6 +253,7 @@ class Extrapolation:
         """
         self.plots = plots
         self.fit_results = {}
+        self.is_data = is_data
 
     def muon_func_log(self, x: np.ndarray, loga: float, logb: float) -> np.ndarray:
         """
@@ -539,7 +541,10 @@ class Extrapolation:
         y_hatch = np.vstack((y, y)).reshape((-1,), order="F")
         y_hatch_unc = np.vstack((yerr_prop, yerr_prop)).reshape((-1,), order="F")
         hep.histplot(
-            plot_pre_fit, yerr=np.sqrt(plot_pre_fit.variances()), label="MC", ax=ax1
+            plot_pre_fit,
+            yerr=np.sqrt(plot_pre_fit.variances()),
+            label="data" if self.is_data else "MC",
+            ax=ax1,
         )
         hep.histplot(y, bins=plot_post_fit.axes[0].edges, label="fit", ax=ax1)
         ax1.fill_between(
@@ -577,7 +582,7 @@ class Extrapolation:
         )
         ax2.axhline(1, ls="--", color="gray")
         ax2.set_xlabel("")
-        ax2.set_ylabel("MC / fit")
+        ax2.set_ylabel("data / fit" if self.is_data else "MC / fit")
         ax2.set_xlim(2.8, 8.2)
         ax2.set_ylim(0, 2)
 
@@ -624,7 +629,7 @@ class Extrapolation:
         for label in ax2.xaxis.get_ticklabels():
             label.set_visible(False)
 
-    def plot_fit(self, region: str, syst: str = "") -> None:
+    def plot_fit(self, region: str, syst: str = "", add_label: bool = False) -> None:
         """
         Plot the region's MC histograms and extrapolations, as well as the ratio and pulls.
         Will plot both the loose and tight regions side by side.
@@ -665,11 +670,18 @@ class Extrapolation:
         self.plot_region(f"{region}_loose{syst}", syst, ax1_left, ax2_left, ax3_left)
         self.plot_region(f"{region}_tight{syst}", syst, ax1_right, ax2_right, ax3_right)
 
+        if add_label:
+            hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1_left)
+            hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1_right)
+
         plt.tight_layout()
         plt.show()
 
     def plot_overlay(
-        self, regions: Optional[list] = ["SR_high_temp", "SR_low_temp"], syst: str = ""
+        self,
+        regions: Optional[list] = ["SR_high_temp", "SR_low_temp"],
+        syst: str = "",
+        add_label: bool = False,
     ) -> None:
         """
         Plot an overlay of the histograms for the loose reion, the tight region,
@@ -687,7 +699,11 @@ class Extrapolation:
         if not syst.startswith("_") and syst != "":
             syst = f"_{syst}"
 
-        fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
+        if len(regions) > 1:
+            fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
+        else:
+            fig, axes = plt.subplots(1, 1, figsize=(8, 8))
+            axes = [axes]
 
         for region, ax in zip(regions, axes):
             self.plots[f"{region}_loose{syst}"].plot(
@@ -712,10 +728,24 @@ class Extrapolation:
             ax.set_ylim(1e-2, 1e8)
             ax.xaxis.set_minor_locator(ticker.NullLocator())
             ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+            if add_label:
+                hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax)
             ax.legend()
 
         plt.tight_layout()
         plt.show()
+
+
+def convert_strcat_hist_to_root(hist_in, name, axis_name):
+    """
+    This resolves an issue with uproot's conversion that has a bug.
+    It puts the first value to bin 0 (underflow bin) instead of bin 1.
+    """
+    h_out = ROOT.TH1D(name, axis_name, len(hist_in.values()), 0, len(hist_in.values()))
+    for i in range(len(hist_in.values())):
+        h_out.SetBinContent(i + 1, hist_in[i].value)
+        h_out.SetBinError(i + 1, np.sqrt(hist_in[i].variance))
+    return h_out.Clone()
 
 
 def convert_to_root(
@@ -775,6 +805,34 @@ def convert_to_root(
         h_CR_prompt.SetBinContent(1, CR_prompt_plot[2j].value)
         h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
         plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
+
+        if "CR" in plots_in:
+            CR_plot = (
+                plots_in["CR"] if f"CR{syst}" not in plots_in else plots_in[f"CR{syst}"]
+            )
+            plots_out[f"CR{syst}"] = convert_strcat_hist_to_root(
+                CR_plot, f"nMuon_CR{syst}_{sample}", "nMuon"
+            )
+
+        if f"SUEP_high_temp{suffix}" in plots_in:
+            CR_plot = (
+                plots_in[f"SUEP_high_temp{suffix}"]
+                if f"SUEP_high_temp{suffix}{syst}" not in plots_in
+                else plots_in[f"SUEP_high_temp{suffix}{syst}"]
+            )
+            plots_out[f"SUEP_high_temp{syst}"] = convert_strcat_hist_to_root(
+                CR_plot, f"nMuon_SUEP_high_temp{syst}_{sample}", "nMuon"
+            )
+
+        if f"SUEP_low_temp{suffix}" in plots_in:
+            CR_plot = (
+                plots_in[f"SUEP_low_temp{suffix}"]
+                if f"SUEP_low_temp{suffix}{syst}" not in plots_in
+                else plots_in[f"SUEP_low_temp{suffix}{syst}"]
+            )
+            plots_out[f"SUEP_low_temp{syst}"] = convert_strcat_hist_to_root(
+                CR_plot, f"nMuon_SUEP_low_temp{syst}_{sample}", "nMuon"
+            )
 
         if f"SR_low_temp_tight{suffix}" in plots_in:
             SR_low_temp_plot = (
