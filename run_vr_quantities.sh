@@ -30,7 +30,7 @@ if [ $signal -eq 1 ]; then
     python runner.py \
         --workflow SUEP_coffea_VR_quantities -o "processor_output_files/${tag}_VR"\
         --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 \
-        --executor futures -j 40 --chunk 70000 --skimmed --isMC
+        --executor futures -j 44 --chunk 80000 --skimmed --isMC
 fi
 
 if [ $background -eq 1 ]; then
@@ -38,5 +38,5 @@ if [ $background -eq 1 ]; then
     python runner.py \
         --workflow SUEP_coffea_VR_quantities -o "processor_output_files/${tag}_VR"\
         --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 \
-        --executor futures -j 40 --chunk 70000 --skimmed --isMC
+        --executor futures -j 44 --chunk 80000 --skimmed --isMC
 fi

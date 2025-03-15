@@ -65,15 +65,15 @@ def create_lumi_json(filename, output_json="lumi_ranges.json"):
     print(f"Created JSON file: {output_json}")
 
     # Print some statistics
-    total_runs = len(output_dict)
-    total_ls_ranges = sum(len(ranges) for ranges in output_dict.values())
-    print(f"\nStatistics:")
-    print(f"Total number of runs: {total_runs}")
-    print(f"Total number of LS ranges: {total_ls_ranges}")
-    print("\nExample brilcalc command:")
-    print(
-        f"brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -i {output_json}"
-    )
+    # total_runs = len(output_dict)
+    # total_ls_ranges = sum(len(ranges) for ranges in output_dict.values())
+    # print(f"\nStatistics:")
+    # print(f"Total number of runs: {total_runs}")
+    # print(f"Total number of LS ranges: {total_ls_ranges}")
+    # print("\nExample brilcalc command:")
+    # print(
+    #     f"brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -i {output_json}"
+    # )
 
     f.close()
     return output_dict

@@ -19,23 +19,6 @@ warnings.filterwarnings("ignore")
 # Set to 10 color cycler
 plt.style.use(cms_styles.CMS_petroff_10)
 
-pub_style = {
-    "font.size": 26,
-    "axes.labelsize": "large",
-    "xtick.labelsize": "medium",
-    "ytick.labelsize": "medium",
-    "legend.fontsize": "small",
-    "legend.handlelength": 1.5,
-    "legend.borderpad": 0.5,
-    "xtick.major.size": 12,
-    "xtick.minor.size": 6,
-    "xtick.major.pad": 6,
-    "ytick.major.size": 12,
-    "ytick.minor.size": 6.0,
-    "axes.linewidth": 2,
-}
-plt.style.use(pub_style)
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -85,7 +68,7 @@ region_labels = {
 }
 
 
-def calculate_QCD_k_factor(plots, region="VR_loose"):
+def calculate_QCD_k_factor(plots, region="VR_loose", use_extrapolation=False):
     mc_processes = [
         "Higgs_2018",
         "ST_NLO_2018",
@@ -99,7 +82,9 @@ def calculate_QCD_k_factor(plots, region="VR_loose"):
         non_QCD_bkg += plots[process][region]
     k_factor = (
         plots["DoubleMuon_2018"][region].sum().value - non_QCD_bkg.sum().value
-    ) / plots["QCD_Pt_MuEnrichedPt5_2018"][region].sum().value
+    ) / plots["QCD_Pt_MuEnrichedPt5_2018"][
+        region + "_extrapolation" if use_extrapolation else region
+    ].sum().value
     return k_factor
 
 
@@ -154,6 +139,44 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
     ax.axhline(1, ls="--", color="gray")
 
 
+def plot_pull(hist_data, hist_bkg_total, ax, x_hatch):
+    pulls = (hist_data.values() - hist_bkg_total.values()) / np.sqrt(
+        hist_bkg_total.variances()
+    )
+    pulls_up = np.where(pulls >= 0, pulls, 0)
+    pulls_down = np.where(pulls < 0, pulls, 0)
+
+    y_hatch_up = np.vstack((pulls_up, pulls_up)).reshape((-1,), order="F")
+    y_hatch_down = np.vstack((pulls_down, pulls_down)).reshape((-1,), order="F")
+
+    ax.fill_between(
+        x=x_hatch,
+        y1=0,
+        y2=y_hatch_up,  # type: ignore[arg-type]
+        step="pre",
+        facecolor="None",
+        edgecolor="red",
+        alpha=1,
+        linewidth=0,
+        hatch="///",
+    )
+    ax.fill_between(
+        x=x_hatch,
+        y1=0,
+        y2=y_hatch_down,  # type: ignore[arg-type]
+        step="pre",
+        facecolor="None",
+        edgecolor="blue",
+        alpha=1,
+        linewidth=0,
+        hatch="///",
+    )
+    ax.axhline(0, ls="--", color="gray")
+    ax.set_xlabel("nMuon")
+    ax.set_ylabel("pull")
+    ax.set_ylim(-2.5, 2.5)
+
+
 def plot_VR(args, plots, region):
     extrapolation = "extrapolation" in region
     region = region.replace("_extrapolation", "")
@@ -172,22 +195,6 @@ def plot_VR(args, plots, region):
     ]
     data_name = ("DoubleMuon_2018", "Data")
 
-    # The following are signal samples with contamination in VR
-    signal_processes = [
-        "GluGluToSUEP_mS500.000_mPhi2.000_T8.000_modehadronic_13TeV_2018",
-        "GluGluToSUEP_mS1000.000_mPhi2.000_T4.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS1000.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS500.000_mPhi8.000_T2.000_modeleptonic_13TeV_2018",
-    ]
-    signal_labels = [
-        r"$m_S=500\,$GeV,$m_\phi=2\,$GeV," + "\n" + r"$T=8\,$GeV, lep. decays",
-        r"$m_S=1000\,$GeV,$m_\phi=2\,$GeV," + "\n" + r"$T=4\,$GeV, lep. decays",
-        r"$m_S=1000\,$GeV,$m_\phi=4\,$GeV," + "\n" + r"$T=4\,$GeV, lep. decays",
-        r"$m_S=125\,$GeV,$m_\phi=1\,$GeV," + "\n" + r"$T=0.25\,$GeV, lep. decays",
-        r"$m_S=500\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=2\,$GeV, lep. decays",
-    ]
-
     hists_mc = []
     hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][region].copy().reset()
 
@@ -198,18 +205,14 @@ def plot_VR(args, plots, region):
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
-    hists_signal = []
-    for process in signal_processes:
-        h_signal = plots[process][region]
-        hists_signal.append(h_signal)
-
-    fig, ax1 = plt.subplots(figsize=(12, 12))
+    fig, ax1 = plt.subplots(figsize=(7, 7))
 
     if args.ratio:
-        fig = plt.figure(figsize=(12, 13))
-        plt.subplots_adjust(bottom=0.08, top=0.94, left=0.11, right=0.96)
-        ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
-        ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
+        fig = plt.figure(figsize=(8, 10.5))
+        plt.subplots_adjust(bottom=0.1, top=0.92, left=0.15, right=0.96)
+        ax1 = plt.subplot2grid((5, 1), (0, 0), rowspan=3)
+        ax2 = plt.subplot2grid((5, 1), (3, 0), rowspan=1, sharex=ax1)
+        ax3 = plt.subplot2grid((5, 1), (4, 0), rowspan=1, sharex=ax1)
 
     hep.histplot(
         hists_mc,
@@ -257,47 +260,45 @@ def plot_VR(args, plots, region):
             ax=ax1,
         )
 
-    hep.histplot(
-        hists_signal,
-        yerr=[np.sqrt(h.variances()) for h in hists_signal],
-        label=[s for s in signal_labels],
-        lw=3,
-        ls="--",
-        ax=ax1,
-    )
-
     if args.ratio and args.data:
         plot_ratio(plots[data_name[0]][region], hist_bkg_total, ax2, x_hatch)
+        plot_pull(plots[data_name[0]][region], hist_bkg_total, ax3, x_hatch)
 
     hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
 
     if extrapolation:
         region = f"{region}_extrapolation"
-    region_label_coords = (0.7, 0.37)
+    region_label_coords = (0.7, 0.4)
     plt.text(
         *region_label_coords,
         region_labels[region],
         ha="center",
         weight="bold",
+        fontsize=24,
         transform=ax1.transAxes,
     )
 
     if args.ratio and args.data:
+        plt.sca(ax3)
+        plt.ylim(-2.5, 2.5)
+        plt.ylabel("pull")
         plt.sca(ax2)
         plt.ylim(0.5, 1.5)
         plt.ylabel("Data/MC")
         plt.setp(ax1.get_xticklabels(), visible=False)
+        plt.setp(ax2.get_xticklabels(), visible=False)
         ax1.set_xlabel("", visible=False)
+        ax2.set_xlabel("", visible=False)
     plt.xlabel(r"$n_{muon}$")
     plt.sca(ax1)
     plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
     plt.ylim(1e-2, 1e10)
     plt.yscale("log")
-    plt.legend(ncol=3)
+    plt.legend(ncol=2)
     plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{region}.pdf")
+    plt.savefig(f"{args.dest}/{region}_nosignal.pdf")
     plt.close()
 
 
@@ -317,12 +318,21 @@ if "__main__" == __name__:
     # Apply k-factor to QCD
     if args.data and args.normalize:
         print("Calculate and apply k-factor to QCD...", end=" ", flush=True)
-        k_factor = calculate_QCD_k_factor(plots)
+        k_factor_loose = calculate_QCD_k_factor(plots, region="VR_loose")
+        k_factor_tight = calculate_QCD_k_factor(plots, region="VR_tight")
         for plot in plots["QCD_Pt_MuEnrichedPt5_2018"]:
-            plots["QCD_Pt_MuEnrichedPt5_2018"][plot] = (
-                k_factor * plots["QCD_Pt_MuEnrichedPt5_2018"][plot]
-            )
-        print(f"k_QCD = {k_factor:.2f}  Done!", flush=True)
+            if "loose" in plot:
+                plots["QCD_Pt_MuEnrichedPt5_2018"][plot] = (
+                    k_factor_loose * plots["QCD_Pt_MuEnrichedPt5_2018"][plot]
+                )
+            if "tight" in plot:
+                plots["QCD_Pt_MuEnrichedPt5_2018"][plot] = (
+                    k_factor_tight * plots["QCD_Pt_MuEnrichedPt5_2018"][plot]
+                )
+        print(
+            f"k_loose = {k_factor_loose:.2f}, k_tight = {k_factor_tight:.2f}  Done!",
+            flush=True,
+        )
 
     print("Fit and extrapolation...", end=" ", flush=True)
     # QCD extrapolation
@@ -334,8 +344,31 @@ if "__main__" == __name__:
 
     qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
-
     print("Done!", flush=True)
+
+    # Recalculate the k-factor after the extrapolation
+    if args.data and args.normalize:
+        print(
+            "Calculate and apply k-factor to QCD after extrapolation...",
+            end=" ",
+            flush=True,
+        )
+        k_factor_loose_extr = calculate_QCD_k_factor(
+            plots, region="VR_loose", use_extrapolation=True
+        )
+        k_factor_tight_extr = calculate_QCD_k_factor(
+            plots, region="VR_tight", use_extrapolation=True
+        )
+        plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_loose_extrapolation"] = (
+            k_factor_loose_extr
+            * plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_loose_extrapolation"]
+        )
+        plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_tight_extrapolation"] = (
+            k_factor_tight_extr
+            * plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_tight_extrapolation"]
+        )
+        print(f"k_loose_extr = {k_factor_loose_extr:.2f}  Done!", flush=True)
+        print(f"k_tight_extr = {k_factor_tight_extr:.2f}  Done!", flush=True)
 
     # Plot regions
     regions = [

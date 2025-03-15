@@ -83,7 +83,7 @@ if "__main__" == __name__:
     regions = [
         "SR_low_temp",
         "SR_high_temp",
-        "VR",
+        # "VR",
     ]
     for region in track(regions):
         qcd_extrapolation.plot_fit(region)

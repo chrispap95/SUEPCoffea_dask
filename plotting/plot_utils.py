@@ -801,10 +801,18 @@ def convert_to_root(
             if f"CR_prompt{syst}" not in plots_in
             else plots_in[f"CR_prompt{syst}"]
         )
-        h_CR_prompt = ROOT.TH1D(f"nMuon_CR_DY{syst}_{sample}", "nMuon", 1, 2, 3)
-        h_CR_prompt.SetBinContent(1, CR_prompt_plot[2j].value)
-        h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
-        plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
+        plots_out[f"CR_DY{syst}"] = uproot.to_writable(CR_prompt_plot).to_pyroot()  # type: ignore[attr-defined]
+        plots_out[f"CR_DY{syst}"].SetName(f"nMuon_CR_DY{syst}_{sample}")
+
+        # CR_prompt_plot = (
+        #     plots_in["CR_prompt"]
+        #     if f"CR_prompt{syst}" not in plots_in
+        #     else plots_in[f"CR_prompt{syst}"]
+        # )
+        # h_CR_prompt = ROOT.TH1D(f"nMuon_CR_DY{syst}_{sample}", "nMuon", 1, 2, 3)
+        # h_CR_prompt.SetBinContent(1, CR_prompt_plot[2j].value)
+        # h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
+        # plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
 
         if "CR" in plots_in:
             CR_plot = (

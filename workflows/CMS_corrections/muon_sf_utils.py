@@ -5,6 +5,11 @@ from coffea.lookup_tools import rochester_lookup, txt_converters
 
 
 def muon_efficiencies(muons, syst=""):
+    """
+    This will return the total muon scale factors. The muon scale factors are the product of
+    muon RECO efficiency and muon ID efficiency. ISO efficiency is not included yet.
+    The muon scale factors are calculated for medium pt muons and low pt muons separately.
+    """
     var = "nominal"
     if syst == "up":
         var = "systup"

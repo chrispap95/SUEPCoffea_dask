@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2024",
+        default="full_analysis_Feb2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -51,6 +51,12 @@ def parse_args():
         type=int,
         default=0,
         help="Inject signal in the data_obs plot for the SR. This is the number (integer) of signal events to inject.",
+    )
+    parser.add_argument(
+        "--signal_filter",
+        type=str,
+        default="",
+        help="Export only signal containing this string. E.g., 'mPhi8.000_T32.000'.",
     )
     parser.add_argument(
         "--dest",
@@ -241,10 +247,7 @@ if "__main__" in __name__:
 
     # Add signal
     signal_models = [model for model in plots if "SUEP" in model]
-    # For now just do the mPhi8.000_T32.000_modeleptonic
-    signal_models = [
-        model for model in signal_models if "mPhi8.000_T32.000_modeleptonic" in model
-    ]
+    signal_models = [model for model in signal_models if args.signal_filter in model]
     for model in signal_models:
         plots_for_export[model] = plot_utils.convert_to_root(
             model, plots[model], do_syst=True
@@ -274,8 +277,23 @@ if "__main__" in __name__:
     )
 
     # VV+VVV bkg
-    plots_for_export["Multiboson_13TeV_2018"] = plot_utils.convert_to_root(
+    plots_for_export["VV+VVV_13TeV_2018"] = plot_utils.convert_to_root(
         "VV+VVV_2018", plots["VV+VVV_2018"], do_syst=True
+    )
+
+    # WJets bkg
+    plots_for_export["WJets_13TeV_2018"] = plot_utils.convert_to_root(
+        "WJets_2018", plots["WJets_2018"], do_syst=True
+    )
+
+    # TTV bkg
+    plots_for_export["TTV_13TeV_2018"] = plot_utils.convert_to_root(
+        "TTV_2018", plots["TTV_2018"], do_syst=True
+    )
+
+    # Higgs bkg
+    plots_for_export["Higgs_13TeV_2018"] = plot_utils.convert_to_root(
+        "Higgs_2018", plots["Higgs_2018"], do_syst=True
     )
 
     # Data

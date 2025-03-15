@@ -26,3 +26,9 @@ plots = plot_utils.loader(
     verbosity=0, # for debugging
 )
 ```
+
+To facilitate producing frequently used plots, a few plotting scripts are available:
+
+- `plot_regions.py` can be used to make plots of the `nMuon` distribution in the signal, control, and validation regions,
+- `plot_systematics.py` can be used to plot systematic variations,
+- `make_plots.py` will make plots that can be passed to combine.

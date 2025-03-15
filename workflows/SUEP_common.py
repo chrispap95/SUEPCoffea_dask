@@ -80,6 +80,7 @@ class SUEP_base(processor.ProcessorABC):
         )
 
         # L1 prefire weights
+        # Reference: https://twiki.cern.ch/twiki/bin/view/CMS/L1PrefiringWeightRecipe
         weights.add(
             "L1PreFire",
             weight=events.L1PreFiringWeight.Nom,
@@ -129,23 +130,36 @@ class SUEP_base(processor.ProcessorABC):
         and selecting the one closest to the Z mass.
         """
         # Make sure there are at least two muons with opposite charge
+        muons_idx = ak.local_index(muons)
         muons1 = muons[muons.charge == 1]
         muons2 = muons[muons.charge == -1]
+        muons1_idx = muons_idx[muons.charge == 1]
+        muons2_idx = muons_idx[muons.charge == -1]
         enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
         muons1 = muons1[enough_muons]
         muons2 = muons2[enough_muons]
+        muons1_idx = muons1_idx[enough_muons]
+        muons2_idx = muons2_idx[enough_muons]
         muons = muons[enough_muons]
         events = events[enough_muons]
 
         # Create all possible pairs of OS muons
         muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        muon_pairs_idx = ak.unzip(ak.cartesian([muons1_idx, muons2_idx]))
 
         # Find the pair closest to the Z mass
         Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore[attr-defined]
         closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_MASS), axis=1)
         Z_cands = ak.firsts(Z_cands[ak.singletons(closest_to_peak)])
+        muon_indices = ak.concatenate(
+            [
+                muon_pairs_idx[0][ak.singletons(closest_to_peak)],
+                muon_pairs_idx[1][ak.singletons(closest_to_peak)],  # type: ignore[index]
+            ],
+            axis=-1,
+        )
 
-        return events, muons, Z_cands
+        return events, muons, Z_cands, muon_indices
 
     def muon_filter(self, events):
         """

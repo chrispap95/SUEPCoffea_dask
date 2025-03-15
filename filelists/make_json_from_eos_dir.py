@@ -20,7 +20,7 @@ parser.add_argument(
     required=False,
 )
 
-xrootd_redirector = "root://cmsxrootd.fnal.gov/"
+xrootd_redirector = "root://cmseos.fnal.gov/"
 
 
 def get_files_recursive(path):

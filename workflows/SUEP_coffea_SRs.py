@@ -194,8 +194,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
-        events_tight_cut, muons_tight_cut, Z_cands_tight_cut = self.find_Z_candidates(
-            events, muons_tight_cut
+        events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
+            self.find_Z_candidates(events, muons_tight_cut)
         )
         outside_mass_window_tight_cut = (
             abs(Z_cands_tight_cut.mass - Z_MASS) > 2 * Z_WIDTH
@@ -221,7 +221,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         SUEP_cluster_tight_cut = SUEP_cluster_tight_cut[found_SUEP_cand_tight_cut]
 
         # Tight SR: sphericity cut
-        sph1_tight_cut = self.S1(SUEP_cluster_tight_cut, SUEP_cand_tight_cut)
+        sph1_tight_cut = self.S1(SUEP_cand_tight_cut, SUEP_cluster_tight_cut)
         events_tight_cut = events[sph1_tight_cut > 0.75]
         muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.75]
 
@@ -230,8 +230,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
-        events_loose_cut, muons_loose_cut, Z_cands_loose_cut = self.find_Z_candidates(
-            events, muons_loose_cut
+        events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
+            self.find_Z_candidates(events, muons_loose_cut)
         )
         outside_mass_window_loose_cut = (
             abs(Z_cands_loose_cut.mass - Z_MASS) > 2 * Z_WIDTH
@@ -274,8 +274,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
         )
         muons_tight_cut = muons[clean_muons & tight_cut]
-        events_tight_cut, muons_tight_cut, Z_cands_tight_cut = self.find_Z_candidates(
-            events, muons_tight_cut
+        events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
+            self.find_Z_candidates(events, muons_tight_cut)
         )
         outside_mass_window_tight_cut = (
             abs(Z_cands_tight_cut.mass - SUEP_common.Z_MASS) > 2 * SUEP_common.Z_WIDTH
@@ -294,8 +294,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 10)
         )
         muons_loose_cut = muons[clean_muons & loose_cut]
-        events_loose_cut, muons_loose_cut, Z_cands_loose_cut = self.find_Z_candidates(
-            events, muons_loose_cut
+        events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
+            self.find_Z_candidates(events, muons_loose_cut)
         )
         outside_mass_window_loose_cut = (
             abs(Z_cands_loose_cut.mass - SUEP_common.Z_MASS) > 2 * SUEP_common.Z_WIDTH

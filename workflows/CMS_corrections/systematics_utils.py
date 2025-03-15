@@ -10,6 +10,8 @@ def pileup_weight(events, era, syst=""):
     The pileup weights are calculated as the ratio of the data distribution to the MC distribution
     The data distribution is normalized to 1
 
+    Reference: https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData
+
     Parameters:
     era: str
         The year of the data taking

@@ -1,15 +1,18 @@
 import argparse
 import os
+import pathlib
 import warnings
 
 import cms_styles
+import hist
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
 import matplotlib.ticker as ticker  # type: ignore[import]
+import matplotlib.transforms as transforms  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import plot_utils
-from rich.progress import track  # type: ignore[import]
+from matplotlib.lines import Line2D  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
@@ -22,8 +25,8 @@ plt.style.use(cms_styles.CMS_petroff_10)
 pub_style = {
     "font.size": 26,
     "axes.labelsize": "large",
-    "xtick.labelsize": "medium",
-    "ytick.labelsize": "medium",
+    "xtick.labelsize": "large",
+    "ytick.labelsize": "large",
     "legend.fontsize": "small",
     "legend.handlelength": 1.5,
     "legend.borderpad": 0.5,
@@ -69,50 +72,18 @@ def parse_args():
         help="Normalize the QCD to the data. Default is False.",
     )
     parser.add_argument(
+        "--unblind",
+        action="store_true",
+        help="Unblind the SRs. Default is False.",
+    )
+    parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/regions_plots",
-        help="Destination directory to save the plots",
-    )
-    parser.add_argument(
-        "--CRs",
-        action="store_true",
-        help="Process only CRs. Default is False.",
-    )
-    parser.add_argument(
-        "--SRs",
-        action="store_true",
-        help="Process only SRs. Default is False.",
+        default=str(pathlib.Path(__file__).parent / "regions_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'regions_plots'}",
     )
     return parser.parse_args()
-
-
-region_labels = {
-    "CR_cb": r"$CR_{QCD}$",
-    "CR_prompt": r"$CR_{DY}$",
-    "SR_high_temp_loose": r"$SR^{loose}_{high~T}$",
-    "SR_high_temp_loose_extrapolation": r"$SR^{loose}_{high~T}$ + extrapolation",
-    "SR_high_temp_tight": r"$SR^{tight}_{high~T}$",
-    "SR_high_temp_tight_extrapolation": r"$SR^{tight}_{high~T}$ + extrapolation",
-    "SR_low_temp_loose": r"$SR^{loose}_{low~T}$",
-    "SR_low_temp_loose_extrapolation": r"$SR^{loose}_{low~T}$ + extrapolation",
-    "SR_low_temp_tight": r"$SR^{tight}_{low~T}$",
-    "SR_low_temp_tight_extrapolation": r"$SR^{tight}_{low~T}$ + extrapolation",
-}
-
-y_ranges = {
-    "CR_cb": (10, 1e11),
-    "CR_light": (10, 1e11),
-    "CR_prompt": (1, 1e8),
-    "SR_high_temp_loose_extrapolation": (1e-2, 1e12),
-    "SR_high_temp_loose": (1e-2, 1e12),
-    "SR_high_temp_tight_extrapolation": (1e-2, 1e12),
-    "SR_high_temp_tight": (1e-2, 1e12),
-    "SR_low_temp_loose_extrapolation": (1e-2, 1e12),
-    "SR_low_temp_loose": (1e-2, 1e12),
-    "SR_low_temp_tight_extrapolation": (1e-2, 1e12),
-    "SR_low_temp_tight": (1e-2, 1e12),
-}
 
 
 def calculate_k_factor(plots, region="CR_cb", process="QCD_Pt_MuEnrichedPt5_2018"):
@@ -136,19 +107,22 @@ def calculate_k_factor(plots, region="CR_cb", process="QCD_Pt_MuEnrichedPt5_2018
     return k_factor
 
 
-def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
+def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
+    slc = slice(None)
+    if not args.unblind:
+        slc = slice(0, -2)
     ratio = np.divide(
         hist_data.values(),
-        hist_bkg_total.values(),
+        hist_bkg_total.values()[slc],
         out=np.ones_like(hist_data.values()),
-        where=hist_bkg_total.values() != 0,
+        where=hist_bkg_total.values()[slc] != 0,
     )
     ratio_err = np.where(
-        hist_bkg_total.values() > 0,
+        hist_bkg_total.values()[slc] > 0,
         np.sqrt(
-            (hist_bkg_total.values() ** -2) * (hist_data.variances())
-            + (hist_data.values() ** 2 * hist_bkg_total.values() ** -4)
-            * (hist_bkg_total.variances())
+            (hist_bkg_total.values()[slc] ** -2) * (hist_data.variances())
+            + (hist_data.values() ** 2 * hist_bkg_total.values()[slc] ** -4)
+            * (hist_bkg_total.variances()[slc])
         ),
         0,
     )
@@ -159,7 +133,7 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
         color="black",
         fmt="o",
         linestyle="none",
-        markersize=7,
+        markersize=8,
         lw=2,
     )
 
@@ -184,15 +158,9 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
         linewidth=0,
         hatch="///",
     )
-    ax.axhline(1, ls="--", color="gray")
 
 
-def plot_region(args, plots, region):
-    extrapolation = "extrapolation" in region
-    region = region.replace("_extrapolation", "")
-    extrapolation_tag = ""
-    if extrapolation:
-        extrapolation_tag = "+extr."
+def plot_SUEP_combined(args, plots):
     mc_processes = [
         ("Higgs_2018", "Higgs"),
         ("TTV_2018", "TTV"),
@@ -200,57 +168,46 @@ def plot_region(args, plots, region):
         ("WJets_2018", "WJets"),
         ("VV+VVV_2018", "VV+VVV"),
         ("TT_powheg_2018", "TT"),
-        ("DY_2018", f"DY{extrapolation_tag}"),
-        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD{extrapolation_tag}"),
+        ("DY_2018", "DY"),
+        ("QCD_Pt_MuEnrichedPt5_2018", "QCD"),
     ]
     data_name = ("DoubleMuon_2018", "Data")
 
     signal_processes = [
+        "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
+        "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
+        "GluGluToSUEP_mS125.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
         "GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi4.000_T16.000_modeleptonic_13TeV_2018",
         "GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_13TeV_2018",
         "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018",
     ]
     signal_labels = [
-        r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=8\,$GeV, lep. decays",
-        r"$m_S=125\,$GeV,$m_\phi=4\,$GeV," + "\n" + r"$T=16\,$GeV, lep. decays",
-        r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=16\,$GeV, lep. decays",
-        r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=32\,$GeV, lep. decays",
+        r"$m_\phi=1\,$GeV, $T=0.25\,$GeV",
+        r"$m_\phi=2\,$GeV, $T=2\,$GeV",
+        r"$m_\phi=4\,$GeV, $T=4\,$GeV",
+        r"$m_\phi=8\,$GeV, $T=8\,$GeV",
+        r"$m_\phi=8\,$GeV, $T=16\,$GeV",
+        r"$m_\phi=8\,$GeV, $T=32\,$GeV",
     ]
-    if "low_temp" in region:
-        signal_processes = [
-            "GluGluToSUEP_mS125.000_mPhi4.000_T1.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
-        ]
-        signal_labels = [
-            r"$m_S=125\,$GeV,$m_\phi=4\,$GeV," + "\n" + r"$T=1\,$GeV, lep. decays",
-            r"$m_S=125\,$GeV,$m_\phi=2\,$GeV," + "\n" + r"$T=2\,$GeV, lep. decays",
-            r"$m_S=125\,$GeV,$m_\phi=2\,$GeV," + "\n" + r"$T=2\,$GeV, lep. decays",
-            r"$m_S=125\,$GeV,$m_\phi=4\,$GeV," + "\n" + r"$T=4\,$GeV, lep. decays",
-        ]
 
     hists_mc = []
-    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][region].copy().reset()
+    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"]["SUEP"].copy().reset()
 
     for process, label in mc_processes:
-        h_mc = plots[process][
-            (f"{region}_extrapolation" if "extr" in label else region)
-        ]
+        h_mc = plots[process]["SUEP"]
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
     hists_signal = []
     for process in signal_processes:
-        h_signal = plots[process][region]
+        h_signal = plots[process]["SUEP"]
         hists_signal.append(h_signal)
 
-    fig, ax1 = plt.subplots(figsize=(12, 12))
+    fig, ax1 = plt.subplots(figsize=(13.5, 11))
 
     if args.ratio:
-        fig = plt.figure(figsize=(12, 13))
-        plt.subplots_adjust(bottom=0.08, top=0.92, left=0.1, right=0.95)
+        fig = plt.figure(figsize=(14, 12.5))
+        plt.subplots_adjust(bottom=0.12, top=0.95, left=0.1, right=0.97)
         ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
         ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
 
@@ -287,9 +244,9 @@ def plot_region(args, plots, region):
         zorder=2,
     )
 
-    if args.data and region in plots[data_name[0]]:
+    if args.data and "SUEP" in plots[data_name[0]]:
         hep.histplot(
-            plots[data_name[0]][region],
+            plots[data_name[0]]["SUEP"],
             label=[data_name[1]],
             histtype="errorbar",
             mec="black",
@@ -304,54 +261,93 @@ def plot_region(args, plots, region):
         hists_signal,
         yerr=[np.sqrt(h.variances()) for h in hists_signal],
         label=[s for s in signal_labels],
+        color=["C8", "C9"] + ["C" + str(i) for i in range(len(signal_labels) - 2)],
         lw=3,
         ls="--",
         ax=ax1,
     )
 
     if args.ratio and args.data:
-        plot_ratio(plots[data_name[0]][region], hist_bkg_total, ax2, x_hatch)
-
-    if "SR" in region:
-        plt.vlines(x=7, color="red", ymin=1e-3, ymax=1e6, lw=7)
-        plt.annotate(
-            "",
-            xy=(7.5, 1e5),
-            xytext=(7, 1e5),
-            arrowprops=dict(
-                arrowstyle="simple",  # Gives a filled arrow with an outline
-                facecolor="red",  # Fills arrow with red
-                edgecolor="black",  # Black outline
-                linewidth=2,  # Outline thickness
-                mutation_scale=40,  # Increases overall arrow size
-            ),
-        )
+        plot_ratio(plots[data_name[0]]["SUEP"], hist_bkg_total, ax2, x_hatch, args)
 
     hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
 
-    if extrapolation:
-        region = f"{region}_extrapolation"
-    region_label_coords = (0.51, 0.61)
-    if "CR" in region:
-        region_label_coords = (0.4, 0.62)
+    ln_x_positions = [0, 4, 8, 10, 12]
+    ln_y_upper = [3.83, 3.83, 3.63, 3.63, 3.83]
+    lines = []
+    for ln_x_pos, ln_y_pos in zip(ln_x_positions, ln_y_upper):
+        lines.append(
+            Line2D(
+                [ln_x_pos, ln_x_pos],
+                [0.1, ln_y_pos],
+                figure=fig,
+                transform=ax2.transData,
+                color="black",
+                linestyle="-",
+                linewidth=4,
+            )
+        )
+        fig.add_artist(lines[-1])
+
+    region_y = 0.13
     plt.text(
-        *region_label_coords,
-        region_labels[region],
+        2,
+        region_y,
+        r"$CR_{QCD}$",
         ha="center",
         weight="bold",
+        fontsize=30,
+        transform=ax2.transData,
+    )
+    plt.text(
+        6,
+        region_y,
+        r"$CR_{DY}$",
+        ha="center",
+        weight="bold",
+        fontsize=30,
+        transform=ax2.transData,
+    )
+    plt.text(
+        9,
+        region_y,
+        r"$SR_\text{low T}$",
+        ha="center",
+        weight="bold",
+        fontsize=30,
+        transform=ax2.transData,
+    )
+    plt.text(
+        11,
+        region_y,
+        r"$SR_\text{high T}$",
+        ha="center",
+        weight="bold",
+        fontsize=30,
+        transform=ax2.transData,
+    )
+
+    plt.text(
+        0.65,
+        0.6,
+        r"$m_S=125\,$GeV, $m_{A'}=0.5\,$GeV",
+        ha="center",
+        fontsize=24,
         transform=ax1.transAxes,
     )
 
-    # modify last x tick label
-    if "CR_cb" in region:
-        labels = ["", "1", "2", "3", "4+", ""]
-        ax1.set_xticklabels(labels)
-    elif "CR_prompt" in region:
-        labels = ["", "2", "3", "4", "5+", ""]
-        ax1.set_xticklabels(labels)
-    elif "SR" in region:
-        labels = ["", "3", "4", "5", "6", "7+", ""]
-        ax1.set_xticklabels(labels)
+    labels = ["1", "2", "3", "4+", "2", "3", "4", "5+", "7+", "7+", ""]
+    major_ticks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12]
+    ax1.xaxis.set_major_locator(ticker.FixedLocator(major_ticks))
+    ax1.set_xticklabels(labels)
+    ax1.xaxis.set_minor_locator(ticker.NullLocator())
+    # Create offset transform by 5 points in x direction
+    dxs = np.array([25, 25, 25, 20, 25, 25, 25, 20, 45, 45, 0]) / 72.0
+    dy = 0 / 72.0
+    for label, dx in zip(ax2.get_xticklabels(), dxs):
+        label.set_horizontalalignment("left")
+        offset = transforms.ScaledTranslation(dx, dy, fig.dpi_scale_trans)  # type: ignore[attr-defined]
+        label.set_transform(label.get_transform() + offset)
 
     if args.ratio and args.data:
         plt.sca(ax2)
@@ -359,16 +355,14 @@ def plot_region(args, plots, region):
         plt.ylabel("Data/MC")
         plt.setp(ax1.get_xticklabels(), visible=False)
         ax1.set_xlabel("", visible=False)
-    plt.xlabel(r"$n_{muon}$")
+    plt.xlabel(r"$n_{muon}$", fontsize=36, labelpad=35)
     plt.sca(ax1)
-    plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
-    plt.ylim(y_ranges[region])
+    plt.ylim(1e-2, 1e13)
     plt.yscale("log")
-    plt.legend(ncol=3)
+    plt.legend(ncol=3, loc="upper center")
     plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{region}.pdf")
+    plt.savefig(f"{args.dest}/all_regions_combined.pdf")
     plt.close()
 
 
@@ -437,22 +431,36 @@ if "__main__" == __name__:
     dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
     print("Done!", flush=True)
 
+    # Make combined plots
+    for sample in plots:
+        h_comb = hist.Hist.new.Variable(
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12],
+            name="SUEP",
+        ).Weight()
+        if "DoubleMuon" in sample and not args.unblind:
+            h_comb = hist.Hist.new.Variable(
+                [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                name="SUEP",
+            ).Weight()
+
+        h_comb[0] = plots[sample]["CR_cb"][1j]
+        h_comb[1] = plots[sample]["CR_cb"][2j]
+        h_comb[2] = plots[sample]["CR_cb"][3j]
+        h_comb[3] = plots[sample]["CR_cb"][4j]
+        h_comb[4] = plots[sample]["CR_prompt"][2j]
+        h_comb[5] = plots[sample]["CR_prompt"][3j]
+        h_comb[6] = plots[sample]["CR_prompt"][4j]
+        h_comb[7] = plots[sample]["CR_prompt"][5j]
+        if args.unblind or "DoubleMuon" not in sample:
+            if "SR_low_temp_tight" in plots[sample]:
+                h_comb[8] = plots[sample]["SR_low_temp_tight"][7j]
+            if "SR_low_temp_tight_extrapolation" in plots[sample]:
+                h_comb[8] = plots[sample]["SR_low_temp_tight_extrapolation"][7j]
+            if "SR_high_temp_tight" in plots[sample]:
+                h_comb[9] = plots[sample]["SR_high_temp_tight"][7j]
+            if "SR_high_temp_tight_extrapolation" in plots[sample]:
+                h_comb[9] = plots[sample]["SR_high_temp_tight_extrapolation"][7j]
+        plots[sample]["SUEP"] = h_comb.copy()
+
     # Plot regions
-    regions = [
-        "CR_prompt",
-        "CR_cb",
-        "SR_low_temp_loose",
-        "SR_low_temp_loose_extrapolation",
-        "SR_low_temp_tight",
-        "SR_low_temp_tight_extrapolation",
-        "SR_high_temp_loose",
-        "SR_high_temp_loose_extrapolation",
-        "SR_high_temp_tight",
-        "SR_high_temp_tight_extrapolation",
-    ]
-    for region in track(regions):
-        if args.CRs and "CR" not in region:
-            continue
-        if args.SRs and "SR" not in region:
-            continue
-        plot_region(args, plots, region)
+    plot_SUEP_combined(args, plots)
