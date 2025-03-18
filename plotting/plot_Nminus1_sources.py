@@ -125,7 +125,8 @@ def make_plot(plots, plot):
         "unmatched",
         "light",
         "prompt",
-        "c/b",
+        "c",
+        "b",
     ]
 
     hists_mc = []
@@ -275,7 +276,14 @@ if "__main__" == __name__:
 
     # Initialize empty plots for sources
     print("Creating plots for sources...", end=" ", flush=True)
-    plots_sources = {"unmatched": {}, "prompt": {}, "light": {}, "c/b": {}, "tau": {}}
+    plots_sources = {
+        "unmatched": {},
+        "prompt": {},
+        "light": {},
+        "c": {},
+        "b": {},
+        "tau": {},
+    }
     for source in plots_sources:
         for plot in plots["QCD_Pt_MuEnrichedPt5_2018"].keys():
             if "dimuon" in plot or "sph1" in plot:
@@ -291,7 +299,8 @@ if "__main__" == __name__:
             plots_sources["unmatched"][plot] += plots[dataset][plot][:, 0].copy()
             plots_sources["prompt"][plot] += plots[dataset][plot][:, 1j].copy()
             plots_sources["light"][plot] += plots[dataset][plot][:, 3j].copy()
-            plots_sources["c/b"][plot] += plots[dataset][plot][:, 4j].copy()
+            plots_sources["c"][plot] += plots[dataset][plot][:, 4j].copy()
+            plots_sources["b"][plot] += plots[dataset][plot][:, 5j].copy()
             plots_sources["tau"][plot] += plots[dataset][plot][:, 15j].copy()
     print("Done!", flush=True)
 
