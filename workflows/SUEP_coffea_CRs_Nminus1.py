@@ -641,6 +641,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_cand_muon_pt"].fill(
                 ak.flatten(cand_muons.pt),
+                ak.flatten(cand_muons.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         cand_muons.pt,
@@ -663,6 +664,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_cand_muon_iso"].fill(
                 ak.flatten(cand_muons.miniPFRelIso_all),
+                ak.flatten(cand_muons.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         cand_muons.miniPFRelIso_all,
@@ -685,6 +687,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_cand_muon_dxy"].fill(
                 ak.flatten(abs(cand_muons.dxy)),
+                ak.flatten(cand_muons.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         cand_muons.dxy,
@@ -707,6 +710,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_cand_muon_dz"].fill(
                 ak.flatten(abs(cand_muons.dz)),
+                ak.flatten(cand_muons.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         cand_muons.dz,
@@ -729,6 +733,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_cand_muon_ip3d"].fill(
                 ak.flatten(abs(cand_muons.ip3d)),
+                ak.flatten(cand_muons.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         cand_muons.ip3d,
@@ -749,6 +754,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_muon_dxy"].fill(
                 ak.flatten(abs(muons_CR_prompt.dxy)),
+                ak.flatten(muons_CR_prompt.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_CR_prompt.dxy,
@@ -769,6 +775,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_muon_dz"].fill(
                 ak.flatten(abs(muons_CR_prompt.dz)),
+                ak.flatten(muons_CR_prompt.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_CR_prompt.dz,
@@ -789,6 +796,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_CR_prompt.ip3d),
+                ak.flatten(muons_CR_prompt.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_CR_prompt.ip3d,
@@ -809,6 +817,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_prompt_Nminus1_muon_iso"].fill(
                 ak.flatten(muons_CR_prompt.miniPFRelIso_all),
+                ak.flatten(muons_CR_prompt.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_CR_prompt.miniPFRelIso_all,
@@ -829,6 +838,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["CR_cb_Nminus1_muon_dxy"].fill(
                 ak.flatten(abs(muons_CR_cb.dxy)),
+                ak.flatten(muons_CR_cb.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_CR_cb.dxy,
@@ -903,7 +913,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 100,
                 name="cand_muon_pt",
                 label="cand_muon_pt",
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_cand_muon_iso": hist.Hist.new.Regular(
                 100,
                 0.02,
@@ -911,7 +923,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="cand_muon_iso",
                 label="cand_muon_iso",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_cand_muon_ip3d": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -919,7 +933,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="cand_muon_ip3d",
                 label="cand_muon_ip3d",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_cand_muon_dxy": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -927,7 +943,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="cand_muon_dxy",
                 label="cand_muon_dxy",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_cand_muon_dz": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -935,7 +953,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="cand_muon_dz",
                 label="cand_muon_dz",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_muon_iso": hist.Hist.new.Regular(
                 100,
                 0.02,
@@ -943,7 +963,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_iso",
                 label="muon_iso",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_muon_ip3d": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -951,7 +973,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_ip3d",
                 label="muon_ip3d",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_muon_dxy": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -959,7 +983,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_dxy",
                 label="muon_dxy",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_prompt_Nminus1_muon_dz": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -967,7 +993,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_dz",
                 label="muon_dz",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "CR_cb_Nminus1_muon_dxy": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -975,7 +1003,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_dxy",
                 label="muon_dxy",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
         }
         output = {
             dataset: {

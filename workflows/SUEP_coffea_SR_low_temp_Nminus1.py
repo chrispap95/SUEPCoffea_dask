@@ -556,6 +556,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_muon_pt"].fill(
                 ak.flatten(muons_SR_low_temp_tight.pt),
+                ak.flatten(muons_SR_low_temp_tight.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_SR_low_temp_tight.pt, weights_SR_low_temp_tight.weight()
@@ -573,6 +574,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_muon_pt"].fill(
                 ak.flatten(muons_SR_low_temp_loose.pt),
+                ak.flatten(muons_SR_low_temp_loose.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_SR_low_temp_loose.pt, weights_SR_low_temp_loose.weight()
@@ -598,6 +600,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_SR_low_temp_tight.ip3d),
+                ak.flatten(muons_SR_low_temp_tight.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_SR_low_temp_tight.ip3d, weights_SR_low_temp_tight.weight()
@@ -615,6 +618,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_SR_low_temp_loose.ip3d),
+                ak.flatten(muons_SR_low_temp_loose.genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_SR_low_temp_loose.ip3d, weights_SR_low_temp_loose.weight()
@@ -745,10 +749,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
         histograms = {
             "SR_low_temp_tight_Nminus1_muon_pt": hist.Hist.new.Regular(
                 100, 0, 100, name="muon_pt", label="muon_pt"
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "SR_low_temp_loose_Nminus1_muon_pt": hist.Hist.new.Regular(
                 100, 0, 100, name="muon_pt", label="muon_pt"
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "SR_low_temp_tight_Nminus1_muon_ip3d": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -756,7 +764,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_ip3d",
                 label="muon_ip3d",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "SR_low_temp_loose_Nminus1_muon_ip3d": hist.Hist.new.Regular(
                 100,
                 2e-4,
@@ -764,7 +774,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 name="muon_ip3d",
                 label="muon_ip3d",
                 transform=hist.axis.transform.log,
-            ).Weight(),
+            )
+            .IntCategory([0, 1, 3, 4, 5, 15], name="genPartFlav", label="genPartFlav")
+            .Weight(),
             "SR_low_temp_tight_Nminus1_dimuon_mass": hist.Hist.new.Regular(
                 100, 0, 200, name="dimuon_mass", label="dimuon_mass"
             ).Weight(),
