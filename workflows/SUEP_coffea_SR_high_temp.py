@@ -48,8 +48,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Tight SR selection
         tight_cut = (
-            (muons.pt < 45)
-            & (muons.ip3d < 0.008)
+            (muons.ip3d < 0.007)
             & (muons.miniPFRelIso_all < 0.65)
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
         )
@@ -57,11 +56,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
             self.find_Z_candidates(events, muons_tight_cut)
         )
-        outside_mass_window_tight_cut = (
-            abs(Z_cands_tight_cut.mass - SUEP_common.Z_MASS) > 2 * SUEP_common.Z_WIDTH
-        )
-        events_tight_cut = events_tight_cut[outside_mass_window_tight_cut]
-        muons_tight_cut = muons_tight_cut[outside_mass_window_tight_cut]
+        mass_cut = Z_cands_tight_cut.mass < 70
+        events_tight_cut = events_tight_cut[mass_cut]
+        muons_tight_cut = muons_tight_cut[mass_cut]
 
         select_by_muons_tight = ak.num(muons_tight_cut, axis=-1) > 2
         events_tight_cut = events_tight_cut[select_by_muons_tight]
@@ -70,18 +67,17 @@ class SUEP_processor(SUEP_common.SUEP_base):
         # Loose SR selection
         loose_cut = (
             (muons.ip3d < 0.1)
-            & (muons.miniPFRelIso_all < 10)
-            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 10)
+            & (muons.miniPFRelIso_all < 5)
+            & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 3)
         )
         muons_loose_cut = muons[clean_muons & loose_cut]
         events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
             self.find_Z_candidates(events, muons_loose_cut)
         )
-        outside_mass_window_loose_cut = (
-            abs(Z_cands_loose_cut.mass - SUEP_common.Z_MASS) > 2 * SUEP_common.Z_WIDTH
-        )
-        events_loose_cut = events_loose_cut[outside_mass_window_loose_cut]
-        muons_loose_cut = muons_loose_cut[outside_mass_window_loose_cut]
+        mass_cut = Z_cands_loose_cut.mass < 70
+        events_loose_cut = events_loose_cut[mass_cut]
+        muons_loose_cut = muons_loose_cut[mass_cut]
+
         select_by_muons_loose_cut = ak.num(muons_loose_cut, axis=-1) > 2
         events_loose_cut = events_loose_cut[select_by_muons_loose_cut]
         muons_loose_cut = muons_loose_cut[select_by_muons_loose_cut]

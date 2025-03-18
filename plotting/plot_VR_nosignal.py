@@ -9,6 +9,8 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import plot_utils
+import scipy.stats as stats  # type: ignore[import]
+from arrow import get
 from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
@@ -66,6 +68,13 @@ region_labels = {
     "VR_tight": r"$VR_{tight}$",
     "VR_tight_extrapolation": r"$VR_{tight}$ + extrapolation",
 }
+
+
+def get_poisson_errors(N, alpha=0.6827):
+    # Return the Garwood confidence interval for a Poisson distribution
+    upper = stats.gamma.ppf((1 + alpha) / 2, N + 1) - N
+    lower = N - stats.gamma.ppf((1 - alpha) / 2, N)
+    return np.nan_to_num(lower), np.nan_to_num(upper)
 
 
 def calculate_QCD_k_factor(plots, region="VR_loose", use_extrapolation=False):
@@ -140,8 +149,15 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
 
 
 def plot_pull(hist_data, hist_bkg_total, ax, x_hatch):
+    # Get poisson errors for the data
+    data_unc = get_poisson_errors(hist_data.values())
+    # Select correct side for poisson errors
+    data_unc = np.where(
+        hist_data.values() > hist_bkg_total.values(), data_unc[0], data_unc[1]
+    )
+
     pulls = (hist_data.values() - hist_bkg_total.values()) / np.sqrt(
-        hist_bkg_total.variances()
+        hist_bkg_total.variances() + data_unc**2
     )
     pulls_up = np.where(pulls >= 0, pulls, 0)
     pulls_down = np.where(pulls < 0, pulls, 0)
@@ -342,7 +358,9 @@ if "__main__" == __name__:
         "VR_tight": slice(3j, None),
     }
 
-    qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
+    qcd_extrapolation = plot_utils.Extrapolation(
+        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
+    )
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
     print("Done!", flush=True)
 

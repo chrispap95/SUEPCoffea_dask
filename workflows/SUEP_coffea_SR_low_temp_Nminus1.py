@@ -185,18 +185,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
         )
 
         # Tight SR: selection for muons
-        tight_cut = muons.ip3d < 0.008
+        tight_cut = muons.ip3d < 0.007
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
         events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
             self.find_Z_candidates(events, muons_tight_cut)
         )
-        outside_mass_window_tight_cut = (
-            abs(Z_cands_tight_cut.mass - Z_MASS) > 2 * Z_WIDTH
-        )
-        events_tight_cut = events_tight_cut[outside_mass_window_tight_cut]
-        muons_tight_cut = muons_tight_cut[outside_mass_window_tight_cut]
+        mass_cut = Z_cands_tight_cut.mass < 35
+        events_tight_cut = events_tight_cut[mass_cut]
+        muons_tight_cut = muons_tight_cut[mass_cut]
 
         # Tight SR: at least 3 muons
         select_by_muons_tight = ak.num(muons_tight_cut, axis=-1) > 2
@@ -217,8 +215,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Tight SR: sphericity cut
         sph1_tight_cut = self.S1(SUEP_cand_tight_cut, SUEP_cluster_tight_cut)
-        events_tight_cut = events[sph1_tight_cut > 0.75]
-        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.75]
+        events_tight_cut = events[sph1_tight_cut > 0.7]
+        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.7]
 
         # Loose SR: selection for muons
         loose_cut = events.Muon.ip3d < 0.1
@@ -228,16 +226,31 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
             self.find_Z_candidates(events, muons_loose_cut)
         )
-        outside_mass_window_loose_cut = (
-            abs(Z_cands_loose_cut.mass - Z_MASS) > 2 * Z_WIDTH
-        )
-        events_loose_cut = events_loose_cut[outside_mass_window_loose_cut]
-        muons_loose_cut = muons_loose_cut[outside_mass_window_loose_cut]
+        mass_cut = Z_cands_loose_cut.mass < 45
+        events_loose_cut = events_loose_cut[mass_cut]
+        muons_loose_cut = muons_loose_cut[mass_cut]
 
         # Loose SR: at least 3 muons
         select_by_muons_loose_cut = ak.num(muons_loose_cut, axis=-1) > 2
         events_loose_cut = events_loose_cut[select_by_muons_loose_cut]
         muons_loose_cut = muons_loose_cut[select_by_muons_loose_cut]
+
+        # Loose SR: SUEP candidate
+        tracks_loose_cut = self.get_clean_tracks(events_loose_cut)
+        SUEP_cand_loose_cut, SUEP_cluster_loose_cut = self.find_SUEP_candidate(
+            tracks_loose_cut
+        )
+        found_SUEP_cand_loose_cut = ~ak.is_none(SUEP_cand_loose_cut)
+        events_loose_cut = events_loose_cut[found_SUEP_cand_loose_cut]
+        muons_loose_cut = muons_loose_cut[found_SUEP_cand_loose_cut]
+        tracks_loose_cut = tracks_loose_cut[found_SUEP_cand_loose_cut]
+        SUEP_cand_loose_cut = SUEP_cand_loose_cut[found_SUEP_cand_loose_cut]
+        SUEP_cluster_loose_cut = SUEP_cluster_loose_cut[found_SUEP_cand_loose_cut]
+
+        # Loose SR: sphericity cut
+        sph1_loose_cut = self.S1(SUEP_cand_loose_cut, SUEP_cluster_loose_cut)
+        events_loose_cut = events[sph1_loose_cut > 0.2]
+        muons_loose_cut = muons_loose_cut[sph1_loose_cut > 0.2]
 
         return events_tight_cut, events_loose_cut, muons_tight_cut, muons_loose_cut
 
@@ -268,11 +281,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
             self.find_Z_candidates(events, muons_tight_cut)
         )
-        outside_mass_window_tight_cut = (
-            abs(Z_cands_tight_cut.mass - Z_MASS) > 2 * Z_WIDTH
-        )
-        events_tight_cut = events_tight_cut[outside_mass_window_tight_cut]
-        muons_tight_cut = muons_tight_cut[outside_mass_window_tight_cut]
+        mass_cut = Z_cands_tight_cut.mass < 35
+        events_tight_cut = events_tight_cut[mass_cut]
+        muons_tight_cut = muons_tight_cut[mass_cut]
 
         # Tight SR: at least 3 muons
         select_by_muons_tight = ak.num(muons_tight_cut, axis=-1) > 2
@@ -293,26 +304,42 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Tight SR: sphericity cut
         sph1_tight_cut = self.S1(SUEP_cand_tight_cut, SUEP_cluster_tight_cut)
-        events_tight_cut = events[sph1_tight_cut > 0.75]
-        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.75]
+        events_tight_cut = events[sph1_tight_cut > 0.7]
+        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.7]
 
         # Loose SR: selection for muons
-        muons_loose_cut = muons[clean_muons]
+        loose_cut = events.Muon.pt < 45
+        muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
         events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
             self.find_Z_candidates(events, muons_loose_cut)
         )
-        outside_mass_window_loose_cut = (
-            abs(Z_cands_loose_cut.mass - Z_MASS) > 2 * Z_WIDTH
-        )
-        events_loose_cut = events_loose_cut[outside_mass_window_loose_cut]
-        muons_loose_cut = muons_loose_cut[outside_mass_window_loose_cut]
+        mass_cut = Z_cands_loose_cut.mass < 45
+        events_loose_cut = events_loose_cut[mass_cut]
+        muons_loose_cut = muons_loose_cut[mass_cut]
 
         # Loose SR: at least 3 muons
         select_by_muons_loose_cut = ak.num(muons_loose_cut, axis=-1) > 2
         events_loose_cut = events_loose_cut[select_by_muons_loose_cut]
         muons_loose_cut = muons_loose_cut[select_by_muons_loose_cut]
+
+        # Loose SR: SUEP candidate
+        tracks_loose_cut = self.get_clean_tracks(events_loose_cut)
+        SUEP_cand_loose_cut, SUEP_cluster_loose_cut = self.find_SUEP_candidate(
+            tracks_loose_cut
+        )
+        found_SUEP_cand_loose_cut = ~ak.is_none(SUEP_cand_loose_cut)
+        events_loose_cut = events_loose_cut[found_SUEP_cand_loose_cut]
+        muons_loose_cut = muons_loose_cut[found_SUEP_cand_loose_cut]
+        tracks_loose_cut = tracks_loose_cut[found_SUEP_cand_loose_cut]
+        SUEP_cand_loose_cut = SUEP_cand_loose_cut[found_SUEP_cand_loose_cut]
+        SUEP_cluster_loose_cut = SUEP_cluster_loose_cut[found_SUEP_cand_loose_cut]
+
+        # Loose SR: sphericity cut
+        sph1_loose_cut = self.S1(SUEP_cand_loose_cut, SUEP_cluster_loose_cut)
+        events_loose_cut = events[sph1_loose_cut > 0.2]
+        muons_loose_cut = muons_loose_cut[sph1_loose_cut > 0.2]
 
         return events_tight_cut, events_loose_cut, muons_tight_cut, muons_loose_cut
 
@@ -336,20 +363,19 @@ class SUEP_processor(SUEP_common.SUEP_base):
         )
 
         # Tight SR: selection for muons
-        tight_cut = (muons.pt < 35) & (muons.ip3d < 0.008)
+        tight_cut = (muons.pt < 35) & (muons.ip3d < 0.007)
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
         events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
             self.find_Z_candidates(events, muons_tight_cut)
         )
-        Z_cand_tight_mass_diff = Z_cands_tight_cut.mass - Z_MASS
 
         # Tight SR: at least 3 muons
         select_by_muons_tight = ak.num(muons_tight_cut, axis=-1) > 2
         events_tight_cut = events_tight_cut[select_by_muons_tight]
         muons_tight_cut = muons_tight_cut[select_by_muons_tight]
-        Z_cand_tight_mass_diff = Z_cand_tight_mass_diff[select_by_muons_tight]
+        Z_cands_tight_cut = Z_cands_tight_cut[select_by_muons_tight]
 
         # Tight SR: SUEP candidate
         tracks_tight_cut = self.get_clean_tracks(events_tight_cut)
@@ -362,37 +388,55 @@ class SUEP_processor(SUEP_common.SUEP_base):
         tracks_tight_cut = tracks_tight_cut[found_SUEP_cand_tight_cut]
         SUEP_cand_tight_cut = SUEP_cand_tight_cut[found_SUEP_cand_tight_cut]
         SUEP_cluster_tight_cut = SUEP_cluster_tight_cut[found_SUEP_cand_tight_cut]
-        Z_cand_tight_mass_diff = Z_cand_tight_mass_diff[found_SUEP_cand_tight_cut]
+        Z_cands_tight_cut = Z_cands_tight_cut[found_SUEP_cand_tight_cut]
 
         # Tight SR: sphericity cut
         sph1_tight_cut = self.S1(SUEP_cand_tight_cut, SUEP_cluster_tight_cut)
-        events_tight_cut = events[sph1_tight_cut > 0.75]
-        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.75]
-        Z_cand_tight_mass_diff = Z_cand_tight_mass_diff[sph1_tight_cut > 0.75]
+        events_tight_cut = events[sph1_tight_cut > 0.7]
+        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.7]
+        Z_cands_tight_cut = Z_cands_tight_cut[sph1_tight_cut > 0.7]
 
         # Loose SR: selection for muons
-        loose_cut = events.Muon.ip3d < 0.1
+        loose_cut = (events.Muon.pt < 45) & (events.Muon.ip3d < 0.1)
         muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
         events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
             self.find_Z_candidates(events, muons_loose_cut)
         )
-        Z_cand_loose_mass_diff = Z_cands_loose_cut.mass - Z_MASS
 
         # Loose SR: at least 3 muons
         select_by_muons_loose_cut = ak.num(muons_loose_cut, axis=-1) > 2
         events_loose_cut = events_loose_cut[select_by_muons_loose_cut]
         muons_loose_cut = muons_loose_cut[select_by_muons_loose_cut]
-        Z_cand_loose_mass_diff = Z_cand_loose_mass_diff[select_by_muons_loose_cut]
+        Z_cands_loose_cut = Z_cands_loose_cut[select_by_muons_loose_cut]
+
+        # Loose SR: SUEP candidate
+        tracks_loose_cut = self.get_clean_tracks(events_loose_cut)
+        SUEP_cand_loose_cut, SUEP_cluster_loose_cut = self.find_SUEP_candidate(
+            tracks_loose_cut
+        )
+        found_SUEP_cand_loose_cut = ~ak.is_none(SUEP_cand_loose_cut)
+        events_loose_cut = events_loose_cut[found_SUEP_cand_loose_cut]
+        muons_loose_cut = muons_loose_cut[found_SUEP_cand_loose_cut]
+        tracks_loose_cut = tracks_loose_cut[found_SUEP_cand_loose_cut]
+        SUEP_cand_loose_cut = SUEP_cand_loose_cut[found_SUEP_cand_loose_cut]
+        SUEP_cluster_loose_cut = SUEP_cluster_loose_cut[found_SUEP_cand_loose_cut]
+        Z_cands_loose_cut = Z_cands_loose_cut[found_SUEP_cand_loose_cut]
+
+        # Loose SR: sphericity cut
+        sph1_loose_cut = self.S1(SUEP_cand_loose_cut, SUEP_cluster_loose_cut)
+        events_loose_cut = events[sph1_loose_cut > 0.2]
+        muons_loose_cut = muons_loose_cut[sph1_loose_cut > 0.2]
+        Z_cands_loose_cut = Z_cands_loose_cut[sph1_loose_cut > 0.2]
 
         return (
             events_tight_cut,
             events_loose_cut,
             muons_tight_cut,
             muons_loose_cut,
-            Z_cand_tight_mass_diff,
-            Z_cand_loose_mass_diff,
+            Z_cands_tight_cut,
+            Z_cands_loose_cut,
         )
 
     def apply_SR_low_temp_minus_sph1_cut(self, events):
@@ -415,16 +459,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
         )
 
         # Tight SR: selection for muons
-        tight_cut = (muons.pt < 35) & (muons.ip3d < 0.008)
+        tight_cut = (muons.pt < 35) & (muons.ip3d < 0.007)
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
         events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
             self.find_Z_candidates(events, muons_tight_cut)
         )
-        outside_mass_window_tight_cut = (
-            abs(Z_cands_tight_cut.mass - Z_MASS) > 2 * Z_WIDTH
-        )
+        outside_mass_window_tight_cut = Z_cands_tight_cut.mass < 35
         events_tight_cut = events_tight_cut[outside_mass_window_tight_cut]
         muons_tight_cut = muons_tight_cut[outside_mass_window_tight_cut]
 
@@ -449,18 +491,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
         sph1_tight_cut = self.S1(SUEP_cand_tight_cut, SUEP_cluster_tight_cut)
 
         # Loose SR: selection for muons
-        loose_cut = events.Muon.ip3d < 0.1
+        loose_cut = (events.Muon.pt < 45) & (events.Muon.ip3d < 0.1)
         muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
         events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
             self.find_Z_candidates(events, muons_loose_cut)
         )
-        outside_mass_window_loose_cut = (
-            abs(Z_cands_loose_cut.mass - Z_MASS) > 2 * Z_WIDTH
-        )
-        events_loose_cut = events_loose_cut[outside_mass_window_loose_cut]
-        muons_loose_cut = muons_loose_cut[outside_mass_window_loose_cut]
+        mass_cut = Z_cands_loose_cut.mass < 45
+        events_loose_cut = events_loose_cut[mass_cut]
+        muons_loose_cut = muons_loose_cut[mass_cut]
 
         # Loose SR: at least 3 muons
         select_by_muons_loose_cut = ak.num(muons_loose_cut, axis=-1) > 2
@@ -514,7 +554,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_muon_pt_tight"].fill(
+            output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_muon_pt"].fill(
                 ak.flatten(muons_SR_low_temp_tight.pt),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
@@ -531,7 +571,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_muon_pt_loose"].fill(
+            output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_muon_pt"].fill(
                 ak.flatten(muons_SR_low_temp_loose.pt),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
@@ -556,7 +596,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_muon_ip3d_tight"].fill(
+            output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_SR_low_temp_tight.ip3d),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
@@ -573,7 +613,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_muon_ip3d_loose"].fill(
+            output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_SR_low_temp_loose.ip3d),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
@@ -588,8 +628,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events_SR_low_temp_loose,
             muons_SR_low_temp_tight,
             muons_SR_low_temp_loose,
-            Z_cand_tight_mass_diff,
-            Z_cand_loose_mass_diff,
+            Z_cands_tight_cut,
+            Z_cands_loose_cut,
         ) = self.apply_SR_low_temp_minus_Z_mass_cut(events_)
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
@@ -600,8 +640,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_Z_mass_diff_tight"].fill(
-                Z_cand_tight_mass_diff, weight=weights_SR_low_temp_tight.weight()
+            output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_dimuon_mass"].fill(
+                Z_cands_tight_cut.mass, weight=weights_SR_low_temp_tight.weight()
             )
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
@@ -612,8 +652,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_Z_mass_diff_loose"].fill(
-                Z_cand_loose_mass_diff, weight=weights_SR_low_temp_loose.weight()
+            output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_dimuon_mass"].fill(
+                Z_cands_loose_cut.mass, weight=weights_SR_low_temp_loose.weight()
             )
 
         # N-1 for sph1 cut
@@ -634,7 +674,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_sph1_tight"].fill(
+            output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_sph1"].fill(
                 sph1_tight_cut, weight=weights_SR_low_temp_tight.weight()
             )
         if len(events_SR_low_temp_loose) > 0:
@@ -646,7 +686,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 ),
             )
-            output[dataset]["histograms"]["Nminus1_sph1_loose"].fill(
+            output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_sph1"].fill(
                 sph1_loose_cut, weight=weights_SR_low_temp_loose.weight()
             )
 
@@ -703,13 +743,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
             label="cutflow",
         ).Weight()
         histograms = {
-            "Nminus1_muon_pt_tight": hist.Hist.new.Regular(
+            "SR_low_temp_tight_Nminus1_muon_pt": hist.Hist.new.Regular(
                 100, 0, 100, name="muon_pt", label="muon_pt"
             ).Weight(),
-            "Nminus1_muon_pt_loose": hist.Hist.new.Regular(
+            "SR_low_temp_loose_Nminus1_muon_pt": hist.Hist.new.Regular(
                 100, 0, 100, name="muon_pt", label="muon_pt"
             ).Weight(),
-            "Nminus1_muon_ip3d_tight": hist.Hist.new.Regular(
+            "SR_low_temp_tight_Nminus1_muon_ip3d": hist.Hist.new.Regular(
                 100,
                 2e-4,
                 0.2,
@@ -717,7 +757,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 label="muon_ip3d",
                 transform=hist.axis.transform.log,
             ).Weight(),
-            "Nminus1_muon_ip3d_loose": hist.Hist.new.Regular(
+            "SR_low_temp_loose_Nminus1_muon_ip3d": hist.Hist.new.Regular(
                 100,
                 2e-4,
                 0.2,
@@ -725,16 +765,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 label="muon_ip3d",
                 transform=hist.axis.transform.log,
             ).Weight(),
-            "Nminus1_Z_mass_diff_tight": hist.Hist.new.Regular(
-                100, -100, 100, name="Z_mass_diff", label="Z_mass_diff"
+            "SR_low_temp_tight_Nminus1_dimuon_mass": hist.Hist.new.Regular(
+                100, 0, 200, name="dimuon_mass", label="dimuon_mass"
             ).Weight(),
-            "Nminus1_Z_mass_diff_loose": hist.Hist.new.Regular(
-                100, -100, 100, name="Z_mass_diff", label="Z_mass_diff"
+            "SR_low_temp_loose_Nminus1_dimuon_mass": hist.Hist.new.Regular(
+                100, 0, 200, name="dimuon_mass", label="dimuon_mass"
             ).Weight(),
-            "Nminus1_sph1_tight": hist.Hist.new.Regular(
+            "SR_low_temp_tight_Nminus1_sph1": hist.Hist.new.Regular(
                 100, 0, 1, name="sph1", label="sph1"
             ).Weight(),
-            "Nminus1_sph1_loose": hist.Hist.new.Regular(
+            "SR_low_temp_loose_Nminus1_sph1": hist.Hist.new.Regular(
                 100, 0, 1, name="sph1", label="sph1"
             ).Weight(),
         }

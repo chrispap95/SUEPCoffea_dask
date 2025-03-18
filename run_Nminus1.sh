@@ -26,27 +26,39 @@ if [ $all -eq 1 ]; then
 fi
 
 if [ $signal -eq 1 ]; then
+    echo -n ""
     # echo "Processing signal SR_low_temp..."
     # python runner.py \
     #     --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_SR_low_temp" \
     #     --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 --skimmed \
     #     --isMC --executor futures -j 38 --chunk 4000
-    echo "Processing signal SR_high_temp..."
+    # echo "Processing signal SR_high_temp..."
+    # python runner.py \
+    #     --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
+    #     --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 --skimmed \
+    #     --isMC --executor futures -j 48 --chunk 80000
+    echo "Processing signal CRs..."
     python runner.py \
-        --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
+        --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_CRs" \
         --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 --skimmed \
-        --isMC --executor futures -j 48 --chunk 70000
+        --isMC --executor futures -j 48 --chunk 80000
 fi
 
 if [ $background -eq 1 ]; then
+    echo -n ""
     # echo "Processing BKG SR_low_temp..."
     # python runner.py \
     #     --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_SR_low_temp" \
     #     --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 --skimmed \
-    #     --isMC --executor futures -j 48 --chunk 7000
-    echo "Processing BKG SR_high_temp..."
+    #     --isMC --executor futures -j 44 --chunk 7000
+    # echo "Processing BKG SR_high_temp..."
+    # python runner.py \
+    #     --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
+    #     --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 --skimmed \
+    #     --isMC --executor futures -j 48 --chunk 80000
+    echo "Processing BKG CRs..."
     python runner.py \
-        --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
+        --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
         --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 --skimmed \
-        --isMC --executor futures -j 48 --chunk 70000
+        --isMC --executor futures -j 48 --chunk 80000
 fi

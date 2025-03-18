@@ -2,7 +2,6 @@ import awkward as ak
 import hist
 import vector  # type: ignore[import]
 from coffea import processor
-from prompt_toolkit import prompt
 
 # Importing CMS corrections
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
@@ -47,15 +46,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & (abs(muons.dz) < 0.2)
         )
 
-        # Apply extra very tight cuts for CR_prompt
-        # prompt_muons = (
-        #     (muons.pt > 25)
-        #     & (muons.miniPFRelIso_all < 0.1)
-        #     & (abs(muons.dxy) < 0.005)
-        #     & (abs(muons.dz) < 0.01)
-        #     & (abs(muons.ip3d < 0.008))
-        # )
-
         # Get the Z candidates and make sure they are close to the peak
         muons = muons[clean_muons]
         events, muons, Z_cands, candidates_indices = self.find_Z_candidates(
@@ -88,16 +78,12 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & (abs(muons.dz) > 0.01)
             & (abs(muons.ip3d) > 0.015)
         ]
-        # if len(qcd_muons) > 0:
         muons = ak.concatenate([prompt_muons, qcd_muons], axis=-1)
-        # else:
-        #     muons = prompt_muons
 
         # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_high = True  # ak.num(muons, axis=-1) < 5
         select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_high & select_by_muons_low]
-        muons = muons[select_by_muons_high & select_by_muons_low]
+        events = events[select_by_muons_low]
+        muons = muons[select_by_muons_low]
 
         return events, muons
 

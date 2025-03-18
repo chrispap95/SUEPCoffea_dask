@@ -13,6 +13,7 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import ROOT  # type: ignore[import]
+import scipy.special as special  # type: ignore[import]
 import uproot
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
@@ -242,7 +243,13 @@ class Extrapolation:
     Class to perform extrapolation of histograms.
     """
 
-    def __init__(self, plots: dict, is_data: bool = False) -> None:
+    def __init__(
+        self,
+        plots: dict,
+        is_data: bool = False,
+        fit_function: str = "exponential",
+        uncertainty_scheme: str = "simple",
+    ) -> None:
         """
         Initialize the class.
 
@@ -250,14 +257,24 @@ class Extrapolation:
         ----------
         plots : dict
             Dictionary of histograms.
+        is_data : bool
+            Flag to indicate if the input is data.
+        fit_function : str
+            The fit function to use. Options are "exponential" or "binomial".
+        uncertainty_scheme : str
+            The uncertainty scheme to use. Options are "simple" or "full".
+            Simple uses the uncertainty from the fit.
+            Full adds the MC statistical uncertainty and the uncertainty from the fit in quadrature.
         """
         self.plots = plots
         self.fit_results = {}
         self.is_data = is_data
+        self.fit_function = fit_function
+        self.uncertainty_scheme = uncertainty_scheme
 
     def muon_func_log(self, x: np.ndarray, loga: float, logb: float) -> np.ndarray:
         """
-        This function is the log of a power law function: a * b^-n
+        This function is the log of a power law function: a * b**-n
         """
         return loga - x * logb
 
@@ -276,6 +293,41 @@ class Extrapolation:
         Wrapper for muon_func_log. To be used in the fit for the loose region
         """
         return self.muon_func_log(x, loga_l, logb)
+
+    def muon_func_log_alt(
+        self, x: np.ndarray, loga: float, logb: float, N: float
+    ) -> np.ndarray:
+        """
+        This function is the log of effective binomial distribution: a * b**n * (1-b)**(N-n)
+
+        Binomial factor using gamma function:
+        N!/n!(N-n)! = gamma(N+1)/(gamma(n+1)*gamma(N-n+1))
+        """
+        binomial_factor = special.gamma(N + 1) / (
+            special.gamma(x + 1) * special.gamma(N - x + 1)
+        )
+        return (
+            loga
+            + np.log(binomial_factor)
+            + x * logb
+            + (N - x) * np.log(1 - np.exp(logb))
+        )
+
+    def muon_func_tight_log_alt(
+        self, x: np.ndarray, loga_t: float, logb: float, N: float
+    ) -> np.ndarray:
+        """
+        Wrapper for muon_func_log_alt. To be used in the fit for the tight region
+        """
+        return self.muon_func_log_alt(x, loga_t, logb, N)
+
+    def muon_func_loose_log_alt(
+        self, x: np.ndarray, loga_l: float, logb: float, N: float
+    ) -> np.ndarray:
+        """
+        Wrapper for muon_func_log_alt. To be used in the fit for the loose region
+        """
+        return self.muon_func_log_alt(x, loga_l, logb, N)
 
     def extrapolate(
         self, slice_hists: dict = {}, syst: str = "", verbose: bool = False
@@ -435,12 +487,23 @@ class Extrapolation:
         data_x_l = np.arange(len(data_y_l))
         data_x_t = np.arange(len(data_y_t))
 
+        if self.fit_function == "exponential":
+            fit_function_tight = self.muon_func_tight_log
+            fit_function_loose = self.muon_func_loose_log
+            parameters = {"loga_t": 1, "loga_l": 1, "logb": 1}
+        elif self.fit_function == "binomial":
+            fit_function_tight = self.muon_func_tight_log_alt
+            fit_function_loose = self.muon_func_loose_log_alt
+            parameters = {"loga_t": 7, "loga_l": 8, "logb": -2.3, "N": 7}
+        else:
+            raise ValueError("Invalid fit function")
+
         least_squares = LeastSquares(
-            data_x_l, data_y_l, data_yerr_l, self.muon_func_loose_log  # type: ignore[arg-type]
+            data_x_l, data_y_l, data_yerr_l, fit_function_loose  # type: ignore[arg-type]
         ) + LeastSquares(
-            data_x_t, data_y_t, data_yerr_t, self.muon_func_tight_log  # type: ignore[arg-type]
+            data_x_t, data_y_t, data_yerr_t, fit_function_tight  # type: ignore[arg-type]
         )
-        m = Minuit(least_squares, loga_t=1, loga_l=1, logb=1)
+        m = Minuit(least_squares, **parameters)  # type: ignore[arg-type]
         m.migrad()
         m.hesse()
 
@@ -485,16 +548,43 @@ class Extrapolation:
 
         # Extract the fit parameters and covariance matrix
         loga = "loga_t" if "tight" in region else "loga_l"
-        params = np.array([m.values[loga], m.values["logb"]])
-        if m.covariance is not None:
-            cov = np.array(
-                [
-                    [m.covariance[loga, loga], m.covariance[loga, "logb"]],
-                    [m.covariance["logb", loga], m.covariance["logb", "logb"]],
-                ]
-            )
+        if self.fit_function == "exponential":
+            params = np.array([m.values[loga], m.values["logb"]])
+            if m.covariance is not None:
+                cov = np.array(
+                    [
+                        [m.covariance[loga, loga], m.covariance[loga, "logb"]],
+                        [m.covariance["logb", loga], m.covariance["logb", "logb"]],
+                    ]
+                )
+            else:
+                raise ValueError("Covariance matrix is None")
+        elif self.fit_function == "binomial":
+            params = np.array([m.values[loga], m.values["logb"], m.values["N"]])
+            if m.covariance is not None:
+                cov = np.array(
+                    [
+                        [
+                            m.covariance[loga, loga],
+                            m.covariance[loga, "logb"],
+                            m.covariance[loga, "N"],
+                        ],
+                        [
+                            m.covariance["logb", loga],
+                            m.covariance["logb", "logb"],
+                            m.covariance["logb", "N"],
+                        ],
+                        [
+                            m.covariance["N", loga],
+                            m.covariance["N", "logb"],
+                            m.covariance["N", "N"],
+                        ],
+                    ]
+                )
+            else:
+                raise ValueError("Covariance matrix is None")
         else:
-            raise ValueError("Covariance matrix is None")
+            raise ValueError("Invalid fit function")
 
         # Determine the x value to begin the fit
         fit_x_begin = x[0]
@@ -503,17 +593,44 @@ class Extrapolation:
         elif region in slice_hists:
             fit_x_begin = slice_hists[region].start.imag
 
+        if self.fit_function == "exponential":
+            fit_function = self.muon_func_log
+        elif self.fit_function == "binomial":
+            fit_function = self.muon_func_log_alt
+        else:
+            raise ValueError("Invalid fit function")
+
         # Propagate the fit parameters and covariance matrix
         logy, logycov = propagate(
-            lambda p: self.muon_func_log(x - fit_x_begin, *p), params, cov
+            lambda p: fit_function(x - fit_x_begin, *p), params, cov
         )
         logyerr_prop = np.diag(logycov) ** 0.5
         y = 10**logy
         yerr_prop = np.log(10) * y * logyerr_prop
 
         # Fill the histogram and return it
-        for i in range(len(h0.values())):
-            h0[i] = (y[i], yerr_prop[i] ** 2)
+        if self.uncertainty_scheme == "simple":
+            for i in range(len(h0.values())):
+                h0[i] = (y[i], yerr_prop[i] ** 2)
+        elif self.uncertainty_scheme == "full":
+            mc_vals = self.plots[region].values()
+            mc_vars = self.plots[region].variances()
+            mc_rel_unc = np.where(
+                self.plots[region].values() > 0,
+                np.sqrt(mc_vars) / mc_vals,
+                0,
+            )
+            # Find closest non-zero values
+            non_zero_indices = np.where(mc_rel_unc != 0)[0]
+            indices = np.indices(mc_rel_unc.shape)[0]
+            closest_indices = non_zero_indices[
+                np.argmin(np.abs(indices[:, None] - non_zero_indices), axis=1)
+            ]
+            mc_rel_unc = mc_rel_unc[closest_indices]
+            for i in range(len(h0.values())):
+                h0[i] = (y[i], (mc_rel_unc[i] * y[i]) ** 2 + yerr_prop[i] ** 2)
+        else:
+            raise ValueError("Invalid uncertainty scheme")
 
         return h0
 
@@ -586,7 +703,9 @@ class Extrapolation:
         ax2.set_xlim(2.8, 8.2)
         ax2.set_ylim(0, 2)
 
-        pulls = (plot_pre_fit.values() - y) / np.sqrt(plot_pre_fit.variances())
+        pulls = (plot_pre_fit.values() - y) / np.sqrt(
+            plot_pre_fit.variances() + yerr_prop**2
+        )
         pulls_up = np.where(pulls >= 0, pulls, 0)
         pulls_down = np.where(pulls < 0, pulls, 0)
 

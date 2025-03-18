@@ -46,21 +46,44 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & (abs(muons.dz) < 0.2)
         )
 
-        # Apply extra very tight cuts for CR_prompt
-        prompt_muons = (
-            (muons.pt > 25)
-            & (muons.miniPFRelIso_all < 0.1)
-            & (abs(muons.dxy) < 0.005)
-            & (abs(muons.dz) < 0.01)
-            & (abs(muons.ip3d < 0.008))
+        # Get the Z candidates and make sure they are close to the peak
+        muons = muons[clean_muons]
+        events, muons, Z_cands, candidates_indices = self.find_Z_candidates(
+            events, muons
         )
-        muons = muons[clean_muons & prompt_muons]
+        inside_mass_window = (
+            abs(Z_cands.mass - SUEP_common.Z_MASS) < 2 * SUEP_common.Z_WIDTH
+        )
+        muons = muons[inside_mass_window]
+        events = events[inside_mass_window]
+        candidates_indices = candidates_indices[inside_mass_window]
+
+        # Make sure both muons from the Z candidates are prompt
+        candidate_muons = muons[candidates_indices]
+        prompt_muons = muons[
+            (candidate_muons.pt > 25)
+            & (candidate_muons.miniPFRelIso_all < 0.1)
+            & (abs(candidate_muons.dxy) < 0.008)
+            & (abs(candidate_muons.dz) < 0.01)
+            & (abs(candidate_muons.ip3d) < 0.01)
+        ]
+        muons = muons[ak.num(prompt_muons, axis=-1) > 0]
+        events = events[ak.num(prompt_muons, axis=-1) > 0]
+        prompt_muons = prompt_muons[ak.num(prompt_muons, axis=-1) > 0]
+
+        # Non prompt muons – these are orthogonal to the previous selection so they can just be added
+        qcd_muons = muons[
+            (muons.miniPFRelIso_all > 0.1)
+            & (abs(muons.dxy) > 0.01)
+            & (abs(muons.dz) > 0.01)
+            & (abs(muons.ip3d) > 0.015)
+        ]
+        muons = ak.concatenate([prompt_muons, qcd_muons], axis=-1)
 
         # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_high = ak.num(muons, axis=-1) < 5
         select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_high & select_by_muons_low]
-        muons = muons[select_by_muons_high & select_by_muons_low]
+        events = events[select_by_muons_low]
+        muons = muons[select_by_muons_low]
 
         return events, muons
 

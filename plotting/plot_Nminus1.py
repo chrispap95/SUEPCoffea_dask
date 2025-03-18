@@ -54,7 +54,101 @@ def parse_args():
     return parser.parse_args()
 
 
-def make_plot(plots, region, plot):
+cuts = {
+    # The tuples contains: (cut value, arrow location, arrow height)
+    "CR_prompt_Nminus1_dimuon_mass": [(80, 1.14, 5e5), (100, 0.9, 5e5)],
+    "CR_prompt_Nminus1_cand_muon_pt": [(25, 1.3, 1e5)],
+    "CR_prompt_Nminus1_cand_muon_iso": [(0.1, 0.5, 1e5)],
+    "CR_prompt_Nminus1_cand_muon_ip3d": [(0.01, 0.5, 7e4)],
+    "CR_prompt_Nminus1_cand_muon_dxy": [(0.008, 0.5, 7e4)],
+    "CR_prompt_Nminus1_cand_muon_dz": [(0.01, 0.5, 7e4)],
+    "CR_prompt_Nminus1_muon_iso": [(0.1, 1.5, 7e4)],
+    "CR_prompt_Nminus1_muon_ip3d": [(0.015, 1.5, 7e4)],
+    "CR_prompt_Nminus1_muon_dxy": [(0.01, 1.5, 7e4)],
+    "CR_prompt_Nminus1_muon_dz": [(0.01, 1.5, 7e4)],
+    "CR_cb_Nminus1_muon_dxy": [(0.01, 2, 4e6), (0.2, 0.5, 4e6)],
+    "SR_low_temp_loose_Nminus1_muon_pt": [(45, 0.75, 5e6)],
+    "SR_low_temp_tight_Nminus1_muon_pt": [(35, 0.75, 2e5)],
+    "SR_low_temp_loose_Nminus1_muon_ip3d": [(0.1, 0.5, 5e6)],
+    "SR_low_temp_tight_Nminus1_muon_ip3d": [(0.007, 0.5, 1e6)],
+    "SR_low_temp_loose_Nminus1_sph1": [(0.2, 1.6, 5e6)],
+    "SR_low_temp_tight_Nminus1_sph1": [(0.7, 1.2, 2e5)],
+    "SR_low_temp_loose_Nminus1_dimuon_mass": [(45, 0.75, 5e6)],
+    "SR_low_temp_tight_Nminus1_dimuon_mass": [(35, 0.6, 2e5)],
+    "SR_high_temp_loose_Nminus1_muon_ip3d": [(0.1, 0.5, 5e6)],
+    "SR_high_temp_tight_Nminus1_muon_ip3d": [(0.007, 0.5, 2e6)],
+    "SR_high_temp_loose_Nminus1_muon_iso": [(5, 0.5, 5e6)],
+    "SR_high_temp_tight_Nminus1_muon_iso": [(0.65, 0.5, 5e5)],
+    "SR_high_temp_loose_Nminus1_muon_neutral_iso": [(3, 0.5, 5e6)],
+    "SR_high_temp_tight_Nminus1_muon_neutral_iso": [(0.5, 0.5, 5e5)],
+    "SR_high_temp_loose_Nminus1_dimuon_mass": [(70, 0.75, 5e6)],
+    "SR_high_temp_tight_Nminus1_dimuon_mass": [(70, 0.75, 2e5)],
+}
+
+ylims = {
+    "CR_prompt_Nminus1_dimuon_mass": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_pt": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_iso": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_ip3d": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_dxy": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_dz": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_iso": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_ip3d": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_dxy": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_dz": (1e0, 1e8),
+    "CR_cb_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_pt": (1, 1e8),
+    "SR_low_temp_loose_Nminus1_muon_pt": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_low_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_sph1": (10, 1e9),
+    "SR_low_temp_loose_Nminus1_sph1": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_dimuon_mass": (1, 1e8),
+    "SR_low_temp_loose_Nminus1_dimuon_mass": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_high_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_iso": (10, 1e9),
+    "SR_high_temp_loose_Nminus1_muon_iso": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_neutral_iso": (10, 1e9),
+    "SR_high_temp_loose_Nminus1_muon_neutral_iso": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_dimuon_mass": (1, 1e8),
+    "SR_high_temp_loose_Nminus1_dimuon_mass": (1e2, 1e10),
+}
+
+
+def get_xlabel(plot):
+    xlabels = {
+        "Nminus1_muon_pt": r"muon $p_{T}$ (GeV)",
+        "Nminus1_muon_ip3d": r"muon $IP_{3D}$ (cm)",
+        "Nminus1_muon_iso": "muon isolation",
+        "Nminus1_muon_neutral_iso": "muon neutral isolation",
+        "Nminus1_sph1": r"$S_{1}$",
+        "Nminus1_dimuon_mass": r"$m_{\mu\mu}$ (GeV)",
+        "Nminus1_cand_muon_pt": r"prompt muon $p_{T}$ (GeV)",
+        "Nminus1_cand_muon_iso": "prompt muon isolation",
+        "Nminus1_cand_muon_ip3d": r"prompt muon $IP_{3D}$ (cm)",
+        "Nminus1_cand_muon_dxy": r"prompt muon $|d_{xy}|$ (cm)",
+        "Nminus1_cand_muon_dz": r"prompt muon $|d_{z}|$ (cm)",
+        "Nminus1_muon_ip3d": r"muon $IP_{3D}$ (cm)",
+        "Nminus1_muon_dxy": r"muon $|d_{xy}|$ (cm)",
+        "Nminus1_muon_dz": r"muon $|d_{z}|$ (cm)",
+    }
+    for key in xlabels:
+        if key in plot:
+            return xlabels[key]
+    return plot
+
+
+logx_plots = [
+    "muon_ip3d",
+    "muon_dxy",
+    "muon_dz",
+    "muon_iso",
+    "muon_neutral_iso",
+]
+
+
+def make_plot(plots, plot):
     mc_processes = [
         ("Higgs_2018", "Higgs"),
         ("TTV_2018", "TTV"),
@@ -78,7 +172,7 @@ def make_plot(plots, region, plot):
         r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=16\,$GeV, lep. decays",
         r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=32\,$GeV, lep. decays",
     ]
-    if "low_temp" in region:
+    if "low_temp" in plot:
         # signal_processes = [
         #     "GluGluToSUEP_mS200.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
         #     "GluGluToSUEP_mS1000.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
@@ -111,35 +205,20 @@ def make_plot(plots, region, plot):
             r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=4\,$GeV, had. decays",
         ]
 
-    xlabels = {
-        "Nminus1_muon_pt_tight": r"muon $p_{T}$ (GeV)",
-        "Nminus1_muon_pt_loose": r"muon $p_{T}$ (GeV)",
-        "Nminus1_muon_ip3d_tight": r"muon $IP_{3D}$ (cm)",
-        "Nminus1_muon_ip3d_loose": r"muon $IP_{3D}$ (cm)",
-        "Nminus1_muon_iso_tight": "muon isolation",
-        "Nminus1_muon_iso_loose": "muon isolation",
-        "Nminus1_muon_neutral_iso_tight": "muon neutral isolation",
-        "Nminus1_muon_neutral_iso_loose": "muon neutral isolation",
-        "Nminus1_sph1_tight": r"$S_{1}$",
-        "Nminus1_sph1_loose": r"$S_{1}$",
-        "Nminus1_Z_mass_diff_tight": r"$m_\text{Z cand} - m_{Z}$ (GeV)",
-        "Nminus1_Z_mass_diff_loose": r"$m_\text{Z cand} - m_{Z}$ (GeV)",
-    }
-
     hists_mc = []
-    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][plot].copy().reset()
+    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][plot][::2j].copy().reset()
 
     for process, label in mc_processes:
-        h_mc = plots[process][plot]
+        h_mc = plots[process][plot][::2j]
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
     hists_signal = []
     for process in signal_processes:
-        h_signal = plots[process][plot]
+        h_signal = plots[process][plot][::2j]
         hists_signal.append(h_signal)
 
-    fig, ax1 = plt.subplots(figsize=(18, 14))
+    fig, ax1 = plt.subplots(figsize=(13, 12))
 
     hep.histplot(
         hists_mc,
@@ -183,28 +262,37 @@ def make_plot(plots, region, plot):
         ax=ax1,
     )
 
+    cut_list = cuts[plot]
+    for cut in cut_list:
+        plt.vlines(x=cut[0], color="black", ymin=1e-3, ymax=2.5 * cut[2], lw=7)
+        plt.annotate(
+            "",
+            xy=(cut[1] * cut[0], cut[2]),
+            xytext=(cut[0], cut[2]),
+            arrowprops=dict(
+                arrowstyle="simple",  # Gives a filled arrow with an outline
+                facecolor="red",  # Fills arrow with red
+                edgecolor="black",  # Black outline
+                linewidth=2,  # Outline thickness
+                mutation_scale=40,  # Increases overall arrow size
+            ),
+        )
+
     hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
 
-    logx_plots = [
-        "Nminus1_muon_ip3d_tight",
-        "Nminus1_muon_ip3d_loose",
-        "Nminus1_muon_iso_tight",
-        "Nminus1_muon_iso_loose",
-        "Nminus1_muon_neutral_iso_tight",
-        "Nminus1_muon_neutral_iso_loose",
-    ]
-    plt.xlabel(xlabels[plot])
-    if plot in logx_plots:
-        plt.xscale("log")
+    plt.xlabel(get_xlabel(plot))
+    for key in logx_plots:
+        if key in plot:
+            plt.xscale("log")
+            break
     plt.yscale("log")
-    if "loose" in plot:
-        plt.ylim(1e2, 1e10)
-    else:
-        plt.ylim(1, 1e8)
-    plt.legend(ncol=3)
-    # plt.ylabel("events")
+    plt.ylim(ylims[plot])
+    plt.legend(ncol=3, loc="upper center")
+    plt.ylabel("muons")
+    if "sph1" in plot or "dimuon_mass" in plot:
+        plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{region}_{plot}.pdf")
+    plt.savefig(f"{args.dest}/{plot}.pdf")
     plt.close()
 
 
@@ -214,10 +302,28 @@ if "__main__" == __name__:
     # Create destination directory
     os.makedirs(args.dest, exist_ok=True)
 
-    # Load plots and merge them
-    for region in ["SR_high_temp", "SR_low_temp"]:
-        plots = plot_utils.loader(tag=f"{args.tag}_{region}")
-        available_plots = list(plots["QCD_Pt_MuEnrichedPt5_2018"].keys())
+    plots_CRs = plot_utils.loader(tag=f"{args.tag}_CRs")
+    plots_SR_high_temp = plot_utils.loader(tag=f"{args.tag}_SR_high_temp")
+    plots_SR_low_temp = plot_utils.loader(tag=f"{args.tag}_SR_low_temp")
+    plots = {}
+    all_datasets = (
+        set(plots_CRs.keys())
+        | set(plots_SR_high_temp.keys())
+        | set(plots_SR_low_temp.keys())
+    )
+    for dataset in list(all_datasets):
+        if dataset not in plots_CRs:
+            plots_CRs[dataset] = {}
+        if dataset not in plots_SR_high_temp:
+            plots_SR_high_temp[dataset] = {}
+        if dataset not in plots_SR_low_temp:
+            plots_SR_low_temp[dataset] = {}
+        plots[dataset] = (
+            plots_CRs[dataset]
+            | plots_SR_high_temp[dataset]
+            | plots_SR_low_temp[dataset]
+        )
 
-        for plot in available_plots:
-            make_plot(plots, region, plot)
+    # Load plots and merge them
+    for plot in track(plots["QCD_Pt_MuEnrichedPt5_2018"].keys()):
+        make_plot(plots, plot)

@@ -175,7 +175,9 @@ if "__main__" == __name__:
         "SR_high_temp_loose": slice(4j, None),
         "SR_high_temp_tight": slice(3j, None),
     }
-    qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
+    qcd_extrapolation = plot_utils.Extrapolation(
+        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
+    )
     qcd_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     # DY extrapolation
@@ -186,7 +188,9 @@ if "__main__" == __name__:
         "SR_high_temp_loose": slice(4j, None),
         "SR_high_temp_tight": slice(3j, None),
     }
-    dy_extrapolation = plot_utils.Extrapolation(plots["DY_2018"])
+    dy_extrapolation = plot_utils.Extrapolation(
+        plots["DY_2018"], uncertainty_scheme="full"
+    )
     dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
     print("Done!", flush=True)
 

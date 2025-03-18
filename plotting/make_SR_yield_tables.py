@@ -11,21 +11,32 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Feb2025",
+        default="full_analysis_Mar2025",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--latex",
+        action="store_true",
+        help="Print the table in LaTeX format",
     )
     return parser.parse_args()
 
 
-def smart_rounding(value, uncertainty):
+def smart_rounding(value, uncertainty, mode="simple"):
+    prefix = suffix = ""
+    sep = "±"
+    if mode == "latex_raw":
+        prefix = "$"
+        suffix = "$"
+        sep = r"\pm"
     if uncertainty == 0 and value == 0:
-        return "0 ± 0"
+        return f"{prefix}0{sep}0{suffix}"
     elif uncertainty < 1:
-        return f"{value:.2f} ± {uncertainty:.2f}"
+        return f"{prefix}{value:.2f} {sep} {uncertainty:.2f}{suffix}"
     elif uncertainty < 10:
-        return f"{value:.1f} ± {uncertainty:.1f}"
+        return f"{prefix}{value:.1f} {sep} {uncertainty:.1f}{suffix}"
     else:
-        return f"{value:.0f} ± {uncertainty:.0f}"
+        return f"{prefix}{value:.0f} {sep} {uncertainty:.0f}{suffix}"
 
 
 if "__main__" == __name__:
@@ -37,7 +48,8 @@ if "__main__" == __name__:
     print("Done!", flush=True)
 
     tablefmt = "simple"
-    # tablefmt = "latex_raw"
+    if args.latex:
+        tablefmt = "latex_raw"
 
     header = ["SUEP model", "SR high temp", "SR low temp"]
     yield_table = []
@@ -56,27 +68,49 @@ if "__main__" == __name__:
                     if sample not in plots:
                         continue
                     name = f"mS{mS}_mPhi{mPhi}_T{T}_{mode}"
+                    if tablefmt == "latex_raw":
+                        name = (
+                            f"$m_S={mS}$, $m_" + r"\phi" + f"={mPhi}$, $T={T}$, {mode}"
+                        )
 
                     if (
                         plots[sample]["SR_high_temp_tight"][7j::sum].value
                         > plots[sample]["SR_low_temp_tight"][7j::sum].value
                     ):
-                        color1 = Fore.GREEN
-                        color2 = Fore.RED
+                        style1 = Fore.GREEN
+                        style2 = Fore.RED
+                        reset1 = reset2 = Style.RESET_ALL
+                        if tablefmt == "latex_raw":
+                            style1 = r"\textbf{"
+                            style2 = ""
+                            reset1 = "}"
+                            reset2 = ""
                     elif (
                         plots[sample]["SR_high_temp_tight"][7j::sum].value
                         < plots[sample]["SR_low_temp_tight"][7j::sum].value
                     ):
-                        color1 = Fore.RED
-                        color2 = Fore.GREEN
+                        style1 = Fore.RED
+                        style2 = Fore.GREEN
+                        reset1 = reset2 = Style.RESET_ALL
+                        if tablefmt == "latex_raw":
+                            style1 = ""
+                            style2 = r"\textbf{"
+                            reset1 = ""
+                            reset2 = "}"
                     else:
-                        color1 = Fore.WHITE
-                        color2 = Fore.WHITE
+                        style1 = Fore.WHITE
+                        style2 = Fore.WHITE
+                        reset1 = reset2 = Style.RESET_ALL
+                        if tablefmt == "latex_raw":
+                            style1 = ""
+                            style2 = ""
+                            reset1 = ""
+                            reset2 = ""
 
                     yield_table.append(
                         [
                             name,
-                            color1
+                            style1
                             + smart_rounding(
                                 plots[sample]["SR_high_temp_tight"][7j::sum].value,
                                 math.sqrt(
@@ -84,16 +118,18 @@ if "__main__" == __name__:
                                         7j::sum
                                     ].variance
                                 ),
+                                tablefmt,
                             )
-                            + Style.RESET_ALL,
-                            color2
+                            + reset1,
+                            style2
                             + smart_rounding(
                                 plots[sample]["SR_low_temp_tight"][7j::sum].value,
                                 math.sqrt(
                                     plots[sample]["SR_low_temp_tight"][7j::sum].variance
                                 ),
+                                tablefmt,
                             )
-                            + Style.RESET_ALL,
+                            + reset2,
                         ]
                     )
     print()

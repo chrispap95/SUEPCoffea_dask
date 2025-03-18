@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2024",
+        default="full_analysis_Feb2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -49,9 +49,9 @@ if "__main__" == __name__:
     plots_CR = plot_utils.loader(
         tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=False
     )
-    plots_VR = plot_utils.loader(
-        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=False
-    )
+    # plots_VR = plot_utils.loader(
+    #     tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=False
+    # )
     plots_SR = plot_utils.loader(
         tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=False
     )
@@ -59,23 +59,31 @@ if "__main__" == __name__:
     for dataset in plots_CR:
         # Note: need to fix this to be mergeable even when data for SR is missing! (blinded...)
         # This merges two dicts!
-        plots[dataset] = plots_CR[dataset] | plots_VR[dataset] | plots_SR[dataset]
+        # plots[dataset] = plots_CR[dataset] | plots_VR[dataset] | plots_SR[dataset]
+        plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
     print("Done!", flush=True)
 
     print("Fit and extrapolation...", end=" ", flush=True)
-    # QCD extrapolation
     # Slice the first bin out where needed for fit stability
     slice_hists = {
-        "VR_loose": slice(4j, None),
-        "VR_tight": slice(3j, None),
+        # "VR_loose": slice(4j, None),
+        # "VR_tight": slice(3j, None),
         "SR_low_temp_loose": slice(4j, None),
         "SR_low_temp_tight": slice(3j, None),
         "SR_high_temp_loose": slice(4j, None),
         "SR_high_temp_tight": slice(3j, None),
     }
 
-    qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
+    qcd_extrapolation = plot_utils.Extrapolation(
+        plots["QCD_Pt_MuEnrichedPt5_2018"],
+        uncertainty_scheme="full",
+    )
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+
+    dy_extrapolation = plot_utils.Extrapolation(
+        plots["DY_2018"], uncertainty_scheme="full"
+    )
+    dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     print("Done!", flush=True)
 
@@ -88,10 +96,20 @@ if "__main__" == __name__:
     for region in track(regions):
         qcd_extrapolation.plot_fit(region)
         plt.tight_layout()
-        plt.savefig(f"{args.dest}/plot_fit_{region}.pdf")
+        plt.savefig(f"{args.dest}/plot_fit_QCD_{region}.pdf")
+        plt.close()
+
+        dy_extrapolation.plot_fit(region)
+        plt.tight_layout()
+        plt.savefig(f"{args.dest}/plot_fit_DY_{region}.pdf")
         plt.close()
 
     qcd_extrapolation.plot_overlay(regions=regions)
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/fit_overlay.pdf")
+    plt.savefig(f"{args.dest}/fit_overlay_QCD.pdf")
+    plt.close()
+
+    dy_extrapolation.plot_overlay(regions=regions)
+    plt.tight_layout()
+    plt.savefig(f"{args.dest}/fit_overlay_DY.pdf")
     plt.close()

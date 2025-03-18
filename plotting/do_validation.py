@@ -68,11 +68,13 @@ if "__main__" == __name__:
         "VR_tight": slice(3j, None),
     }
 
-    qcd_extrapolation = plot_utils.Extrapolation(plots["QCD_Pt_MuEnrichedPt5_2018"])
+    qcd_extrapolation = plot_utils.Extrapolation(
+        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
+    )
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     data_extrapolation = plot_utils.Extrapolation(
-        plots["DoubleMuon_2018"], is_data=True
+        plots["DoubleMuon_2018"], is_data=True, uncertainty_scheme="full"
     )
     data_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
