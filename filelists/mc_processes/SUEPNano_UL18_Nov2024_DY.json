@@ -1,0 +1,70 @@
+{
+  "DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_1.root"
+  ],
+  "DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_1.root"
+  ],
+  "DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_1.root"
+  ],
+  "DY4JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DY4JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_0.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-0_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_1.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_2.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_3.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_1.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_2.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_3.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_4.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_5.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_1.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_2.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_3.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_4.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_5.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_1.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_2.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_1.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_2.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_3.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_4.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_5.root"
+  ],
+  "DYJetsToLL_LHEFilterPtZ-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_LHEFilterPtZ-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root"
+  ],
+  "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root"
+  ],
+  "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/merged_0.root"
+  ],
+  "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_0.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_1.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_2.root",
+    "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_UL18_Nov2024_merged/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/merged_3.root"
+  ]
+}
