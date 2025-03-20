@@ -2,7 +2,7 @@ import glob
 
 
 def create_figure(document, plot):
-    document.write(r"\begin{figure}[H]" + "\n")
+    document.write(r"\begin{figure}[htbp]" + "\n")
     document.write(4 * " " + r"\centering" + "\n")
     document.write(
         4 * " " + r"\includegraphics[width=0.67\textwidth]{fig/" + plot + "}\n"

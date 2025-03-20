@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Feb2025",
+        default="full_analysis_Mar2025",
         help="Tag to identify the analysis",
     )
     return parser.parse_args()

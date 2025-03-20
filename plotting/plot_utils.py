@@ -900,6 +900,8 @@ def convert_to_root(
     for region in plots_in:
         if do_syst and f"SR_high_temp_tight{suffix}_" in region:
             systematic_vars.add(region.replace(f"SR_high_temp_tight{suffix}", ""))
+        if do_syst and f"SR_low_temp_tight{suffix}_" in region:
+            systematic_vars.add(region.replace(f"SR_low_temp_tight{suffix}", ""))
 
     systematic_vars = list(systematic_vars)
     if verbose:
@@ -933,6 +935,7 @@ def convert_to_root(
         # h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
         # plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
 
+        # This for the combined CR (deprecated)
         if "CR" in plots_in:
             CR_plot = (
                 plots_in["CR"] if f"CR{syst}" not in plots_in else plots_in[f"CR{syst}"]

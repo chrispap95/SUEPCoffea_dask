@@ -4,7 +4,7 @@ verbosity = 0
 
 
 def create_figure(document, systematic, region, samples, year):
-    document.write(r"\begin{figure}[H]" + "\n")
+    document.write(r"\begin{figure}[htbp]" + "\n")
     document.write(4 * " " + r"\centering" + "\n")
     for sample in samples:
         if systematic not in samples[sample]:
@@ -12,17 +12,17 @@ def create_figure(document, systematic, region, samples, year):
                 print(f"Skipping {systematic} for {sample} in {region}")
             continue
         if not os.path.exists(
-            f"systematics_plots/{region}_{sample}_{year}_{systematic}.pdf"
+            f"systematics_plots/{region}_{sample.replace('.', 'p')}_{year}_{systematic}.pdf"
         ):
             if verbosity > 0:
                 print(
-                    f"File systematics_plots/{region}_{sample}_{year}_{systematic}.pdf does not exist."
+                    f"File systematics_plots/{region}_{sample.replace('.', 'p')}_{year}_{systematic}.pdf does not exist."
                 )
             continue
         document.write(
             4 * " "
             + r"\includegraphics[width=0.49\textwidth]{"
-            + f"fig/systematics_plots/{region}_{sample}_{year}_{systematic}"
+            + f"fig/systematics_plots/{region}_{sample.replace('.', 'p')}_{year}_{systematic}"
             + r".pdf}"
             + "\n"
         )
@@ -106,4 +106,5 @@ if __name__ == "__main__":
             create_subsection(document, systematic)
             for region in regions:
                 create_figure(document, systematic, region, samples, year)
+            document.write(r"\clearpage" + "\n")
             document.write("\n")

@@ -11,6 +11,23 @@ from rich.progress import track  # type: ignore[import]
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
+pub_style = {
+    "font.size": 26,
+    "axes.labelsize": "large",
+    "xtick.labelsize": "medium",
+    "ytick.labelsize": "medium",
+    "legend.fontsize": "small",
+    "legend.handlelength": 1.5,
+    "legend.borderpad": 0.5,
+    "xtick.major.size": 12,
+    "xtick.minor.size": 6,
+    "xtick.major.pad": 6,
+    "ytick.major.size": 12,
+    "ytick.minor.size": 6.0,
+    "axes.linewidth": 2,
+}
+plt.style.use(pub_style)
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -137,7 +154,7 @@ def make_plot(plots, plot):
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
-    fig, ax1 = plt.subplots(figsize=(10, 10))
+    fig, ax1 = plt.subplots(figsize=(12, 12))
 
     hep.histplot(
         hists_mc,
@@ -224,6 +241,7 @@ def make_plot(plots, plot):
         region_labels[plot.split("_Nminus1")[0]],
         ha="center",
         weight="bold",
+        fontsize=30,
         transform=ax1.transAxes,
     )
 
@@ -239,7 +257,7 @@ def make_plot(plots, plot):
     if "sph1" in plot or "dimuon" in plot:
         plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{plot}_sources.pdf")
+    plt.savefig(f"{args.dest}/{plot}_sources.pdf", bbox_inches="tight")
     plt.close()
 
 
@@ -292,16 +310,26 @@ if "__main__" == __name__:
                 plots["QCD_Pt_MuEnrichedPt5_2018"][plot][:, ::sum].copy().reset()
             )
 
-    for dataset in plots:
-        for plot in plots[dataset]:
+    mc_processes = [
+        "Higgs_2018",
+        "TTV_2018",
+        "ST_NLO_2018",
+        "WJets_2018",
+        "VV+VVV_2018",
+        "TT_powheg_2018",
+        "DY_2018",
+        "QCD_Pt_MuEnrichedPt5_2018",
+    ]
+    for mc_process in mc_processes:
+        for plot in plots[mc_process]:
             if plot not in plots_sources["unmatched"]:
                 continue
-            plots_sources["unmatched"][plot] += plots[dataset][plot][:, 0].copy()
-            plots_sources["prompt"][plot] += plots[dataset][plot][:, 1j].copy()
-            plots_sources["light"][plot] += plots[dataset][plot][:, 3j].copy()
-            plots_sources["c"][plot] += plots[dataset][plot][:, 4j].copy()
-            plots_sources["b"][plot] += plots[dataset][plot][:, 5j].copy()
-            plots_sources["tau"][plot] += plots[dataset][plot][:, 15j].copy()
+            plots_sources["unmatched"][plot] += plots[mc_process][plot][:, 0].copy()
+            plots_sources["prompt"][plot] += plots[mc_process][plot][:, 1j].copy()
+            plots_sources["light"][plot] += plots[mc_process][plot][:, 3j].copy()
+            plots_sources["c"][plot] += plots[mc_process][plot][:, 4j].copy()
+            plots_sources["b"][plot] += plots[mc_process][plot][:, 5j].copy()
+            plots_sources["tau"][plot] += plots[mc_process][plot][:, 15j].copy()
     print("Done!", flush=True)
 
     # Load plots and merge them

@@ -3,7 +3,6 @@ import logging
 import math
 import shutil
 
-import hist
 import plot_utils
 
 # Suppress warnings from Extrapolation class
@@ -15,7 +14,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Feb2025",
+        default="full_analysis_Mar2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -42,11 +41,6 @@ def parse_args():
         help="Scale signal by this factor. Can be used to scale r value in combine. This is the inverse of the scaling of the signal strength.",
     )
     parser.add_argument(
-        "--make_combined_regions",
-        action="store_true",
-        help="Make combined regions: CR and SUEP(CR+SR).",
-    )
-    parser.add_argument(
         "--inject_signal",
         type=int,
         default=0,
@@ -65,94 +59,6 @@ def parse_args():
         help="Destination directory for the ROOT files.",
     )
     return parser.parse_args()
-
-
-def combine_CR_regions(plots):
-    for sample in plots:
-        systematic_vars = {""}
-        for region in plots[sample]:
-            if "SR_high_temp_tight_" in region:
-                systematic_vars.add(region.replace(f"SR_high_temp_tight", ""))
-
-        systematic_vars = list(systematic_vars)
-
-        for syst in systematic_vars:
-            CR_cb_plot = (
-                plots[sample]["CR_cb"]
-                if f"CR_cb{syst}" not in plots[sample]
-                else plots[sample][f"CR_cb{syst}"]
-            )
-            CR_prompt_plot = (
-                plots[sample]["CR_prompt"]
-                if f"CR_prompt{syst}" not in plots[sample]
-                else plots[sample][f"CR_prompt{syst}"]
-            )
-            h_comb = hist.Hist.new.StrCat(
-                [
-                    "CR_QCD bin 1",
-                    "CR_QCD bin 2",
-                    "CR_QCD bin 3",
-                    "CR_QCD bin 4",
-                    "CR_DY bin 1",
-                ],
-                name=f"CR{syst}",
-            ).Weight()
-            h_comb["CR_QCD bin 1"] = CR_cb_plot[1j]
-            h_comb["CR_QCD bin 2"] = CR_cb_plot[2j]
-            h_comb["CR_QCD bin 3"] = CR_cb_plot[3j]
-            h_comb["CR_QCD bin 4"] = CR_cb_plot[4j]
-            h_comb["CR_DY bin 1"] = CR_prompt_plot[2j]
-            plots[sample][f"CR{syst}"] = h_comb.copy()
-
-
-def combine_all_regions(plots, sr="high_temp"):
-    for sample in plots:
-        systematic_vars = {""}
-        suffix = ""
-        for region in plots[sample]:
-            if "extrapolation" in region:
-                suffix = "_extrapolation"
-                break
-        for region in plots[sample]:
-            if f"SR_{sr}_tight{suffix}_" in region:
-                systematic_vars.add(region.replace(f"SR_{sr}_tight{suffix}", ""))
-
-        systematic_vars = list(systematic_vars)
-
-        for syst in systematic_vars:
-            CR_cb_plot = (
-                plots[sample]["CR_cb"]
-                if f"CR_cb{syst}" not in plots[sample]
-                else plots[sample][f"CR_cb{syst}"]
-            )
-            CR_prompt_plot = (
-                plots[sample]["CR_prompt"]
-                if f"CR_prompt{syst}" not in plots[sample]
-                else plots[sample][f"CR_prompt{syst}"]
-            )
-            SR_high_temp_plot = (
-                plots[sample][f"SR_{sr}_tight{suffix}"]
-                if f"SR_{sr}_tight{suffix}{syst}" not in plots[sample]
-                else plots[sample][f"SR_{sr}_tight{suffix}{syst}"]
-            )
-            h_comb = hist.Hist.new.StrCat(
-                [
-                    "CR_QCD bin 1",
-                    "CR_QCD bin 2",
-                    "CR_QCD bin 3",
-                    "CR_QCD bin 4",
-                    "CR_DY bin 1",
-                    f"SR_{sr} bin 1",
-                ],
-                name=f"SUEP_{sr}{suffix}{syst}",
-            ).Weight()
-            h_comb["CR_QCD bin 1"] = CR_cb_plot[1j]
-            h_comb["CR_QCD bin 2"] = CR_cb_plot[2j]
-            h_comb["CR_QCD bin 3"] = CR_cb_plot[3j]
-            h_comb["CR_QCD bin 4"] = CR_cb_plot[4j]
-            h_comb["CR_DY bin 1"] = CR_prompt_plot[2j]
-            h_comb[f"SR_{sr} bin 1"] = SR_high_temp_plot[7j]
-            plots[sample][f"SUEP_{sr}{suffix}{syst}"] = h_comb.copy()
 
 
 if "__main__" in __name__:
@@ -238,12 +144,6 @@ if "__main__" in __name__:
     dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
     print("Done!", flush=True)
 
-    if args.make_combined_regions:
-        print("Creating combined regions...", end=" ", flush=True)
-        combine_CR_regions(plots)
-        combine_all_regions(plots)
-        print("Done!", flush=True)
-
     print("Converting to ROOT...", end=" ", flush=True)
 
     # Prepare plots for export
@@ -257,48 +157,22 @@ if "__main__" in __name__:
             model, plots[model], do_syst=True
         )
 
-    # QCD bkg
-    plots_for_export["QCD_13TeV_2018"] = plot_utils.convert_to_root(
-        "QCD_Pt_MuEnrichedPt5_2018",
-        plots["QCD_Pt_MuEnrichedPt5_2018"],
-        extrapolation=True,
-        do_syst=True,
-    )
-
-    # DY bkg
-    plots_for_export["DY_13TeV_2018"] = plot_utils.convert_to_root(
-        "DY_2018", plots["DY_2018"], extrapolation=True, do_syst=True
-    )
-
-    # TT bkg
-    plots_for_export["TT_13TeV_2018"] = plot_utils.convert_to_root(
-        "TT_powheg_2018", plots["TT_powheg_2018"], do_syst=True
-    )
-
-    # ST bkg
-    plots_for_export["ST_13TeV_2018"] = plot_utils.convert_to_root(
-        "ST_NLO_2018", plots["ST_NLO_2018"], do_syst=True
-    )
-
-    # VV+VVV bkg
-    plots_for_export["VV+VVV_13TeV_2018"] = plot_utils.convert_to_root(
-        "VV+VVV_2018", plots["VV+VVV_2018"], do_syst=True
-    )
-
-    # WJets bkg
-    plots_for_export["WJets_13TeV_2018"] = plot_utils.convert_to_root(
-        "WJets_2018", plots["WJets_2018"], do_syst=True
-    )
-
-    # TTV bkg
-    plots_for_export["TTV_13TeV_2018"] = plot_utils.convert_to_root(
-        "TTV_2018", plots["TTV_2018"], do_syst=True
-    )
-
-    # Higgs bkg
-    plots_for_export["Higgs_13TeV_2018"] = plot_utils.convert_to_root(
-        "Higgs_2018", plots["Higgs_2018"], do_syst=True
-    )
+    # MC bkg
+    mc_processes = [
+        ("Higgs_2018", "Higgs"),
+        ("TTV_2018", "TTV"),
+        ("ST_NLO_2018", "ST"),
+        ("WJets_2018", "WJets"),
+        ("VV+VVV_2018", "VV+VVV"),
+        ("TT_powheg_2018", "TT"),
+        ("DY_2018", "DY"),
+        ("QCD_Pt_MuEnrichedPt5_2018", "QCD"),
+    ]
+    for process, process_name in mc_processes:
+        do_extrapolation = process_name in ["QCD", "DY"]
+        plots_for_export[process_name + "_13TeV_2018"] = plot_utils.convert_to_root(
+            process, plots[process], extrapolation=do_extrapolation, do_syst=True
+        )
 
     # Data
     if args.data:

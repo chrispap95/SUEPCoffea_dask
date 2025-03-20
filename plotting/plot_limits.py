@@ -22,10 +22,10 @@ green = "#607641"
 yellow = "#F5BB54"
 
 scan_points = [
-    # ("1.000", "0.250"),
-    # ("1.400", "0.350"),
+    ("1.000", "0.250"),
+    ("1.400", "0.350"),
     ("4.000", "1.000"),
-    # ("1.400", "1.400"),
+    ("1.400", "1.400"),
     ("2.000", "2.000"),
     ("8.000", "2.000"),
     ("1.400", "2.800"),
@@ -247,4 +247,8 @@ if __name__ == "__main__":
             fontsize=22,
         )
         plt.tight_layout()
-        plt.savefig(f"limit_plots/limits_mPhi{m_phi}_T{T}.pdf")
+        plt.savefig(
+            f"limit_plots/limits_mPhi{m_phi.replace('.', 'p')}_T{T.replace('.', 'p')}.pdf",
+            bbox_inches="tight",
+        )
+        plt.close()

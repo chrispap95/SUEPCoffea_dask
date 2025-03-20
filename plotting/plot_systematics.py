@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2024",
+        default="full_analysis_Mar2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -137,7 +137,7 @@ def plot_systematics(args, plots, sample, region):
         ax1.set_xlabel("")
         for label in ax1.xaxis.get_ticklabels():
             label.set_visible(False)
-        plt.savefig(f"{args.dest}/{region}_{sample}_{syst}.pdf")
+        plt.savefig(f"{args.dest}/{region}_{sample.replace('.', 'p')}_{syst}.pdf")
         plt.close()
     return
 

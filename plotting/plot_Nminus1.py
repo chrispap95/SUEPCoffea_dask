@@ -232,7 +232,7 @@ def make_plot(plots, plot):
         h_signal = plots[process][plot][slc]
         hists_signal.append(h_signal)
 
-    fig, ax1 = plt.subplots(figsize=(13, 12))
+    fig, ax1 = plt.subplots(figsize=(12, 12))
 
     hep.histplot(
         hists_mc,
@@ -328,6 +328,7 @@ def make_plot(plots, plot):
         region_labels[plot.split("_Nminus1")[0]],
         ha="center",
         weight="bold",
+        fontsize=30,
         transform=ax1.transAxes,
     )
 
@@ -343,7 +344,7 @@ def make_plot(plots, plot):
     if "sph1" in plot or "dimuon" in plot:
         plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{plot}.pdf")
+    plt.savefig(f"{args.dest}/{plot}.pdf", bbox_inches="tight")
     plt.close()
 
 
