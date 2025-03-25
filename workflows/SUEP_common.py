@@ -63,7 +63,7 @@ class SUEP_base(processor.ProcessorABC):
         events = events[trigger]
         return events
 
-    def get_weights(self, events):
+    def get_weights(self, events, do_vars: bool = False):
         weights = Weights(len(events))
         if not self.isMC or len(events) == 0:
             return weights
@@ -88,39 +88,45 @@ class SUEP_base(processor.ProcessorABC):
             weightDown=events.L1PreFiringWeight.Dn,
         )
 
-        # Parton shower weights
-        weights.add(
-            "ISR",
-            weight=np.ones(len(events)),
-            weightUp=systematics_utils.get_PS_weights(events, syst="ISR_up"),
-            weightDown=systematics_utils.get_PS_weights(events, syst="ISR_down"),
-        )
-        weights.add(
-            "FSR",
-            weight=np.ones(len(events)),
-            weightUp=systematics_utils.get_PS_weights(events, syst="FSR_up"),
-            weightDown=systematics_utils.get_PS_weights(events, syst="FSR_down"),
-        )
+        # Some of these systematics are CPU intensive, so only compute them when needed
+        if do_vars:
+            # Parton shower weights
+            weights.add(
+                "ISR",
+                weight=np.ones(len(events)),
+                weightUp=systematics_utils.get_PS_weights(events, syst="ISR_up"),
+                weightDown=systematics_utils.get_PS_weights(events, syst="ISR_down"),
+            )
+            weights.add(
+                "FSR",
+                weight=np.ones(len(events)),
+                weightUp=systematics_utils.get_PS_weights(events, syst="FSR_up"),
+                weightDown=systematics_utils.get_PS_weights(events, syst="FSR_down"),
+            )
 
-        # Matrix element PDF and scale weights
-        weights.add(
-            "LHEPdf",
-            weight=np.ones(len(events)),
-            weightUp=systematics_utils.get_pdf_variations(events, syst="up"),
-            weightDown=systematics_utils.get_pdf_variations(events, syst="down"),
-        )
-        weights.add(
-            "LHEScaleMuR",
-            weight=np.ones(len(events)),
-            weightUp=systematics_utils.get_scale_variations(events, syst="MuRUp"),
-            weightDown=systematics_utils.get_scale_variations(events, syst="MuRDown"),
-        )
-        weights.add(
-            "LHEScaleMuF",
-            weight=np.ones(len(events)),
-            weightUp=systematics_utils.get_scale_variations(events, syst="MuFUp"),
-            weightDown=systematics_utils.get_scale_variations(events, syst="MuFDown"),
-        )
+            # Matrix element PDF and scale weights
+            pdf_vars_up, pdf_vars_down = systematics_utils.get_pdf_variations(events)
+            weights.add(
+                "LHEPdf",
+                weight=np.ones(len(events)),
+                weightUp=pdf_vars_up,
+                weightDown=pdf_vars_down,
+            )
+            muRDown, muFDown, muFUp, muRUp = systematics_utils.get_scale_variations(
+                events
+            )
+            weights.add(
+                "LHEScaleMuR",
+                weight=np.ones(len(events)),
+                weightUp=muRUp,
+                weightDown=muRDown,
+            )
+            weights.add(
+                "LHEScaleMuF",
+                weight=np.ones(len(events)),
+                weightUp=muFUp,
+                weightDown=muFDown,
+            )
 
         return weights
 

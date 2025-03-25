@@ -1,6 +1,6 @@
 import argparse
+import logging
 import os
-import warnings
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.gridspec as gridspec  # type: ignore[import]
@@ -9,12 +9,13 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import plot_utils
-from rich.progress import track  # type: ignore[import]
+from rich.progress import Progress  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def parse_args():
@@ -22,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Mar2025",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -137,7 +138,11 @@ def plot_systematics(args, plots, sample, region):
         ax1.set_xlabel("")
         for label in ax1.xaxis.get_ticklabels():
             label.set_visible(False)
-        plt.savefig(f"{args.dest}/{region}_{sample.replace('.', 'p')}_{syst}.pdf")
+        # plt.tight_layout()
+        plt.savefig(
+            f"{args.dest}/{region}_{sample.replace('.', 'p')}_{syst}.pdf",
+            bbox_inches="tight",
+        )
         plt.close()
     return
 
@@ -200,11 +205,10 @@ if "__main__" == __name__:
     # For now, plot only a few samples
     samples = []
     samples.append("GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018")
-    samples.append("GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018")
+    samples.append("GluGluToSUEP_mS125.000_mPhi1.400_T1.400_modehadronic_13TeV_2018")
     samples.append("QCD_Pt_MuEnrichedPt5_2018")
     samples.append("DY_2018")
     regions = [
-        "CR_light",
         "CR_prompt",
         "CR_cb",
         "SR_low_temp_loose",
@@ -214,6 +218,11 @@ if "__main__" == __name__:
         "SR_high_temp_tight",
         "SR_high_temp_tight_extrapolation",
     ]
-    for sample in track(samples):
-        for region in regions:
-            plot_systematics(args, plots, sample, region)
+    with Progress() as progress:
+        task = progress.add_task(
+            "Plotting systematics...", total=len(samples) * len(regions)
+        )
+        for sample in samples:
+            for region in regions:
+                plot_systematics(args, plots, sample, region)
+                progress.update(task, advance=1)

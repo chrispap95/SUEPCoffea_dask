@@ -99,7 +99,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_high_temp(events_)
 
         if len(events_SR_high_temp_tight) > 0:
-            weights_SR_high_temp_tight = self.get_weights(events_SR_high_temp_tight)
+            weights_SR_high_temp_tight = self.get_weights(
+                events_SR_high_temp_tight, do_vars=True
+            )
             weights_SR_high_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -139,7 +141,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     )
 
         if len(events_SR_high_temp_loose) > 0:
-            weights_SR_high_temp_loose = self.get_weights(events_SR_high_temp_loose)
+            weights_SR_high_temp_loose = self.get_weights(
+                events_SR_high_temp_loose, do_vars=True
+            )
             weights_SR_high_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(

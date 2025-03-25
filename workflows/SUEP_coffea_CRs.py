@@ -87,44 +87,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         return events, muons
 
-    def apply_CR_light(self, events):
-        """
-        Apply the CR_light selection to the events.
-        """
-        muons = events.Muon
-        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
-
-        if self.do_rochester:
-            muons = muon_sf_utils.muon_scale_factors(
-                events, muons, self.era, self.isMC, var="nominal"
-            )
-
-        # Apply basic muon cuts
-        clean_muons = (
-            (muons.mediumId)
-            & (muons.pt > 3)
-            & (abs(muons.eta) < 2.4)
-            & (abs(muons.dz) < 0.2)
-        )
-
-        # Apply extra very tight cuts for CR_light
-        prompt_muons = (
-            (abs(muons.dxy) <= 0.02)
-            & (abs(muons.dz) <= 0.1)
-            & (abs(muons.ip3d) <= 0.02)
-        )
-        non_isolated_muons = muons.miniPFRelIso_all > 0.65
-        light_muons = prompt_muons & non_isolated_muons
-        muons = muons[clean_muons & light_muons]
-
-        # Make sure there is at least one muon in the event after the cuts
-        select_by_muons_high = True  # ak.num(muons, axis=-1) < 5
-        select_by_muons_low = ak.num(muons, axis=-1) > 0
-        events = events[select_by_muons_high & select_by_muons_low]
-        muons = muons[select_by_muons_high & select_by_muons_low]
-
-        return events, muons
-
     def apply_CR_cb(self, events):
         """
         Apply the CR_cb selection to the events.
@@ -166,7 +128,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
         if len(events_CR_prompt) > 0:
-            weights_CR_prompt = self.get_weights(events_CR_prompt)
+            weights_CR_prompt = self.get_weights(events_CR_prompt, do_vars=True)
             weights_CR_prompt.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -197,42 +159,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         weight=weights_CR_prompt.weight(syst),
                     )
 
-        events_CR_light, muons_CR_light = self.apply_CR_light(events_)
-        if len(events_CR_light) > 0:
-            weights_CR_light = self.get_weights(events_CR_light)
-            weights_CR_light.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_light, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_light, syst="up"),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_light, syst="down"),
-                    axis=-1,
-                ),
-            )
-            nMuon_CR_light = ak.num(muons_CR_light, axis=-1)
-            output[dataset]["histograms"]["CR_light"].fill(
-                ak.where(nMuon_CR_light > 4, 4, nMuon_CR_light),
-                weight=weights_CR_light.weight(),
-            )
-            if self.do_syst:
-                for syst in weights_CR_light.variations:
-                    output[dataset]["histograms"][f"CR_light_{syst}"] = (
-                        output[dataset]["histograms"]["CR_light"].copy().reset()
-                    )
-                    output[dataset]["histograms"][f"CR_light_{syst}"].fill(
-                        ak.where(nMuon_CR_light > 4, 4, nMuon_CR_light),
-                        weight=weights_CR_light.weight(syst),
-                    )
-
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
         if len(events_CR_cb) > 0:
-            weights_CR_cb = self.get_weights(events_CR_cb)
+            weights_CR_cb = self.get_weights(events_CR_cb, do_vars=True)
             weights_CR_cb.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -318,9 +247,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
         histograms = {
             "CR_prompt": hist.Hist.new.Regular(
                 4, 2, 6, name="nMuon", label="nMuon"
-            ).Weight(),
-            "CR_light": hist.Hist.new.Regular(
-                4, 1, 5, name="nMuon", label="nMuon"
             ).Weight(),
             "CR_cb": hist.Hist.new.Regular(
                 4, 1, 5, name="nMuon", label="nMuon"

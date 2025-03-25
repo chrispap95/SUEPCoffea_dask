@@ -96,7 +96,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
         if len(events_CR_prompt) > 0:
-            weights_CR_prompt = self.get_weights(events_CR_prompt)
+            weights_CR_prompt = self.get_weights(events_CR_prompt, do_vars=True)
             weights_CR_prompt.add(
                 "MuonSF",
                 weight=ak.prod(

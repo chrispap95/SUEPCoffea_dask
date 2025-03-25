@@ -8,19 +8,19 @@ Total of 3 + 3 = 6 plots for the fit results and
 """
 
 import argparse
+import logging
 import os
-import warnings
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
 import mplhep as hep
 import plot_utils
-from numpy import add
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def parse_args():
@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2024",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -83,23 +83,23 @@ if "__main__" == __name__:
     qcd_extrapolation.plot_fit("VR", add_label=True)
     plt.text(4, 1e6, "QCD", fontsize=20, ha="center")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/plot_fit_VR_qcd.pdf")
+    plt.savefig(f"{args.dest}/plot_fit_VR_qcd.pdf", bbox_inches="tight")
     plt.close()
 
     qcd_extrapolation.plot_overlay(regions=["VR"], add_label=True)
     plt.text(4, 1e6, "QCD", fontsize=20, ha="center")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/fit_overlay_qcd.pdf")
+    plt.savefig(f"{args.dest}/fit_overlay_qcd.pdf", bbox_inches="tight")
     plt.close()
 
     data_extrapolation.plot_fit("VR", add_label=True)
     plt.text(4, 1e6, "Data", fontsize=20, ha="center")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/plot_fit_VR_data.pdf")
+    plt.savefig(f"{args.dest}/plot_fit_VR_data.pdf", bbox_inches="tight")
     plt.close()
 
     data_extrapolation.plot_overlay(regions=["VR"], add_label=True)
     plt.text(4, 1e6, "Data", fontsize=20, ha="center")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/fit_overlay_data.pdf")
+    plt.savefig(f"{args.dest}/fit_overlay_data.pdf", bbox_inches="tight")
     plt.close()

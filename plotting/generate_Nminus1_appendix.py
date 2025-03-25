@@ -1,6 +1,5 @@
 import glob
 import os
-from posixpath import basename
 
 Nminus1_plots_per_event = ["dimuon_mass", "sph1"]
 

@@ -1,6 +1,6 @@
 import argparse
+import logging
 import os
-import warnings
 
 import cms_styles
 import matplotlib as mpl  # type: ignore[import]
@@ -10,13 +10,13 @@ import mplhep as hep
 import numpy as np
 import plot_utils
 import scipy.stats as stats  # type: ignore[import]
-from arrow import get
 from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 # Set to 10 color cycler
 plt.style.use(cms_styles.CMS_petroff_10)
@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2024",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -314,7 +314,7 @@ def plot_VR(args, plots, region):
     plt.legend(ncol=2)
     plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{region}_nosignal.pdf")
+    plt.savefig(f"{args.dest}/{region}_nosignal.pdf", bbox_inches="tight")
     plt.close()
 
 

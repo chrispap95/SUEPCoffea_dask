@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Mar2025",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(

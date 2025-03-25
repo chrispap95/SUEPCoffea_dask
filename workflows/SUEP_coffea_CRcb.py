@@ -67,7 +67,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
         if len(events_CR_cb) > 0:
-            weights_CR_cb = self.get_weights(events_CR_cb)
+            weights_CR_cb = self.get_weights(events_CR_cb, do_vars=True)
             weights_CR_cb.add(
                 "MuonSF",
                 weight=ak.prod(

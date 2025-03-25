@@ -1,10 +1,11 @@
 import argparse
-import warnings
+import logging
 
 import plot_utils
 from tabulate import tabulate  # type: ignore[import]
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def parse_args():
@@ -12,7 +13,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Mar2025",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     return parser.parse_args()
@@ -23,9 +24,10 @@ def print_table(plots, region, samples, tablefmt):
         "PUReweight": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
         "L1PreFire": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
         "MuonSF": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
-        "LHEScaleMuR": ["DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
-        "LHEScaleMuF": ["DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
-        "LHEPdf": ["DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
+        "TrkEff": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
+        "LHEScaleMuR": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
+        "LHEScaleMuF": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
+        "LHEPdf": ["SUEP", "QCD", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
         "ISR": ["SUEP", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
         "FSR": ["SUEP", "DY", "TT", "VV+VVV", "WJets", "ST", "Higgs"],
     }
@@ -34,6 +36,7 @@ def print_table(plots, region, samples, tablefmt):
         "PUReweight": [],
         "L1PreFire": [],
         "MuonSF": [],
+        "TrkEff": [],
         "LHEScaleMuR": [],
         "LHEScaleMuF": [],
         "LHEPdf": [],
@@ -73,6 +76,13 @@ def print_table(plots, region, samples, tablefmt):
             systematics[syst].append(f"{100*impact:.1f}")
 
     syst_table = [[key] + value for key, value in systematics.items()]
+
+    # There is no TrkEff for high temp region
+    if "high_temp" in region:
+        for i in range(len(syst_table)):
+            if syst_table[i][0] == "TrkEff":
+                syst_table.remove(syst_table[i])
+                break
 
     print("\nRegion:", region, "\n")
     print(tabulate(syst_table, headers=header, tablefmt=tablefmt))
@@ -160,8 +170,8 @@ if "__main__" == __name__:
         ("DY_2018", "DY"),
     ]
 
-    # tablefmt = "plain"
-    tablefmt = "latex_raw"
+    tablefmt = "plain"
+    # tablefmt = "latex_raw"
 
     print_table(
         plots, "SR_high_temp_tight", sig_high_temp_samples + bkg_samples, tablefmt

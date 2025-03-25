@@ -1,7 +1,7 @@
 import argparse
+import logging
 import os
 import pathlib
-import warnings
 
 import cms_styles
 import hist
@@ -11,14 +11,14 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import matplotlib.transforms as transforms  # type: ignore[import]
 import mplhep as hep
 import numpy as np
-import plot_utils
 import uproot
 from matplotlib.lines import Line2D  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 # Set to 10 color cycler
 plt.style.use(cms_styles.CMS_petroff_10)
@@ -341,7 +341,7 @@ def plot_SUEP_combined(args, plots):
     plt.legend(ncol=3, loc="upper center")
     plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/postfit_all_regions_combined.pdf")
+    plt.savefig(f"{args.dest}/postfit_all_regions_combined.pdf", bbox_inches="tight")
     plt.close()
 
 

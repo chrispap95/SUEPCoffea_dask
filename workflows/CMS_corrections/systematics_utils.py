@@ -1,7 +1,10 @@
 import awkward as ak
 import correctionlib
 import numpy as np
+import pythia8  # type: ignore[import]
 import uproot
+
+import parton
 
 
 def pileup_weight(events, era, syst=""):
@@ -76,29 +79,108 @@ def get_PS_weights(events, syst):
     return PSWeights
 
 
-def get_pdf_variations(events, syst):
+def manual_pdf_variations(events):
+    """
+    Get the matrix element PDF variations manually by evaluating all the PDF
+    replicas for the given x, id, Q values for the two partons.
+    """
+    Q = events.Generator.scalePDF
+    id1 = np.where(abs(events.Generator.id1) == 21, 0, events.Generator.id1)
+    id2 = np.where(abs(events.Generator.id2) == 21, 0, events.Generator.id2)
+    x1 = events.Generator.x1
+    x2 = events.Generator.x2
+    pdfweights = []
+    for i in range(103):
+        pdf = parton.mkPDF("NNPDF31_nnlo_as_0118_mc_hessian_pdfas", i)
+        newpdf1 = pdf.xfxQ(id1, x1, Q, grid=False) / x1
+        newpdf2 = pdf.xfxQ(id2, x2, Q, grid=False) / x2
+        pdfweights.append(newpdf1 * newpdf2)
+    pdfweights = np.array(pdfweights).T
+    return pdfweights / pdfweights[:, 0][:, np.newaxis]
+
+
+def get_pdf_variations(events, allow_manual=True):
     """
     Get the matrix element PDF variations. Only available if there is LHE info.
+    If the LHEPdfWeight is not available, the variations are calculated manually.
+    This behavior can be disabled by setting allow_manual to False.
     """
-    pdf_vars = np.ones(len(events))
-    if "LHEPdfWeight" not in events.fields:
-        return pdf_vars
-    if len(events.LHEPdfWeight[0]) == 0:
-        return pdf_vars
-    if syst == "up":
-        pdf_vars = 1 + ak.std(events.LHEPdfWeight, axis=1) / ak.mean(
-            events.LHEPdfWeight, axis=1
-        )
-    elif syst == "down":
-        pdf_vars = 1 - ak.std(events.LHEPdfWeight, axis=1) / ak.mean(
-            events.LHEPdfWeight, axis=1
-        )
+    if "LHEPdfWeight" in events.fields:
+        if len(events.LHEPdfWeight[0]) > 0:
+            pdf_weights = events.LHEPdfWeight
+        elif allow_manual:
+            pdf_weights = manual_pdf_variations(events)
+        else:
+            return np.ones(len(events)), np.ones(len(events))
+    elif allow_manual:
+        pdf_weights = manual_pdf_variations(events)
     else:
-        raise RuntimeError(f"Unknown PDF systematic: {syst}")
-    return pdf_vars
+        return np.ones(len(events)), np.ones(len(events))
+    pdf_vars_up = 1 + np.std(pdf_weights, axis=1) / np.mean(pdf_weights, axis=1)
+    pdf_vars_down = 1 - np.std(pdf_weights, axis=1) / np.mean(pdf_weights, axis=1)
+    return pdf_vars_up, pdf_vars_down
 
 
-def get_scale_variations(events, syst=""):
+def matrix_element_scale_variations(events, nEM=0, nQCD=0, kUp=2, kDn=0.5):
+    """
+    Function to calculate the matrix element scale variations
+    """
+
+    # Calculate muR
+    pythia = pythia8.Pythia("pythia/pythia8313/share/Pythia8/xmldoc/", False)
+    settings = pythia.settings
+    # Initialize alphaS with value 0.118 at the Z mass
+    alphaS = pythia8.AlphaStrong()
+    alphaS.init(valueIn=0.118)
+    # Initialize alphaEM with 1st order running
+    alphaEM = pythia8.AlphaEM()
+    alphaEM.init(1, settings)
+    alpS = np.array([alphaS.alphaS(Q**2) for Q in events.Generator.scalePDF])
+    alpSup = np.array([alphaS.alphaS(kUp**2 * Q**2) for Q in events.Generator.scalePDF])
+    alpSdn = np.array([alphaS.alphaS(kDn**2 * Q**2) for Q in events.Generator.scalePDF])
+    alpEM = np.array([alphaEM.alphaEM(Q**2) for Q in events.Generator.scalePDF])
+    alpEMup = np.array(
+        [alphaEM.alphaEM(kUp**2 * Q**2) for Q in events.Generator.scalePDF]
+    )
+    alpEMdn = np.array(
+        [alphaEM.alphaEM(kDn**2 * Q**2) for Q in events.Generator.scalePDF]
+    )
+    weightRenUp = (alpEMup / alpEM) ** nEM * (alpSup / alpS) ** nQCD
+    weightRenDn = (alpEMdn / alpEM) ** nEM * (alpSdn / alpS) ** nQCD
+
+    # Calculate muF
+    Q = events.Generator.scalePDF
+    id1 = np.where(abs(events.Generator.id1) == 21, 0, events.Generator.id1)
+    id2 = np.where(abs(events.Generator.id2) == 21, 0, events.Generator.id2)
+    x1 = events.Generator.x1
+    x2 = events.Generator.x2
+    nnpdf31 = parton.mkPDF("NNPDF31_nnlo_as_0118", 0)
+    pdf1 = nnpdf31.xfxQ(id1, x1, Q, grid=False) / x1
+    pdf2 = nnpdf31.xfxQ(id2, x2, Q, grid=False) / x2
+    pdf1up = nnpdf31.xfxQ(id1, x1, kUp * Q, grid=False) / x1
+    pdf2up = nnpdf31.xfxQ(id2, x2, kUp * Q, grid=False) / x2
+    pdf1dn = nnpdf31.xfxQ(id1, x1, kDn * Q, grid=False) / x1
+    pdf2dn = nnpdf31.xfxQ(id2, x2, kDn * Q, grid=False) / x2
+    weightFacUp = (pdf1up * pdf2up) / (pdf1 * pdf2)
+    weightFacDn = (pdf1dn * pdf2dn) / (pdf1 * pdf2)
+
+    # Return an output that resembles the one from NanoAOD
+    return np.array(
+        [
+            weightRenDn * weightFacDn,
+            weightRenDn,
+            weightRenDn * weightFacUp,
+            weightFacDn,
+            np.ones_like(weightFacUp),
+            weightFacUp,
+            weightRenUp * weightFacDn,
+            weightRenUp,
+            weightRenUp * weightFacUp,
+        ]
+    ).T
+
+
+def get_scale_variations(events, allow_manual=True):
     """
     Get the variations for scale of renormalization, mu_R, and scale of factorization, mu_F.
     Only available if there is LHE info. Up variation is 2x the nominal value, down is 0.5x.
@@ -108,64 +190,78 @@ def get_scale_variations(events, syst=""):
         - MuFUp
         - MuFDown
     """
-    pdf_vars = np.ones(len(events))
-    if "LHEScaleWeight" not in events.fields:
-        return pdf_vars
-    if any(ak.num(events.LHEScaleWeight) > 8):
-        ones = ak.from_numpy(np.ones((len(events), 9)))
-        LHEScaleWeight = ak.where(
-            ak.num(events.LHEScaleWeight) == 9, events.LHEScaleWeight, ones
-        )
-        if syst == "MuRUp":
-            pdf_vars = LHEScaleWeight[:, 7]  # type: ignore[index]
-        elif syst == "MuRDown":
-            pdf_vars = LHEScaleWeight[:, 1]  # type: ignore[index]
-        elif syst == "MuFUp":
-            pdf_vars = LHEScaleWeight[:, 5]  # type: ignore[index]
-        elif syst == "MuFDown":
-            pdf_vars = LHEScaleWeight[:, 3]  # type: ignore[index]
+    nEM = 0
+    nQCD = 0
+    if "SUEP" in events.metadata["dataset"]:
+        nEM = 0
+        nQCD = 2
+    if ("QCD" in events.metadata["dataset"]) and (
+        "MuEnrichedPt5" in events.metadata["dataset"]
+    ):
+        nEM = 0
+        nQCD = 1
+
+    if "LHEScaleWeight" in events.fields:
+        if any(ak.num(events.LHEScaleWeight) > 8):
+            if not all(ak.num(events.LHEScaleWeight) == 9) and allow_manual:
+                LHEScaleWeight_alt = matrix_element_scale_variations(
+                    events, nEM=nEM, nQCD=nQCD, kUp=2, kDn=0.5
+                )
+            else:
+                LHEScaleWeight_alt = ak.from_numpy(np.ones((len(events), 9)))
+            LHEScaleWeight = ak.where(
+                ak.num(events.LHEScaleWeight) == 9,
+                events.LHEScaleWeight,
+                LHEScaleWeight_alt,
+            )
+        elif allow_manual:
+            LHEScaleWeight = matrix_element_scale_variations(
+                events, nEM=nEM, nQCD=nQCD, kUp=2, kDn=0.5
+            )
         else:
-            raise RuntimeError(f"Unknown scale variation systematic: {syst}")
-    return pdf_vars
+            LHEScaleWeight = np.ones((len(events), 9))
+    elif allow_manual:
+        LHEScaleWeight = matrix_element_scale_variations(
+            events, nEM=nEM, nQCD=nQCD, kUp=2, kDn=0.5
+        )
+    else:
+        LHEScaleWeight = np.ones((len(events), 9))
+    # The order is: MuRDown, MuFDown, MuFUp, MuRUp
+    return (
+        LHEScaleWeight[:, 1],  # type: ignore[index]
+        LHEScaleWeight[:, 3],  # type: ignore[index]
+        LHEScaleWeight[:, 5],  # type: ignore[index]
+        LHEScaleWeight[:, 7],  # type: ignore[index]
+    )
 
 
 def track_killing(tracks, era):
     """
     Drop 2.7%, 2.2%, and 2.1% of the tracks randomly at reco-level
-    for charged-particles with 1 < pT < 20 GeV in simulation for 2016, 2017, and
+    for charged-particles with pT < 20 GeV in simulation for 2016, 2017, and
     2018, respectively when reclustering the constituents.
-     For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
+    For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
     """
 
-    year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027}
-    block1_percent = year_percent[str(era)]
-    block2_percent = 0.01
+    low_pt_tracks = tracks[tracks.pt < 20]
+    high_pt_tracks = tracks[tracks.pt >= 20]
 
-    block1_indices = (tracks.pt > 1) & (tracks.pt < 20)
-    block2_indices = tracks.pt >= 20
+    low_pt_trk_cnts = ak.num(low_pt_tracks)
+    high_pt_trk_cnts = ak.num(high_pt_tracks)
 
-    new_indices = []
-    for i in range(len(tracks)):
-        event_indices = np.arange(len(tracks[i]))
-        event_bool = np.array([True] * len(tracks[i]))
+    rng = np.random.default_rng()
+    low_pt_rnd_arr = ak.unflatten(rng.random(ak.sum(low_pt_trk_cnts)), low_pt_trk_cnts)
+    high_pt_rnd_arr = ak.unflatten(
+        rng.random(ak.sum(high_pt_trk_cnts)), high_pt_trk_cnts
+    )
 
-        block1_event_indices = event_indices[block1_indices[i]]
-        block1_event_indices_drop = np.random.choice(
-            block1_event_indices, int((block1_percent) * len(block1_event_indices))
-        )
-        event_bool[block1_event_indices_drop] = False
-
-        block2_event_indices = event_indices[block2_indices[i]]
-        block2_event_indices_drop = np.random.choice(
-            block2_event_indices, int((block2_percent) * len(block2_event_indices))
-        )
-        event_bool[block2_event_indices_drop] = False
-
-        new_indices.append(list(event_bool))
-
-    new_indices = ak.Array(new_indices)
-    tracks = tracks[new_indices]
-    return tracks
+    year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027, "2016APV": 0.027}
+    era = "2018"
+    low_pt_percent = year_percent[era]
+    high_pt_percent = 0.01
+    low_pt_tracks_cut = low_pt_tracks[low_pt_rnd_arr > low_pt_percent]
+    high_pt_tracks_cut = high_pt_tracks[high_pt_rnd_arr > high_pt_percent]
+    return ak.concatenate([high_pt_tracks_cut, low_pt_tracks_cut], axis=1)
 
 
 def higgs_reweight(higgs_pt, variation="nominal"):

@@ -98,8 +98,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             self.apply_VR(events_)
         )
         if len(events_VR_tight) > 0:
-            weights_VR_tight = self.get_weights(events_VR_tight)
-            weights_VR_loose = self.get_weights(events_VR_loose)
+            weights_VR_tight = self.get_weights(events_VR_tight, do_vars=True)
+            weights_VR_loose = self.get_weights(events_VR_loose, do_vars=True)
             weights_VR_tight.add(
                 "MuonSF",
                 weight=ak.prod(

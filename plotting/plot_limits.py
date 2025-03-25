@@ -233,7 +233,7 @@ if __name__ == "__main__":
         plt.yscale("log")
         ax.set_xlabel(r"$m_{S}$ (GeV)")
         ax.set_ylabel(r"$\sigma$ (pb)")
-        hep.cms.label(llabel="Preliminary", data=True, lumi=55, ax=ax)
+        hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax)
         plt.text(
             320,
             100,

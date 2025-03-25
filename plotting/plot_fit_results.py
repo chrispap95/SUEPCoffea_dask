@@ -1,6 +1,6 @@
 import argparse
+import logging
 import os
-import warnings
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -11,7 +11,8 @@ from rich.progress import track  # type: ignore[import]
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def parse_args():
@@ -19,7 +20,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Feb2025",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -96,20 +97,20 @@ if "__main__" == __name__:
     for region in track(regions):
         qcd_extrapolation.plot_fit(region)
         plt.tight_layout()
-        plt.savefig(f"{args.dest}/plot_fit_QCD_{region}.pdf")
+        plt.savefig(f"{args.dest}/plot_fit_QCD_{region}.pdf", bbox_inches="tight")
         plt.close()
 
         dy_extrapolation.plot_fit(region)
         plt.tight_layout()
-        plt.savefig(f"{args.dest}/plot_fit_DY_{region}.pdf")
+        plt.savefig(f"{args.dest}/plot_fit_DY_{region}.pdf", bbox_inches="tight")
         plt.close()
 
     qcd_extrapolation.plot_overlay(regions=regions)
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/fit_overlay_QCD.pdf")
+    plt.savefig(f"{args.dest}/fit_overlay_QCD.pdf", bbox_inches="tight")
     plt.close()
 
     dy_extrapolation.plot_overlay(regions=regions)
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/fit_overlay_DY.pdf")
+    plt.savefig(f"{args.dest}/fit_overlay_DY.pdf", bbox_inches="tight")
     plt.close()

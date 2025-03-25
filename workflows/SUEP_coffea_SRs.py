@@ -8,6 +8,7 @@ from coffea import processor
 # Importing CMS corrections
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
 import workflows.CMS_corrections.muon_sf_utils as muon_sf_utils
+import workflows.CMS_corrections.systematics_utils as systematics_utils
 import workflows.SUEP_common as SUEP_common
 
 # Set vector behavior
@@ -212,16 +213,37 @@ class SUEP_processor(SUEP_common.SUEP_base):
             tracks_tight_cut
         )
         found_SUEP_cand_tight_cut = ~ak.is_none(SUEP_cand_tight_cut)
-        events_tight_cut = events_tight_cut[found_SUEP_cand_tight_cut]
-        muons_tight_cut = muons_tight_cut[found_SUEP_cand_tight_cut]
-        tracks_tight_cut = tracks_tight_cut[found_SUEP_cand_tight_cut]
+        events_tight_cand_cut = events_tight_cut[found_SUEP_cand_tight_cut]
+        muons_tight_cand_cut = muons_tight_cut[found_SUEP_cand_tight_cut]
+        tracks_tight_cand_cut = tracks_tight_cut[found_SUEP_cand_tight_cut]
         SUEP_cand_tight_cut = SUEP_cand_tight_cut[found_SUEP_cand_tight_cut]
         SUEP_cluster_tight_cut = SUEP_cluster_tight_cut[found_SUEP_cand_tight_cut]
 
         # Tight SR: sphericity cut
         sph1_tight_cut = self.S1(SUEP_cand_tight_cut, SUEP_cluster_tight_cut)
-        events_tight_cut = events[sph1_tight_cut > 0.7]
-        muons_tight_cut = muons_tight_cut[sph1_tight_cut > 0.7]
+        events_tight_cand_cut = events_tight_cand_cut[sph1_tight_cut > 0.7]
+        muons_tight_cand_cut = muons_tight_cand_cut[sph1_tight_cut > 0.7]
+        tracks_tight_cand_cut = tracks_tight_cand_cut[sph1_tight_cut > 0.7]
+
+        # Tight SR: track killing systematic
+        tracks_t_trk_kill = systematics_utils.track_killing(
+            tracks_tight_cut, era=self.era
+        )
+        SUEP_cand_t_trk_kill, SUEP_cluster_t_trk_kill = self.find_SUEP_candidate(
+            tracks_t_trk_kill
+        )
+        found_SUEP_cand_t_trk_kill = ~ak.is_none(SUEP_cand_t_trk_kill)
+        events_cand_t_trk_kill = events_tight_cut[found_SUEP_cand_t_trk_kill]
+        muons_cand_t_trk_kill = muons_tight_cut[found_SUEP_cand_t_trk_kill]
+        tracks_cand_t_trk_kill = tracks_t_trk_kill[found_SUEP_cand_t_trk_kill]
+        SUEP_cand_t_trk_kill = SUEP_cand_t_trk_kill[found_SUEP_cand_t_trk_kill]
+        SUEP_cluster_t_trk_kill = SUEP_cluster_t_trk_kill[found_SUEP_cand_t_trk_kill]
+
+        # Tight SR: sphericity cut
+        sph1_t_trk_kill = self.S1(SUEP_cand_t_trk_kill, SUEP_cluster_t_trk_kill)
+        events_cand_t_trk_kill = events_cand_t_trk_kill[sph1_t_trk_kill > 0.7]
+        muons_cand_t_trk_kill = muons_cand_t_trk_kill[sph1_t_trk_kill > 0.7]
+        tracks_cand_t_trk_kill = tracks_cand_t_trk_kill[sph1_t_trk_kill > 0.7]
 
         # Loose SR: selection for muons
         loose_cut = (events.Muon.pt < 45) & (events.Muon.ip3d < 0.1)
@@ -246,18 +268,48 @@ class SUEP_processor(SUEP_common.SUEP_base):
             tracks_loose_cut
         )
         found_SUEP_cand_loose_cut = ~ak.is_none(SUEP_cand_loose_cut)
-        events_loose_cut = events_loose_cut[found_SUEP_cand_loose_cut]
-        muons_loose_cut = muons_loose_cut[found_SUEP_cand_loose_cut]
-        tracks_loose_cut = tracks_loose_cut[found_SUEP_cand_loose_cut]
+        events_loose_cand_cut = events_loose_cut[found_SUEP_cand_loose_cut]
+        muons_loose_cand_cut = muons_loose_cut[found_SUEP_cand_loose_cut]
+        tracks_loose_cand_cut = tracks_loose_cut[found_SUEP_cand_loose_cut]
         SUEP_cand_loose_cut = SUEP_cand_loose_cut[found_SUEP_cand_loose_cut]
         SUEP_cluster_loose_cut = SUEP_cluster_loose_cut[found_SUEP_cand_loose_cut]
 
         # Loose SR: sphericity cut
         sph1_loose_cut = self.S1(SUEP_cand_loose_cut, SUEP_cluster_loose_cut)
-        events_loose_cut = events[sph1_loose_cut > 0.2]
-        muons_loose_cut = muons_loose_cut[sph1_loose_cut > 0.2]
+        events_loose_cand_cut = events_loose_cand_cut[sph1_loose_cut > 0.2]
+        muons_loose_cand_cut = muons_loose_cand_cut[sph1_loose_cut > 0.2]
+        tracks_loose_cand_cut = tracks_loose_cand_cut[sph1_loose_cut > 0.2]
 
-        return events_tight_cut, events_loose_cut, muons_tight_cut, muons_loose_cut
+        # Loose SR: track killing systematic
+        tracks_l_trk_kill = systematics_utils.track_killing(
+            tracks_loose_cut, era=self.era
+        )
+        SUEP_cand_l_trk_kill, SUEP_cluster_l_trk_kill = self.find_SUEP_candidate(
+            tracks_l_trk_kill
+        )
+        found_SUEP_cand_l_trk_kill = ~ak.is_none(SUEP_cand_l_trk_kill)
+        events_cand_l_trk_kill = events_loose_cut[found_SUEP_cand_l_trk_kill]
+        muons_cand_l_trk_kill = muons_loose_cut[found_SUEP_cand_l_trk_kill]
+        tracks_cand_l_trk_kill = tracks_l_trk_kill[found_SUEP_cand_l_trk_kill]
+        SUEP_cand_l_trk_kill = SUEP_cand_l_trk_kill[found_SUEP_cand_l_trk_kill]
+        SUEP_cluster_l_trk_kill = SUEP_cluster_l_trk_kill[found_SUEP_cand_l_trk_kill]
+
+        # Loose SR: sphericity cut
+        sph1_l_trk_kill = self.S1(SUEP_cand_l_trk_kill, SUEP_cluster_l_trk_kill)
+        events_cand_l_trk_kill = events_cand_l_trk_kill[sph1_l_trk_kill > 0.2]
+        muons_cand_l_trk_kill = muons_cand_l_trk_kill[sph1_l_trk_kill > 0.2]
+        tracks_cand_l_trk_kill = tracks_cand_l_trk_kill[sph1_l_trk_kill > 0.2]
+
+        return (
+            events_tight_cand_cut,
+            events_cand_t_trk_kill,
+            events_loose_cand_cut,
+            events_cand_l_trk_kill,
+            muons_tight_cand_cut,
+            muons_cand_t_trk_kill,
+            muons_loose_cand_cut,
+            muons_cand_l_trk_kill,
+        )
 
     def apply_SR_high_temp(self, events):
         """
@@ -331,7 +383,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_high_temp(events_)
 
         if len(events_SR_high_temp_tight) > 0:
-            weights_SR_high_temp_tight = self.get_weights(events_SR_high_temp_tight)
+            weights_SR_high_temp_tight = self.get_weights(
+                events_SR_high_temp_tight, do_vars=True
+            )
             weights_SR_high_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -371,7 +425,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     )
 
         if len(events_SR_high_temp_loose) > 0:
-            weights_SR_high_temp_loose = self.get_weights(events_SR_high_temp_loose)
+            weights_SR_high_temp_loose = self.get_weights(
+                events_SR_high_temp_loose, do_vars=True
+            )
             weights_SR_high_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -412,13 +468,19 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         (
             events_SR_low_temp_tight,
+            events_SR_low_temp_tight_trk_kill,
             events_SR_low_temp_loose,
+            events_SR_low_temp_loose_trk_kill,
             muons_SR_low_temp_tight,
+            muons_SR_low_temp_tight_trk_kill,
             muons_SR_low_temp_loose,
+            muons_SR_low_temp_loose_trk_kill,
         ) = self.apply_SR_low_temp(events_)
 
         if len(events_SR_low_temp_tight) > 0:
-            weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
+            weights_SR_low_temp_tight = self.get_weights(
+                events_SR_low_temp_tight, do_vars=True
+            )
             weights_SR_low_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -455,8 +517,67 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         weight=weights_SR_low_temp_tight.weight(syst),
                     )
 
+        # Systematic for track killing
+        # Needs to be handled manually
+        if len(events_SR_low_temp_tight_trk_kill) > 0:
+            weights_SR_low_temp_tight_trk_kill = self.get_weights(
+                events_SR_low_temp_tight_trk_kill
+            )
+            weights_SR_low_temp_tight_trk_kill.add(
+                "MuonSF",
+                weight=ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_low_temp_tight_trk_kill, syst=""
+                    ),
+                    axis=-1,
+                ),
+            )
+            nMuon_SR_low_temp_tight_trk_kill = ak.num(
+                muons_SR_low_temp_tight_trk_kill, axis=-1
+            )
+            output[dataset]["histograms"]["SR_low_temp_tight_TrkEffDown"] = (
+                output[dataset]["histograms"]["SR_low_temp_tight"]
+                .copy()
+                .reset()
+                .fill(
+                    ak.where(
+                        nMuon_SR_low_temp_tight_trk_kill > 7,
+                        7,
+                        nMuon_SR_low_temp_tight_trk_kill,
+                    ),
+                    weight=weights_SR_low_temp_tight_trk_kill.weight(),
+                )
+            )
+            # The Up variation is calculated manually by symmetrizing the Down variation
+            nominal_yields = output[dataset]["histograms"]["SR_low_temp_tight"].values()
+            down_yields = output[dataset]["histograms"][
+                "SR_low_temp_tight_TrkEffDown"
+            ].values()
+            down_rel_unc = (
+                np.sqrt(
+                    output[dataset]["histograms"][
+                        "SR_low_temp_tight_TrkEffDown"
+                    ].variances()
+                )
+                / down_yields
+            )
+            up_yields = 2 * nominal_yields - down_yields
+            up_vars = (up_yields * down_rel_unc) ** 2
+            output[dataset]["histograms"]["SR_low_temp_tight_TrkEffUp"] = (
+                output[dataset]["histograms"]["SR_low_temp_tight_TrkEffDown"]
+                .copy()
+                .reset()
+            )
+            for i, (val, var) in enumerate(zip(up_yields, up_vars)):
+                output[dataset]["histograms"]["SR_low_temp_tight_TrkEffUp"][i] = (
+                    val,
+                    var,
+                )
+
         if len(events_SR_low_temp_loose) > 0:
-            weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
+            weights_SR_low_temp_loose = self.get_weights(
+                events_SR_low_temp_loose, do_vars=True
+            )
             weights_SR_low_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(
@@ -492,6 +613,63 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ),
                         weight=weights_SR_low_temp_loose.weight(syst),
                     )
+
+        # Systematic for track killing
+        # Needs to be handled manually
+        if len(events_SR_low_temp_loose_trk_kill) > 0:
+            weights_SR_low_temp_loose_trk_kill = self.get_weights(
+                events_SR_low_temp_loose_trk_kill
+            )
+            weights_SR_low_temp_loose_trk_kill.add(
+                "MuonSF",
+                weight=ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_low_temp_loose_trk_kill, syst=""
+                    ),
+                    axis=-1,
+                ),
+            )
+            nMuon_SR_low_temp_loose_trk_kill = ak.num(
+                muons_SR_low_temp_loose_trk_kill, axis=-1
+            )
+            output[dataset]["histograms"]["SR_low_temp_loose_TrkEffDown"] = (
+                output[dataset]["histograms"]["SR_low_temp_loose"]
+                .copy()
+                .reset()
+                .fill(
+                    ak.where(
+                        nMuon_SR_low_temp_loose_trk_kill > 7,
+                        7,
+                        nMuon_SR_low_temp_loose_trk_kill,
+                    ),
+                    weight=weights_SR_low_temp_loose_trk_kill.weight(),
+                )
+            )
+            # The Up variation is calculated manually by symmetrizing the Down variation
+            nominal_yields = output[dataset]["histograms"]["SR_low_temp_loose"].values()
+            down_yields = output[dataset]["histograms"][
+                "SR_low_temp_loose_TrkEffDown"
+            ].values()
+            down_rel_unc = (
+                np.sqrt(
+                    output[dataset]["histograms"][
+                        "SR_low_temp_loose_TrkEffDown"
+                    ].variances()
+                )
+                / down_yields
+            )
+            up_yields = 2 * nominal_yields - down_yields
+            up_vars = (up_yields * down_rel_unc) ** 2
+            output[dataset]["histograms"]["SR_low_temp_loose_TrkEffUp"] = (
+                output[dataset]["histograms"]["SR_low_temp_loose_TrkEffDown"]
+                .copy()
+                .reset()
+            )
+            for i, (val, var) in enumerate(zip(up_yields, up_vars)):
+                output[dataset]["histograms"]["SR_low_temp_loose_TrkEffUp"][i] = (
+                    val,
+                    var,
+                )
 
         return
 

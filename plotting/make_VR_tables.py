@@ -1,11 +1,12 @@
 import argparse
-import warnings
+import logging
 
 import plot_utils
 from colorama import Fore, Style  # type: ignore[import]
 from tabulate import tabulate  # type: ignore[import]
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def color_value(value):
@@ -22,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2024",
+        default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
