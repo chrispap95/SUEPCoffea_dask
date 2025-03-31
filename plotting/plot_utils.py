@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import pickle
 import re
@@ -165,6 +166,7 @@ def loader(
     tag: str,
     custom_lumi: Optional[float] = None,
     load_data: bool = False,
+    input_dir: Optional[str] = None,
     verbosity: int = 0,
 ) -> dict:
     """
@@ -179,6 +181,8 @@ def loader(
         Will use this luminosity (in /pb) if provided.
     load_data : bool
         Flag to indicate if data should be loaded.
+    input_dir : str
+        Input directory for the processor output files. it will override the default directory.
     verbosity : int
         Verbosity level.
 
@@ -189,7 +193,11 @@ def loader(
     """
     # input .pkl files
     base_dir = Path(__file__).parent.parent
+    if input_dir:
+        base_dir = Path(input_dir)
     plot_dir = base_dir / "processor_output_files" / f"{tag}_output_histograms/"
+    if verbosity > 0:
+        print(f"Loading histograms from {plot_dir}")
     filenames = list(plot_dir.glob("*histograms.pkl"))
     basenames = [str(f.name) for f in filenames]
 
@@ -615,10 +623,11 @@ class Extrapolation:
         elif self.uncertainty_scheme == "full":
             mc_vals = self.plots[region].values()
             mc_vars = self.plots[region].variances()
-            mc_rel_unc = np.where(
-                self.plots[region].values() > 0,
-                np.sqrt(mc_vars) / mc_vals,
-                0,
+            mc_rel_unc = np.divide(
+                np.sqrt(mc_vars),
+                mc_vals,
+                where=mc_vals != 0,
+                out=np.zeros_like(mc_vals),
             )
             # Find closest non-zero values
             non_zero_indices = np.where(mc_rel_unc != 0)[0]
@@ -668,13 +677,13 @@ class Extrapolation:
             x=x_hatch,
             y1=y_hatch - y_hatch_unc,  # type: ignore[arg-type]
             y2=y_hatch + y_hatch_unc,  # type: ignore[arg-type]
-            label="Stat. Unc.",
+            label="MC Stat. Unc.",
             step="pre",
             facecolor="C1",
             alpha=0.3,
             linewidth=0,
         )
-        ax1.set_title(region)
+        ax1.set_title(region.replace("_", " ").replace("temp", "T"))
         ax1.legend()
         ax1.set_yscale("log")
         ax1.set_xlabel("")
@@ -768,6 +777,18 @@ class Extrapolation:
             .replace(syst, "")
         )
 
+        # Find max and min y values for all regions
+        max_y = 1
+        min_y = 1e8
+        for subregion in ["_loose", "_tight"]:
+            for suffix in ["", "_extrapolation"]:
+                values = self.plots[f"{region}{subregion}{suffix}{syst}"].values()
+                if len(values) == 0:
+                    continue
+                values = values[values > 0]
+                max_y = max(max_y, values.max())
+                min_y = min(min_y, values.min())
+
         # Create figure
         fig = plt.figure(figsize=(24, 12))
 
@@ -793,7 +814,39 @@ class Extrapolation:
             hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1_left)
             hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1_right)
 
-        plt.tight_layout()
+        # Add fit results to the left plot
+        if self.fit_function == "exponential":
+            fit_result = self.fit_results[f"{region}{syst}"]
+            fit_rslt_str = "Fit result:\n"
+            fit_rslt_str += r"$\chi^2$/ndf = "
+            fit_rslt_str += f"{fit_result.fmin.reduced_chi2:.2f}\n"
+            fit_rslt_str += r"$A_\text{tight} = $"
+            fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
+            fit_rslt_str += r"$A_\text{loose} = $"
+            fit_rslt_str += f"{fit_result.values['loga_l']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['loga_l']:.3f}\n"
+            fit_rslt_str += r"$B = $"
+            fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
+            ax1_left.text(
+                0.07,
+                0.45,
+                fit_rslt_str,
+                transform=ax1_left.transAxes,
+                verticalalignment="top",
+                horizontalalignment="left",
+            )
+
+        # Set y-axis limits for top two plots
+        ax1_left.set_ylim(
+            10 ** math.floor(math.log10(0.5 * min_y)),
+            10 ** math.ceil(math.log10(2 * max_y)),
+        )
+        ax1_right.set_ylim(
+            10 ** math.floor(math.log10(0.5 * min_y)),
+            10 ** math.ceil(math.log10(2 * max_y)),
+        )
         plt.show()
 
     def plot_overlay(
@@ -818,40 +871,171 @@ class Extrapolation:
         if not syst.startswith("_") and syst != "":
             syst = f"_{syst}"
 
-        if len(regions) > 1:
-            fig, axes = plt.subplots(1, len(regions), figsize=(8 * len(regions), 8))
-        else:
-            fig, axes = plt.subplots(1, 1, figsize=(8, 8))
-            axes = [axes]
+        # Find max and min y values for all regions
+        max_y = 1
+        min_y = 1e8
+        for region in regions:
+            for subregion in ["_loose", "_tight"]:
+                for suffix in ["", "_extrapolation"]:
+                    values = self.plots[f"{region}{subregion}{suffix}{syst}"].values()
+                    if len(values) == 0:
+                        continue
+                    values = values[values > 0]
+                    max_y = max(max_y, values.max())
+                    min_y = min(min_y, values.min())
 
-        for region, ax in zip(regions, axes):
-            self.plots[f"{region}_loose{syst}"].plot(
-                yerr=np.sqrt(self.plots[f"{region}_loose{syst}"].variances()),
+        # Create figure
+        fig = plt.figure(figsize=(18 * len(regions), 10))
+
+        # Create the GridSpec layouts
+        gs = gridspec.GridSpec(5, len(regions), left=0.08, right=0.47, bottom=0.15)
+
+        # Create subplots for each region
+        for i, region in enumerate(regions):
+            ax1 = plt.subplot(gs[0:3, i])  # Top 3 rows
+            ax2 = plt.subplot(gs[3:5, i], sharex=ax1)  # 4th row
+
+            h_l_pre = self.plots[f"{region}_loose{syst}"]
+            h_l_post = self.plots[f"{region}_loose_extrapolation{syst}"]
+            h_t_pre = self.plots[f"{region}_tight{syst}"]
+            h_t_post = self.plots[f"{region}_tight_extrapolation{syst}"]
+
+            h_l_pre.plot(
+                yerr=np.sqrt(h_l_pre.variances()),
                 label="loose",
-                ax=ax,
+                color="C0",
+                ax=ax1,
             )
-            self.plots[f"{region}_tight{syst}"].plot(
-                yerr=np.sqrt(self.plots[f"{region}_tight{syst}"].variances()),
+            h_l_post.plot(
+                yerr=np.sqrt(h_l_post.variances()),
+                label="loose extr.",
+                color="C0",
+                ls="--",
+                ax=ax1,
+            )
+            h_t_pre.plot(
+                yerr=np.sqrt(h_t_pre.variances()),
                 label="tight",
-                ax=ax,
+                color="C1",
+                ax=ax1,
             )
-            self.plots[f"{region}_tight_extrapolation{syst}"].plot(
-                yerr=np.sqrt(
-                    self.plots[f"{region}_tight_extrapolation{syst}"].variances()
-                ),
+            h_t_post.plot(
+                yerr=np.sqrt(h_t_post.variances()),
                 label="tight extr.",
-                ax=ax,
+                color="C1",
+                ls="--",
+                ax=ax1,
             )
-            ax.set_title(region)
-            ax.set_yscale("log")
-            ax.set_ylim(1e-2, 1e8)
-            ax.xaxis.set_minor_locator(ticker.NullLocator())
-            ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+            ax1.set_title(region.replace("_", " ").replace("temp", "T"))
+            ax1.set_yscale("log")
+            ax1.set_ylim(
+                10 ** math.floor(math.log10(0.5 * min_y)),
+                10 ** math.ceil(math.log10(2 * max_y)),
+            )
+            ax1.set_xlabel("")
+            ax1.set_ylabel("Events")
+            ax1.xaxis.set_minor_locator(ticker.NullLocator())
+            ax1.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
             if add_label:
-                hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax)
-            ax.legend()
+                hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
+            ax1.legend()
 
-        plt.tight_layout()
+            x_vals = h_l_pre.axes[0].edges
+            ratio_loose = np.divide(
+                h_l_post.values(),
+                h_l_pre.values(),
+                where=h_l_pre.values() != 0,
+                out=np.zeros_like(h_l_post.values()),
+            )
+            ratio_err_loose = np.sqrt(
+                np.divide(
+                    h_l_post.variances(),
+                    h_l_pre.values() ** 2,
+                    where=h_l_pre.values() != 0,
+                    out=np.zeros_like(h_l_post.variances()),
+                )
+                + np.divide(
+                    h_l_post.values() ** 2 * h_l_pre.variances(),
+                    h_l_pre.values() ** 4,
+                    where=h_l_pre.values() != 0,
+                    out=np.zeros_like(h_l_pre.variances()),
+                )
+            )
+            hep.histplot(
+                ratio_loose,
+                x_vals,
+                yerr=ratio_err_loose,
+                color="C0",
+                linestyle="--",
+                lw=2,
+                label="loose extr. / loose",
+            )
+            ratio_tight = np.divide(
+                h_t_post.values(),
+                h_t_pre.values(),
+                where=h_t_pre.values() != 0,
+                out=np.zeros_like(h_t_post.values()),
+            )
+            ratio_err_tight = np.sqrt(
+                np.divide(
+                    h_t_post.variances(),
+                    h_t_pre.values() ** 2,
+                    where=h_t_pre.values() != 0,
+                    out=np.zeros_like(h_t_post.variances()),
+                )
+                + np.divide(
+                    h_t_post.values() ** 2 * h_t_pre.variances(),
+                    h_t_pre.values() ** 4,
+                    where=h_t_pre.values() != 0,
+                    out=np.zeros_like(h_t_pre.variances()),
+                )
+            )
+            hep.histplot(
+                ratio_tight,
+                x_vals,
+                yerr=ratio_err_tight,
+                color="C1",
+                linestyle="--",
+                lw=2,
+                label="tight extr. / tight",
+            )
+            # ratio_pre = np.divide(
+            #     h_t_pre.values() / h_t_pre.sum().value,
+            #     h_l_pre.values() / h_l_pre.sum().value,
+            #     where=h_l_pre.values() != 0,
+            #     out=np.zeros_like(h_t_pre.values()),
+            # )
+            # ratio_err_pre = np.sqrt(
+            #     np.divide(
+            #         h_l_pre.variances(),
+            #         h_t_pre.values() ** 2,
+            #         where=h_t_pre.values() != 0,
+            #         out=np.zeros_like(h_l_pre.variances()),
+            #     )
+            #     + np.divide(
+            #         h_l_pre.values() ** 2 * h_t_pre.variances(),
+            #         h_t_pre.values() ** 4,
+            #         where=h_t_pre.values() != 0,
+            #         out=np.zeros_like(h_t_pre.variances()),
+            #     )
+            # )
+            # hep.histplot(
+            #     ratio_pre,
+            #     x_vals,
+            #     yerr=ratio_err_pre,
+            #     color="black",
+            #     linestyle="--",
+            #     lw=2,
+            #     label="tight / loose",
+            # )
+            ax2.legend(ncols=1, loc="upper right")
+            ax2.axhline(1, ls="--", color="gray")
+            ax2.set_xlabel(r"$n_{muon}$")
+            ax2.set_ylabel("ratio")
+            ax2.set_ylim(0, 2)
+            for label in ax1.xaxis.get_ticklabels():
+                label.set_visible(False)
+
         plt.show()
 
 

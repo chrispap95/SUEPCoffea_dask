@@ -1,5 +1,6 @@
 import argparse
 import os
+import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.cm as cmx  # type: ignore[import]
@@ -26,8 +27,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/cut_scans_plots",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "cut_scans_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'cut_scans_plots'}",
     )
     return parser.parse_args()
 

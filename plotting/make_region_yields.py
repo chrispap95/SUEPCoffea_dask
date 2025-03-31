@@ -1,7 +1,9 @@
 import argparse
 import logging
 
+import numpy as np
 import plot_utils
+import scipy.stats as stats  # type: ignore[import]
 from tabulate import tabulate  # type: ignore[import]
 
 # Suppress warnings from Extrapolation class
@@ -23,11 +25,37 @@ def parse_args():
         "the single data file in filelists/data/data_Run2018A_0p6fb_1file_unskimmed.json."
         "If not provided, the luminosity will be determined automatically for the year.",
     )
+    parser.add_argument(
+        "--poisson",
+        action="store_true",
+        help="Use Poisson errors for the table",
+    )
+    parser.add_argument(
+        "--latex",
+        action="store_true",
+        help="Print the table in LaTeX format",
+    )
     return parser.parse_args()
+
+
+def get_poisson_errors(N, alpha=0.6827, scale=1):
+    # Return the Garwood confidence interval for a Poisson distribution
+    upper = stats.gamma.ppf((1 + alpha) / 2, N + 1) - N
+    lower = N - stats.gamma.ppf((1 - alpha) / 2, N)
+    return np.nan_to_num(lower) * scale, np.nan_to_num(upper) * scale
 
 
 if "__main__" == __name__:
     args = parse_args()
+
+    tablefmt = "simple"
+    prefix = suffix = ""
+    sep = "±"
+    if args.latex:
+        tablefmt = "latex_raw"
+        prefix = "$"
+        suffix = "$"
+        sep = r"\pm"
 
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
@@ -74,88 +102,103 @@ if "__main__" == __name__:
     print("Done!", flush=True)
 
     mc_processes = [
-        ("Higgs_2018", "Higgs"),
-        ("TTV_2018", "TTV"),
-        ("ST_NLO_2018", "ST"),
-        ("WJets_2018", "WJets"),
-        ("VV+VVV_2018", "VV+VVV"),
-        ("TT_powheg_2018", "TT"),
-        ("DY_2018", f"DY+extr."),
-        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD+extr."),
+        # ("Higgs_2018", "Higgs"),
+        # ("TTV_2018", "TTV"),
+        # ("ST_NLO_2018", "ST"),
+        # ("WJets_2018", "WJets"),
+        # ("VV+VVV_2018", "VV+VVV"),
+        # ("TT_powheg_2018", "TT"),
+        # ("DY_2018", f"DY (no extr.)"),
+        ("DY_2018", f"DY + extr."),
+        # ("QCD_Pt_MuEnrichedPt5_2018", f"QCD (no extr.)"),
+        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD + extr."),
     ]
-    regions = ["CR_cb", "CR_prompt", "SR_high_temp_tight", "SR_low_temp_tight"]
+    regions = ["SR_high_temp_tight", "SR_low_temp_tight"]
+    regions_latex = [r"\SRhigh discovery bin", r"\SRlow discovery bin"]
 
     # Calculate total bkg
     plots["total_bkg_2018"] = {}
     for process, proc_label in mc_processes:
         for region in regions:
-            suffix = ""
-            if ("DY" in process or "QCD" in process) and "SR" in region:
-                suffix = "_extrapolation"
+            proc_suffix = ""
+            if "+ extr." in proc_label and "SR" in region:
+                proc_suffix = "_extrapolation"
             if region not in plots["total_bkg_2018"]:
-                plots["total_bkg_2018"][region] = plots[process][region + suffix].copy()
+                plots["total_bkg_2018"][region] = plots[process][
+                    region + proc_suffix
+                ].copy()
             else:
-                plots["total_bkg_2018"][region] += plots[process][region + suffix]
+                plots["total_bkg_2018"][region] += plots[process][region + proc_suffix]
 
-    print(plots["total_bkg_2018"]["SR_low_temp_tight"].values())
-
-    header = [
-        "process",
-        "CR_QCD_bin1",
-        "CR_QCD_bin2",
-        "CR_QCD_bin3",
-        "CR_QCD_bin4",
-        "CR_DY_bin1",
-        "SR_high_temp_bin1",
-    ]
+    header = ["process"] + regions_latex if args.latex else ["process"] + regions
     table = []
     for process, proc_label in mc_processes:
-        suffix = ""
-        if "QCD" in process or "DY" in process:
-            suffix = "_extrapolation"
+        proc_suffix = ""
+        if "+ extr." in proc_label:
+            proc_suffix = "_extrapolation"
         row = [proc_label]
-        row.append(
-            round(
-                plots[process]["CR_cb"][1j].value
-                / plots["total_bkg_2018"]["CR_cb"][1j].value,
-                2,
+        SR_high_temp = plots[process][f"SR_high_temp_tight{proc_suffix}"]
+        SR_low_temp = plots[process][f"SR_low_temp_tight{proc_suffix}"]
+        if args.poisson and args.latex:
+            values = SR_high_temp.values()[SR_high_temp.values() > 0]
+            variances = SR_high_temp.variances()[SR_high_temp.values() > 0]
+            scale = variances[-1] / values[-1]
+            poisson_unc = get_poisson_errors(SR_high_temp[7j].value, scale=scale)
+            row.append(
+                f"${SR_high_temp[7j].value:g}"
+                + r"^{+"
+                + f"{poisson_unc[1]:g}"
+                + "}_{-"
+                + f"{poisson_unc[0]:g}"
+                + r"}$"
             )
-        )
-        row.append(
-            round(
-                plots[process]["CR_cb"][2j].value
-                / plots["total_bkg_2018"]["CR_cb"][2j].value,
-                2,
+            values = SR_low_temp.values()[SR_low_temp.values() > 0]
+            variances = SR_low_temp.variances()[SR_low_temp.values() > 0]
+            scale = variances[-1] / values[-1]
+            poisson_unc = get_poisson_errors(SR_low_temp[7j].value, scale=scale)
+            row.append(
+                f"${SR_low_temp[7j].value:g}"
+                + r"^{+"
+                + f"{poisson_unc[1]:g}"
+                + "}_{-"
+                + f"{poisson_unc[0]:g}"
+                + r"}$"
             )
-        )
-        row.append(
-            round(
-                plots[process]["CR_cb"][3j].value
-                / plots["total_bkg_2018"]["CR_cb"][3j].value,
-                2,
+        elif args.poisson and not args.latex:
+            values = SR_high_temp.values()[SR_high_temp.values() > 0]
+            variances = SR_high_temp.variances()[SR_high_temp.values() > 0]
+            scale = variances[-1] / values[-1]
+            poisson_unc = get_poisson_errors(SR_high_temp[7j].value, scale=scale)
+            row.append(
+                f"{SR_high_temp[7j].value:g} +{poisson_unc[1]:g} -{poisson_unc[0]:g}"
             )
-        )
-        row.append(
-            round(
-                plots[process]["CR_cb"][4j].value
-                / plots["total_bkg_2018"]["CR_cb"][4j].value,
-                2,
+            values = SR_low_temp.values()[SR_low_temp.values() > 0]
+            variances = SR_low_temp.variances()[SR_low_temp.values() > 0]
+            scale = variances[-1] / values[-1]
+            poisson_unc = get_poisson_errors(SR_low_temp[7j].value, scale=scale)
+            row.append(
+                f"{SR_low_temp[7j].value:g} +{poisson_unc[1]:g} -{poisson_unc[0]:g}"
             )
-        )
-        row.append(
-            round(
-                plots[process]["CR_prompt"][2j].value
-                / plots["total_bkg_2018"]["CR_prompt"][2j].value,
-                2,
+        else:
+            row.append(
+                f"{prefix}{SR_high_temp[7j].value:g} {sep} {np.sqrt(SR_high_temp[7j].variance):g}{suffix}"
             )
-        )
-        row.append(
-            round(
-                plots[process][f"SR_high_temp_tight{suffix}"][7j].value
-                / plots["total_bkg_2018"]["SR_high_temp_tight"][7j].value,
-                2,
+            row.append(
+                f"{prefix}{SR_low_temp[7j].value:g} {sep} {np.sqrt(SR_low_temp[7j].variance):g}{suffix}"
             )
-        )
         table.append(row)
 
-    print(tabulate(table, headers=header))
+    row = ["Total bkg"]
+    SR_high_temp = plots["total_bkg_2018"][f"SR_high_temp_tight"][7j]
+    row.append(
+        f"{prefix}{SR_high_temp.value:g} {sep} {np.sqrt(SR_high_temp.variance):g}{suffix}"
+    )
+    SR_low_temp = plots["total_bkg_2018"][f"SR_low_temp_tight"][7j]
+    row.append(
+        f"{prefix}{SR_low_temp.value:g} {sep} {np.sqrt(SR_low_temp.variance):g}{suffix}"
+    )
+    table.append(row)
+
+    print()
+    print(tabulate(table, headers=header, tablefmt=tablefmt))
+    print()

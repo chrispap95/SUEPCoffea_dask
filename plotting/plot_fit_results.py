@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -33,8 +34,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/fit_results_plots",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "fit_results_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'fit_results_plots'}",
     )
     return parser.parse_args()
 
@@ -67,24 +69,27 @@ if "__main__" == __name__:
     print("Fit and extrapolation...", end=" ", flush=True)
     # Slice the first bin out where needed for fit stability
     slice_hists = {
-        # "VR_loose": slice(4j, None),
-        # "VR_tight": slice(3j, None),
         "SR_low_temp_loose": slice(4j, None),
         "SR_low_temp_tight": slice(3j, None),
         "SR_high_temp_loose": slice(4j, None),
         "SR_high_temp_tight": slice(3j, None),
     }
-
     qcd_extrapolation = plot_utils.Extrapolation(
         plots["QCD_Pt_MuEnrichedPt5_2018"],
         uncertainty_scheme="full",
     )
-    qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+    qcd_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
+    slice_hists = {
+        "SR_low_temp_loose": slice(4j, None),
+        "SR_low_temp_tight": slice(3j, None),
+        "SR_high_temp_loose": slice(4j, None),
+        "SR_high_temp_tight": slice(4j, None),
+    }
     dy_extrapolation = plot_utils.Extrapolation(
         plots["DY_2018"], uncertainty_scheme="full"
     )
-    dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+    dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     print("Done!", flush=True)
 
@@ -92,25 +97,20 @@ if "__main__" == __name__:
     regions = [
         "SR_low_temp",
         "SR_high_temp",
-        # "VR",
     ]
     for region in track(regions):
         qcd_extrapolation.plot_fit(region)
-        plt.tight_layout()
         plt.savefig(f"{args.dest}/plot_fit_QCD_{region}.pdf", bbox_inches="tight")
         plt.close()
 
         dy_extrapolation.plot_fit(region)
-        plt.tight_layout()
         plt.savefig(f"{args.dest}/plot_fit_DY_{region}.pdf", bbox_inches="tight")
         plt.close()
 
     qcd_extrapolation.plot_overlay(regions=regions)
-    plt.tight_layout()
     plt.savefig(f"{args.dest}/fit_overlay_QCD.pdf", bbox_inches="tight")
     plt.close()
 
     dy_extrapolation.plot_overlay(regions=regions)
-    plt.tight_layout()
     plt.savefig(f"{args.dest}/fit_overlay_DY.pdf", bbox_inches="tight")
     plt.close()

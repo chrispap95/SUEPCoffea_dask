@@ -1,5 +1,6 @@
 import argparse
 import os
+import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -40,8 +41,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/Nminus1_plots_sources",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "Nminus1_plots_sources"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'Nminus1_plots_sources'}",
     )
     return parser.parse_args()
 
@@ -71,26 +73,26 @@ cuts = {
 }
 
 ylims = {
-    "CR_prompt_Nminus1_cand_muon_pt": (1e1, 1e8),
-    "CR_prompt_Nminus1_cand_muon_iso": (1e1, 1e7),
-    "CR_prompt_Nminus1_cand_muon_ip3d": (1e1, 1e8),
-    "CR_prompt_Nminus1_cand_muon_dxy": (1e1, 1e7),
-    "CR_prompt_Nminus1_cand_muon_dz": (1e1, 1e8),
-    "CR_prompt_Nminus1_muon_iso": (1e1, 1e7),
-    "CR_prompt_Nminus1_muon_ip3d": (1e1, 1e7),
-    "CR_prompt_Nminus1_muon_dxy": (1e1, 1e7),
-    "CR_prompt_Nminus1_muon_dz": (1e1, 1e7),
-    "CR_cb_Nminus1_muon_dxy": (1e3, 1e9),
-    "SR_low_temp_tight_Nminus1_muon_pt": (1e2, 1e10),
+    "CR_prompt_Nminus1_cand_muon_pt": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_iso": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_ip3d": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_dxy": (1e0, 1e8),
+    "CR_prompt_Nminus1_cand_muon_dz": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_iso": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_ip3d": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_dxy": (1e0, 1e8),
+    "CR_prompt_Nminus1_muon_dz": (1e0, 1e8),
+    "CR_cb_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_pt": (1, 1e8),
     "SR_low_temp_loose_Nminus1_muon_pt": (1e2, 1e10),
     "SR_low_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
     "SR_low_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
     "SR_high_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
     "SR_high_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
-    "SR_high_temp_tight_Nminus1_muon_iso": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_iso": (10, 1e9),
     "SR_high_temp_loose_Nminus1_muon_iso": (1e2, 1e10),
-    "SR_high_temp_tight_Nminus1_muon_neutral_iso": (1e2, 1e9),
-    "SR_high_temp_loose_Nminus1_muon_neutral_iso": (1e2, 1e9),
+    "SR_high_temp_tight_Nminus1_muon_neutral_iso": (10, 1e9),
+    "SR_high_temp_loose_Nminus1_muon_neutral_iso": (1e2, 1e10),
 }
 
 region_labels = {
@@ -154,7 +156,7 @@ def make_plot(plots, plot):
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
-    fig, ax1 = plt.subplots(figsize=(12, 12))
+    fig, ax1 = plt.subplots(figsize=(12.5, 12))
 
     hep.histplot(
         hists_mc,
@@ -180,7 +182,7 @@ def make_plot(plots, plot):
         x=x_hatch,
         y1=y_hatch1 - y_hatch1_unc,  # type: ignore[assign]
         y2=y_hatch1 + y_hatch1_unc,  # type: ignore[assign]
-        label="Stat. Unc.",
+        label="MC Stat. Unc.",
         step="pre",
         facecolor="none",
         edgecolor=(0, 0, 0, 0.5),

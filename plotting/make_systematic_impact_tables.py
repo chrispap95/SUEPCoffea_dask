@@ -16,6 +16,11 @@ def parse_args():
         default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
     )
+    parser.add_argument(
+        "--latex",
+        action="store_true",
+        help="Print the table in LaTeX format",
+    )
     return parser.parse_args()
 
 
@@ -73,7 +78,8 @@ def print_table(plots, region, samples, tablefmt):
                 impact_up = (syst_up - nominal) / nominal
                 impact_down = (syst_down - nominal) / nominal
             impact = max(abs(impact_up), abs(impact_down))
-            systematics[syst].append(f"{100*impact:.1f}")
+            sign = "" if abs(impact_up) > abs(impact_down) else "-"
+            systematics[syst].append(f"{sign}{100*impact:.1f}")
 
     syst_table = [[key] + value for key, value in systematics.items()]
 
@@ -170,8 +176,9 @@ if "__main__" == __name__:
         ("DY_2018", "DY"),
     ]
 
-    tablefmt = "plain"
-    # tablefmt = "latex_raw"
+    tablefmt = "simple"
+    if args.latex:
+        tablefmt = "latex_raw"
 
     print_table(
         plots, "SR_high_temp_tight", sig_high_temp_samples + bkg_samples, tablefmt

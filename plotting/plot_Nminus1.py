@@ -1,5 +1,6 @@
 import argparse
 import os
+import pathlib
 
 import cms_styles
 import matplotlib as mpl  # type: ignore[import]
@@ -44,8 +45,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/Nminus1_plots",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "Nminus1_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'Nminus1_plots'}",
     )
     return parser.parse_args()
 
@@ -232,7 +234,7 @@ def make_plot(plots, plot):
         h_signal = plots[process][plot][slc]
         hists_signal.append(h_signal)
 
-    fig, ax1 = plt.subplots(figsize=(12, 12))
+    fig, ax1 = plt.subplots(figsize=(12.5, 12))
 
     hep.histplot(
         hists_mc,
@@ -258,7 +260,7 @@ def make_plot(plots, plot):
         x=x_hatch,
         y1=y_hatch1 - y_hatch1_unc,  # type: ignore[assign]
         y2=y_hatch1 + y_hatch1_unc,  # type: ignore[assign]
-        label="Stat. Unc.",
+        label="MC Stat. Unc.",
         step="pre",
         facecolor="none",
         edgecolor=(0, 0, 0, 0.5),
@@ -339,7 +341,7 @@ def make_plot(plots, plot):
         plt.xscale("log")
     plt.yscale("log")
     plt.ylim(ylims[plot])
-    plt.legend(ncol=3, loc="upper center")
+    plt.legend(ncol=3, loc="upper center", columnspacing=1)
     plt.ylabel("muons")
     if "sph1" in plot or "dimuon" in plot:
         plt.ylabel("events")

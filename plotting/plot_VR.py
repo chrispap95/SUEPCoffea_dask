@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import pathlib
 
 import cms_styles
 import matplotlib as mpl  # type: ignore[import]
@@ -72,8 +73,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/vr_plots",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "vr_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'vr_plots'}.",
     )
     return parser.parse_args()
 
@@ -236,7 +238,7 @@ def plot_VR(args, plots, region):
         x=x_hatch,
         y1=y_hatch1 - y_hatch1_unc,  # type: ignore[assign]
         y2=y_hatch1 + y_hatch1_unc,  # type: ignore[assign]
-        label="Stat. Unc.",
+        label="MC Stat. Unc.",
         step="pre",
         facecolor="none",
         edgecolor=(0, 0, 0, 0.5),

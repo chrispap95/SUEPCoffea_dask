@@ -142,6 +142,13 @@ def plot_limit(input_path, scan_point, mass_vals, masses):
     limits_tree = f["limit"]
     masses, cl_0p5, cl_smooth = get_quantiles(limits_tree, 10000)
 
+    # Get max and min values of the CLs and mask the mass values
+    max_mass = np.max(masses)
+    min_mass = np.min(masses)
+    mass_vals_new = mass_vals[
+        (min_mass - 50 <= mass_vals) & (mass_vals <= max_mass + 50)
+    ]
+
     if "leptonic" in scan_point:
         color = "b"
         m_Aprime = 0.5
@@ -156,8 +163,8 @@ def plot_limit(input_path, scan_point, mass_vals, masses):
     # Plot median expected
     plt.plot(masses, cl_0p5, color=color, marker="o", ms=8, ls="", zorder=3)
     plt.plot(
-        mass_vals,
-        cl_smooth[2](mass_vals),
+        mass_vals_new,
+        cl_smooth[2](mass_vals_new),
         color=color,
         ls="--",
         lw=3,
@@ -173,16 +180,16 @@ def plot_limit(input_path, scan_point, mass_vals, masses):
 
     # Plot bands
     plt.fill_between(
-        mass_vals,
-        cl_smooth[3](mass_vals),
-        cl_smooth[1](mass_vals),
+        mass_vals_new,
+        cl_smooth[3](mass_vals_new),
+        cl_smooth[1](mass_vals_new),
         color=green,
         zorder=1,
     )
     plt.fill_between(
-        mass_vals,
-        cl_smooth[4](mass_vals),
-        cl_smooth[0](mass_vals),
+        mass_vals_new,
+        cl_smooth[4](mass_vals_new),
+        cl_smooth[0](mass_vals_new),
         color=yellow,
         zorder=0,
     )

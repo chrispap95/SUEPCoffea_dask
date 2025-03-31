@@ -223,7 +223,7 @@ def plot_SUEP_combined(args, plots):
         x=x_hatch,
         y1=y_hatch1 - y_hatch1_unc,  # type: ignore[assign]
         y2=y_hatch1 + y_hatch1_unc,  # type: ignore[assign]
-        label="Stat. Unc.",
+        label="MC Stat. Unc.",
         step="pre",
         facecolor="none",
         edgecolor=(0, 0, 0, 0.5),

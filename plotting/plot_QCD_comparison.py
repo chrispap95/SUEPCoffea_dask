@@ -1,6 +1,7 @@
 import argparse
+import logging
 import os
-import warnings
+import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.gridspec as gridspec  # type: ignore[import]
@@ -13,7 +14,8 @@ import plot_utils
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
-warnings.filterwarnings("ignore")
+# Suppress warnings from Extrapolation class
+logging.getLogger().setLevel(logging.ERROR)
 
 
 def parse_args():
@@ -45,8 +47,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/qcd_comparison",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "qcd_comparison"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'qcd_comparison'}",
     )
     return parser.parse_args()
 

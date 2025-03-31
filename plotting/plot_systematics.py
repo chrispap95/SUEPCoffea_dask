@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.gridspec as gridspec  # type: ignore[import]
@@ -36,8 +37,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/systematics_plots",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "systematics_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'systematics_plots'}.",
     )
     return parser.parse_args()
 
@@ -204,10 +206,11 @@ if "__main__" == __name__:
     # samples = [key for key in plots if "SUEP" in key]
     # For now, plot only a few samples
     samples = []
-    samples.append("GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018")
-    samples.append("GluGluToSUEP_mS125.000_mPhi1.400_T1.400_modehadronic_13TeV_2018")
-    samples.append("QCD_Pt_MuEnrichedPt5_2018")
-    samples.append("DY_2018")
+    # samples.append("GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018")
+    # samples.append("GluGluToSUEP_mS125.000_mPhi1.400_T1.400_modehadronic_13TeV_2018")
+    # samples.append("QCD_Pt_MuEnrichedPt5_2018")
+    # samples.append("DY_2018")
+    samples.append("VV+VVV_2018")
     regions = [
         "CR_prompt",
         "CR_cb",

@@ -107,17 +107,33 @@ def get_pdf_variations(events, allow_manual=True):
     """
     if "LHEPdfWeight" in events.fields:
         if len(events.LHEPdfWeight[0]) > 0:
-            pdf_weights = events.LHEPdfWeight
+            mean = np.mean(events.LHEPdfWeight, axis=1)
+            std = np.std(events.LHEPdfWeight, axis=1)
+            if not all(ak.mean(events.LHEPdfWeight, axis=-1) > 0):
+                if allow_manual:
+                    pdf_weights = manual_pdf_variations(events)
+                    mean_alt = np.mean(pdf_weights, axis=1)
+                    std_alt = np.std(pdf_weights, axis=1)
+                else:
+                    mean_alt, std_alt = 1, 0
+                mean = np.where(
+                    ak.mean(events.LHEPdfWeight, axis=-1) > 0, mean, mean_alt
+                )
+                std = np.where(ak.mean(events.LHEPdfWeight, axis=-1) > 0, std, std_alt)
         elif allow_manual:
             pdf_weights = manual_pdf_variations(events)
+            mean = np.mean(pdf_weights, axis=1)
+            std = np.std(pdf_weights, axis=1)
         else:
             return np.ones(len(events)), np.ones(len(events))
     elif allow_manual:
         pdf_weights = manual_pdf_variations(events)
+        mean = np.mean(pdf_weights, axis=1)
+        std = np.std(pdf_weights, axis=1)
     else:
         return np.ones(len(events)), np.ones(len(events))
-    pdf_vars_up = 1 + np.std(pdf_weights, axis=1) / np.mean(pdf_weights, axis=1)
-    pdf_vars_down = 1 - np.std(pdf_weights, axis=1) / np.mean(pdf_weights, axis=1)
+    pdf_vars_up = 1 + std / mean
+    pdf_vars_down = 1 - std / mean
     return pdf_vars_up, pdf_vars_down
 
 

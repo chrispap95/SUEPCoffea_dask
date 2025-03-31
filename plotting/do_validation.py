@@ -10,6 +10,7 @@ Total of 3 + 3 = 6 plots for the fit results and
 import argparse
 import logging
 import os
+import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -41,8 +42,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/muon_branches/SUEPCoffea_dask/plotting/vr_plots",
-        help="Destination directory to save the plots",
+        default=str(pathlib.Path(__file__).parent / "vr_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'vr_plots'}",
     )
     return parser.parse_args()
 
