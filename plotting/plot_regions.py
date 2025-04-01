@@ -353,8 +353,8 @@ def plot_region(args, plots, region):
         labels = ["", "2", "3", "4", "5+", ""]
         ax1.set_xticklabels(labels)
     elif "SR" in region:
-        labels = ["", "3", "4", "5", "6", "7+", ""]
-        ax1.set_xticklabels(labels)
+        ax1.set_xticks([2.75, 3, 4, 5, 6, 7, 8.25])
+        ax1.set_xticklabels(["", "3", "4", "5", "6", "7+", ""])
 
     if args.ratio and args.data:
         plt.sca(ax2)
@@ -368,7 +368,7 @@ def plot_region(args, plots, region):
     plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
     plt.ylim(y_ranges[region])
     plt.yscale("log")
-    plt.legend(ncol=3)
+    plt.legend(ncol=3, columnspacing=1, loc="upper center")
     plt.ylabel("events")
     plt.tight_layout()
     plt.savefig(f"{args.dest}/{region}.pdf", bbox_inches="tight")
@@ -436,7 +436,7 @@ if "__main__" == __name__:
         "SR_low_temp_loose": slice(4j, None),
         "SR_low_temp_tight": slice(3j, None),
         "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
+        "SR_high_temp_tight": slice(4j, None),
     }
     dy_extrapolation = plot_utils.Extrapolation(
         plots["DY_2018"], uncertainty_scheme="full"

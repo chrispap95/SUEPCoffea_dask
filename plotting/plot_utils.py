@@ -269,6 +269,9 @@ class Extrapolation:
             Flag to indicate if the input is data.
         fit_function : str
             The fit function to use. Options are "exponential" or "binomial".
+            Exponential is a simple power law fit.
+            Binomial is a more complex function that uses the binomial distribution.
+            Default is "exponential".
         uncertainty_scheme : str
             The uncertainty scheme to use. Options are "simple" or "full".
             Simple uses the uncertainty from the fit.
@@ -371,6 +374,9 @@ class Extrapolation:
             self.plots[f"{region}_tight_extrapolation{syst}"] = h_tight
 
     def find_syst_variations(self) -> None:
+        """
+        Find all systematic variations by looking at all available plots.
+        """
         syst_variations = set()
         for region in self.plots:
             if "_tight" in region:
@@ -399,6 +405,9 @@ class Extrapolation:
             self.extrapolate(slice_hists=slice_hists, syst=syst_var, verbose=verbose)
 
     def find_extrapolatable_regions(self, syst: str) -> list[str]:
+        """
+        Find all regions that can be extrapolated.
+        """
         return [
             region.replace("_tight", "").replace("_extrapolation", "").replace(syst, "")
             for region in self.plots
@@ -522,6 +531,9 @@ class Extrapolation:
         return m
 
     def print_fit_results(self) -> None:
+        """
+        Print the fit results for all regions.
+        """
         for region in self.fit_results:
             print(f"Fit results for {region}:")
             print(self.fit_results[region])
@@ -649,6 +661,19 @@ class Extrapolation:
         """
         Function to be called by plot_fit. Plots the region's MC histograms and extrapolations,
         as well as the ratio and pulls.
+
+        Parameters
+        ----------
+        region : str
+            The region to plot. E.g. "SR_high_temp".
+        syst : str
+            The systematic variation to use. E.g. "TrkEff". Default is no variation.
+        ax1 : plt.Axes
+            The axes to plot the histograms on.
+        ax2 : plt.Axes
+            The axes to plot the ratio on.
+        ax3 : plt.Axes
+            The axes to plot the pulls on.
         """
         plot_pre_fit = self.plots[f"{region}"]
         post_fit_name = (
@@ -677,7 +702,7 @@ class Extrapolation:
             x=x_hatch,
             y1=y_hatch - y_hatch_unc,  # type: ignore[arg-type]
             y2=y_hatch + y_hatch_unc,  # type: ignore[arg-type]
-            label="MC Stat. Unc.",
+            label="fit + stat. unc.",
             step="pre",
             facecolor="C1",
             alpha=0.3,
@@ -757,7 +782,9 @@ class Extrapolation:
         for label in ax2.xaxis.get_ticklabels():
             label.set_visible(False)
 
-    def plot_fit(self, region: str, syst: str = "", add_label: bool = False) -> None:
+    def plot_fit(
+        self, region: str, syst: str = "", add_label: bool = False, add_text: str = ""
+    ) -> None:
         """
         Plot the region's MC histograms and extrapolations, as well as the ratio and pulls.
         Will plot both the loose and tight regions side by side.
@@ -766,6 +793,12 @@ class Extrapolation:
         ----------
         region : str
             The region to plot. E.g. "SR_high_temp".
+        syst : str
+            The systematic variation to use. E.g. "TrkEff". Default is no variation.
+        add_label : bool
+            Flag to indicate if the CMS label & lumi should be added to the plot.
+        add_text : str
+            Text to add to the plot. Useful for adding the MC sample name or data label.
         """
         if not syst.startswith("_") and syst != "":
             syst = f"_{syst}"
@@ -814,12 +847,23 @@ class Extrapolation:
             hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1_left)
             hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1_right)
 
+        if add_text != "":
+            ax1_left.text(
+                0.5,
+                0.9,
+                add_text,
+                transform=ax1_left.transAxes,
+                fontsize=32,
+                verticalalignment="top",
+                horizontalalignment="center",
+            )
+
         # Add fit results to the left plot
+        fit_result = self.fit_results[f"{region}{syst}"]
+        fit_rslt_str = "Fit result:\n"
+        fit_rslt_str += r"$\chi^2$/ndf = "
+        fit_rslt_str += f"{fit_result.fmin.reduced_chi2:.2f}\n"
         if self.fit_function == "exponential":
-            fit_result = self.fit_results[f"{region}{syst}"]
-            fit_rslt_str = "Fit result:\n"
-            fit_rslt_str += r"$\chi^2$/ndf = "
-            fit_rslt_str += f"{fit_result.fmin.reduced_chi2:.2f}\n"
             fit_rslt_str += r"$A_\text{tight} = $"
             fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
             fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
@@ -829,14 +873,27 @@ class Extrapolation:
             fit_rslt_str += r"$B = $"
             fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
             fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
-            ax1_left.text(
-                0.07,
-                0.45,
-                fit_rslt_str,
-                transform=ax1_left.transAxes,
-                verticalalignment="top",
-                horizontalalignment="left",
-            )
+        elif self.fit_function == "binomial":
+            fit_rslt_str += r"$A_\text{tight} = $"
+            fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
+            fit_rslt_str += r"$A_\text{loose} = $"
+            fit_rslt_str += f"{fit_result.values['loga_l']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['loga_l']:.3f}\n"
+            fit_rslt_str += r"$B = $"
+            fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
+            fit_rslt_str += r"$N = $"
+            fit_rslt_str += f"{fit_result.values['N']:.3f} ± "
+            fit_rslt_str += f"{fit_result.errors['N']:.3f}\n"
+        ax1_left.text(
+            0.07,
+            0.45,
+            fit_rslt_str,
+            transform=ax1_left.transAxes,
+            verticalalignment="top",
+            horizontalalignment="left",
+        )
 
         # Set y-axis limits for top two plots
         ax1_left.set_ylim(
@@ -854,6 +911,7 @@ class Extrapolation:
         regions: Optional[list] = ["SR_high_temp", "SR_low_temp"],
         syst: str = "",
         add_label: bool = False,
+        add_text: str = "",
     ) -> None:
         """
         Plot an overlay of the histograms for the loose reion, the tight region,
@@ -863,6 +921,12 @@ class Extrapolation:
         ----------
         regions : list
             List of regions to plot. E.g. ["SR_high_temp", "SR_low_temp"].
+        syst : str
+            The systematic variation to use. E.g. "TrkEff". Default is no variation.
+        add_label : bool
+            Flag to indicate if the CMS label & lumi should be added to the plot.
+        add_text : str
+            Text to add to the plot. Useful for adding the MC sample name or data label.
         """
         if regions is None:
             print("Warning: No regions specified")
@@ -939,6 +1003,16 @@ class Extrapolation:
             if add_label:
                 hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
             ax1.legend()
+
+            if add_text != "":
+                ax1.text(
+                    0.5,
+                    0.9,
+                    add_text,
+                    transform=ax1.transAxes,
+                    verticalalignment="top",
+                    horizontalalignment="center",
+                )
 
             x_vals = h_l_pre.axes[0].edges
             ratio_loose = np.divide(

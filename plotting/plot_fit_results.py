@@ -99,18 +99,18 @@ if "__main__" == __name__:
         "SR_high_temp",
     ]
     for region in track(regions):
-        qcd_extrapolation.plot_fit(region)
+        qcd_extrapolation.plot_fit(region, add_text="QCD")
         plt.savefig(f"{args.dest}/plot_fit_QCD_{region}.pdf", bbox_inches="tight")
         plt.close()
 
-        dy_extrapolation.plot_fit(region)
+        dy_extrapolation.plot_fit(region, add_text="DY")
         plt.savefig(f"{args.dest}/plot_fit_DY_{region}.pdf", bbox_inches="tight")
         plt.close()
 
-    qcd_extrapolation.plot_overlay(regions=regions)
+    qcd_extrapolation.plot_overlay(regions=regions, add_text="QCD")
     plt.savefig(f"{args.dest}/fit_overlay_QCD.pdf", bbox_inches="tight")
     plt.close()
 
-    dy_extrapolation.plot_overlay(regions=regions)
+    dy_extrapolation.plot_overlay(regions=regions, add_text="DY")
     plt.savefig(f"{args.dest}/fit_overlay_DY.pdf", bbox_inches="tight")
     plt.close()

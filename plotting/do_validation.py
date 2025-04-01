@@ -82,26 +82,18 @@ if "__main__" == __name__:
 
     print("Done!", flush=True)
 
-    qcd_extrapolation.plot_fit("VR", add_label=True)
-    plt.text(4, 1e6, "QCD", fontsize=20, ha="center")
-    plt.tight_layout()
+    qcd_extrapolation.plot_fit("VR", add_label=True, add_text="QCD")
     plt.savefig(f"{args.dest}/plot_fit_VR_qcd.pdf", bbox_inches="tight")
     plt.close()
 
-    qcd_extrapolation.plot_overlay(regions=["VR"], add_label=True)
-    plt.text(4, 1e6, "QCD", fontsize=20, ha="center")
-    plt.tight_layout()
+    qcd_extrapolation.plot_overlay(regions=["VR"], add_label=True, add_text="QCD")
     plt.savefig(f"{args.dest}/fit_overlay_qcd.pdf", bbox_inches="tight")
     plt.close()
 
-    data_extrapolation.plot_fit("VR", add_label=True)
-    plt.text(4, 1e6, "Data", fontsize=20, ha="center")
-    plt.tight_layout()
+    data_extrapolation.plot_fit("VR", add_label=True, add_text="Data")
     plt.savefig(f"{args.dest}/plot_fit_VR_data.pdf", bbox_inches="tight")
     plt.close()
 
-    data_extrapolation.plot_overlay(regions=["VR"], add_label=True)
-    plt.text(4, 1e6, "Data", fontsize=20, ha="center")
-    plt.tight_layout()
+    data_extrapolation.plot_overlay(regions=["VR"], add_label=True, add_text="Data")
     plt.savefig(f"{args.dest}/fit_overlay_data.pdf", bbox_inches="tight")
     plt.close()

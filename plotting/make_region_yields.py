@@ -93,7 +93,7 @@ if "__main__" == __name__:
         "SR_low_temp_loose": slice(4j, None),
         "SR_low_temp_tight": slice(3j, None),
         "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
+        "SR_high_temp_tight": slice(4j, None),
     }
     dy_extrapolation = plot_utils.Extrapolation(
         plots["DY_2018"], uncertainty_scheme="full"

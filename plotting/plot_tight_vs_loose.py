@@ -1,0 +1,183 @@
+import argparse
+import os
+import pathlib
+
+import matplotlib as mpl  # type: ignore[import]
+import matplotlib.pyplot as plt  # type: ignore[import]
+import matplotlib.ticker as ticker  # type: ignore[import]
+import mplhep as hep
+import numpy as np
+import plot_utils
+
+hep.style.use(hep.style.CMS)
+mpl.rcParams["figure.facecolor"] = "white"
+
+cmap = plt.get_cmap("viridis", 10)  # type: ignore[attr-defined]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--tag",
+        type=str,
+        default="full_analysis_Apr2025",
+        help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--dest",
+        type=str,
+        default=str(pathlib.Path(__file__).parent / "tight_vs_loose_plots"),
+        help="Destination directory to save the plots. Default is "
+        f"{pathlib.Path(__file__).parent / 'tight_vs_loose_plots'}",
+    )
+    return parser.parse_args()
+
+
+# Latex labels for the regions
+region_labels = {
+    "SR_high_temp_loose": r"$SR^{loose}_{high~T}$",
+    "SR_high_temp_tight": r"$SR^{tight}_{high~T}$",
+    "SR_low_temp_loose": r"$SR^{loose}_{low~T}$",
+    "SR_low_temp_tight": r"$SR^{tight}_{low~T}$",
+}
+
+# Abbreviations for the sample names
+sample_names = {
+    "QCD_Pt_MuEnrichedPt5_2018": "QCD",
+    "DY_2018": "DY",
+}
+
+
+def make_plot(plots, sample, region):
+    h_loose = (
+        plots[sample][region + "_loose"] / plots[sample][region + "_loose"].sum().value
+    )
+    h_tight = (
+        plots[sample][region + "_tight"] / plots[sample][region + "_tight"].sum().value
+    )
+
+    fig = plt.figure(figsize=(8, 8))
+    plt.subplots_adjust(bottom=0.08, top=0.92, left=0.1, right=0.95, hspace=0.1)
+    ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
+    ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
+
+    hep.histplot(
+        h_loose,
+        yerr=np.sqrt(h_loose.variances()),
+        lw=2,
+        label=region_labels[region + "_loose"],
+        ax=ax1,
+    )
+    hep.histplot(
+        h_tight,
+        yerr=np.sqrt(h_tight.variances()),
+        label=region_labels[region + "_tight"],
+        lw=2,
+        ax=ax1,
+    )
+
+    ratio = np.divide(
+        h_tight.values(),
+        h_loose.values(),
+        out=np.zeros_like(h_tight.values()),
+        where=h_loose.values() != 0,
+    )
+    ratio_err = np.sqrt(
+        np.divide(
+            h_tight.variances(),
+            h_loose.values() ** 2,
+            out=np.zeros_like(h_loose.values()),
+            where=h_loose.values() != 0,
+        )
+        + np.divide(
+            h_tight.values() ** 2 * h_loose.variances(),
+            h_loose.values() ** 4,
+            out=np.zeros_like(h_loose.values()),
+            where=h_loose.values() != 0,
+        )
+    )
+    hep.histplot(
+        ratio,
+        bins=h_loose.axes[0].edges,
+        yerr=ratio_err,
+        label="tight/loose",
+        lw=2,
+        ax=ax2,
+        color="black",
+        histtype="step",
+    )
+    ax2.axhline(1, ls="--", color="gray")
+
+    ax1.text(
+        0.5,
+        0.95,
+        sample_names[sample],
+        ha="center",
+        va="top",
+        transform=ax1.transAxes,
+    )
+    hep.cms.label(llabel="Simulation", data=False, ax=ax1)
+
+    plt.sca(ax2)
+    plt.ylim(0, 2)
+    plt.ylabel("tight/loose")
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    ax1.set_xlabel("", visible=False)
+    plt.xlabel(r"$n_{muon}$")
+    plt.sca(ax1)
+    plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
+    plt.yscale("log")
+    plt.legend()
+    plt.ylabel("density")
+    plt.tight_layout()
+    plt.savefig(
+        f"{args.dest}/tight_vs_loose_{region}_{sample_names[sample]}.pdf",
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+if "__main__" == __name__:
+    args = parse_args()
+
+    # Create destination directory
+    os.makedirs(args.dest, exist_ok=True)
+
+    # Load plots
+    print("Loading plots...", end=" ", flush=True)
+    plots = plot_utils.loader(tag=f"{args.tag}_SRs")
+    print("Done!", flush=True)
+
+    print("Fit and extrapolation...", end=" ", flush=True)
+    # QCD extrapolation
+    # Slice the first bin out where needed for fit stability
+    slice_hists = {
+        "SR_low_temp_loose": slice(4j, None),
+        "SR_low_temp_tight": slice(3j, None),
+        "SR_high_temp_loose": slice(4j, None),
+        "SR_high_temp_tight": slice(3j, None),
+    }
+
+    qcd_extrapolation = plot_utils.Extrapolation(
+        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
+    )
+    qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+
+    # DY extrapolation
+    # Slice the first bin out where needed for fit stability
+    slice_hists = {
+        "SR_low_temp_loose": slice(4j, None),
+        "SR_low_temp_tight": slice(3j, None),
+        "SR_high_temp_loose": slice(4j, None),
+        "SR_high_temp_tight": slice(4j, None),
+    }
+    dy_extrapolation = plot_utils.Extrapolation(
+        plots["DY_2018"], uncertainty_scheme="full"
+    )
+    dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+    print("Done!", flush=True)
+
+    for sample in ["QCD_Pt_MuEnrichedPt5_2018", "DY_2018"]:
+        for region in ["SR_low_temp", "SR_high_temp"]:
+            make_plot(plots, sample, region)
