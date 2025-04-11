@@ -39,7 +39,8 @@ def loadder(args: argparse.Namespace) -> dict:
 
 def getXSection(dataset: str, year: str, path: Optional[str] = "data/") -> float:
     is_SUEP = True if "SUEP" in dataset else False
-    filename = f"{path}/xsections_{year}{'_SUEP' if is_SUEP else ''}.json"
+    is_Run3 = True if year in ["2022", "2022EE", "2023", "2023BPix"] else False
+    filename = f"{path}/xsections_{'SUEP' if is_SUEP else 'bkg'}_{'13p6' if is_Run3 else '13'}TeV.json"
 
     try:
         with open(filename) as file:
