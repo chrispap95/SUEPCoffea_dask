@@ -22,6 +22,9 @@ dask-worker-space/
 .condor_config
 .ipython/
 .local/
+parton/
+pythia/
+python3.10/
 shell
 
 # Python envs
