@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jan2025/CMSSW_11_3_4/src/auxiliaries/input/",
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Apr2025/CMSSW_14_2_2/src/auxiliaries/input/",
         help="Destination directory for the ROOT files.",
     )
     return parser.parse_args()
@@ -129,6 +129,7 @@ if "__main__" in __name__:
         plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
     )
     qcd_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
+    qcd_extrapolation.create_syst_variation(sample="QCD")
 
     # DY extrapolation
     # Slice the first bin out where needed for fit stability
@@ -142,10 +143,10 @@ if "__main__" in __name__:
         plots["DY_2018"], uncertainty_scheme="full"
     )
     dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
+    dy_extrapolation.create_syst_variation(sample="DY")
     print("Done!", flush=True)
 
     print("Converting to ROOT...", end=" ", flush=True)
-
     # Prepare plots for export
     plots_for_export = {}
 
@@ -182,6 +183,11 @@ if "__main__" in __name__:
     print("Done!", flush=True)
 
     # Export histograms to ROOT files
+    print(
+        "Exporting histograms to ROOT and copying to final destination...",
+        end=" ",
+        flush=True,
+    )
     output_name = "SUEP"
     if not math.isclose(args.signal_scale, 1.0):
         output_name += f"_signal_scale{args.signal_scale}"
@@ -196,3 +202,4 @@ if "__main__" in __name__:
 
     # Copy to destination
     shutil.copytree("exports", args.dest, dirs_exist_ok=True)
+    print("Done!", flush=True)

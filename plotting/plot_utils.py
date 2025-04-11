@@ -655,6 +655,39 @@ class Extrapolation:
 
         return h0
 
+    def create_syst_variation(self, sample: str = "") -> None:
+        """
+        Create systematic variations for the extrapolated histograms.
+
+        Parameters
+        ----------
+        sample : str
+            The sample to create systematic variations for. If empty, will exit with an error.
+        """
+        if sample == "":
+            raise ValueError("Sample name cannot be empty. Expecting: QCD or DY")
+        # Find extrapolated regions
+        extrapolated_regions = {
+            region for region in self.plots if region.endswith("_extrapolation")
+        }
+        # Loop over the extrapolated regions and create systematic variations
+        for region in extrapolated_regions:
+            plot = self.plots[region]
+            vals = plot.values()
+            vars = plot.variances()
+            vals_up = vals + np.sqrt(vars)
+            vals_down = vals - np.sqrt(vars)
+            # If negative or zero, set to a very small value
+            vals_down[vals_down <= 0] = vals[vals_down <= 0] * 1e-3
+            plot_name = region.replace(
+                "extrapolation", f"extrapolation_ExtrFit{sample}"
+            )
+            self.plots[plot_name + "Up"] = self.plots[region].copy()
+            self.plots[plot_name + "Down"] = self.plots[region].copy()
+            for i in range(len(vals)):
+                self.plots[plot_name + "Up"][i] = (vals_up[i], vars[i])
+                self.plots[plot_name + "Down"][i] = (vals_down[i], vars[i])
+
     def plot_region(
         self, region: str, syst: str, ax1: plt.Axes, ax2: plt.Axes, ax3: plt.Axes
     ) -> None:
@@ -1154,17 +1187,28 @@ def convert_to_root(
         suffix = "_extrapolation"
     plots_out = {}
 
+    if verbose:
+        print("Converting histograms to ROOT format for: ", sample)
+
+    # All regions that will be exported
+    all_regions = [
+        "CR_cb",
+        "CR_prompt",
+        "SR_high_temp_tight",
+        "SR_low_temp_tight",
+    ]
+
     systematic_vars = {""}
-    for region in plots_in:
-        if do_syst and f"SR_high_temp_tight{suffix}_" in region:
-            systematic_vars.add(region.replace(f"SR_high_temp_tight{suffix}", ""))
-        if do_syst and f"SR_low_temp_tight{suffix}_" in region:
-            systematic_vars.add(region.replace(f"SR_low_temp_tight{suffix}", ""))
+    if do_syst:
+        for region_var in plots_in:
+            for region in all_regions:
+                if f"{region}{suffix}_" in region_var:
+                    systematic_vars.add(region_var.replace(f"{region}{suffix}", ""))
 
     systematic_vars = list(systematic_vars)
     if verbose:
         print("Systematic variations:")
-        print(systematic_vars)
+        print(sorted(systematic_vars), "\n")
 
     for syst in systematic_vars:
         CR_cb_plot = (
@@ -1182,45 +1226,6 @@ def convert_to_root(
         )
         plots_out[f"CR_DY{syst}"] = uproot.to_writable(CR_prompt_plot).to_pyroot()  # type: ignore[attr-defined]
         plots_out[f"CR_DY{syst}"].SetName(f"nMuon_CR_DY{syst}_{sample}")
-
-        # CR_prompt_plot = (
-        #     plots_in["CR_prompt"]
-        #     if f"CR_prompt{syst}" not in plots_in
-        #     else plots_in[f"CR_prompt{syst}"]
-        # )
-        # h_CR_prompt = ROOT.TH1D(f"nMuon_CR_DY{syst}_{sample}", "nMuon", 1, 2, 3)
-        # h_CR_prompt.SetBinContent(1, CR_prompt_plot[2j].value)
-        # h_CR_prompt.SetBinError(1, np.sqrt(CR_prompt_plot[2j].variance))
-        # plots_out[f"CR_DY{syst}"] = h_CR_prompt.Clone()
-
-        # This for the combined CR (deprecated)
-        if "CR" in plots_in:
-            CR_plot = (
-                plots_in["CR"] if f"CR{syst}" not in plots_in else plots_in[f"CR{syst}"]
-            )
-            plots_out[f"CR{syst}"] = convert_strcat_hist_to_root(
-                CR_plot, f"nMuon_CR{syst}_{sample}", "nMuon"
-            )
-
-        if f"SUEP_high_temp{suffix}" in plots_in:
-            CR_plot = (
-                plots_in[f"SUEP_high_temp{suffix}"]
-                if f"SUEP_high_temp{suffix}{syst}" not in plots_in
-                else plots_in[f"SUEP_high_temp{suffix}{syst}"]
-            )
-            plots_out[f"SUEP_high_temp{syst}"] = convert_strcat_hist_to_root(
-                CR_plot, f"nMuon_SUEP_high_temp{syst}_{sample}", "nMuon"
-            )
-
-        if f"SUEP_low_temp{suffix}" in plots_in:
-            CR_plot = (
-                plots_in[f"SUEP_low_temp{suffix}"]
-                if f"SUEP_low_temp{suffix}{syst}" not in plots_in
-                else plots_in[f"SUEP_low_temp{suffix}{syst}"]
-            )
-            plots_out[f"SUEP_low_temp{syst}"] = convert_strcat_hist_to_root(
-                CR_plot, f"nMuon_SUEP_low_temp{syst}_{sample}", "nMuon"
-            )
 
         if f"SR_low_temp_tight{suffix}" in plots_in:
             SR_low_temp_plot = (
@@ -1251,7 +1256,9 @@ def convert_to_root(
     return plots_out
 
 
-def export_histograms_to_root(plots, output_path, output_name="output.root"):
+def export_histograms_to_root(
+    plots: dict, output_path: str, output_name: str = "output.root"
+):
     """
     Export hist.Hist histograms to a ROOT file, organized in TDirectories by region.
     Negative bin entries are set to zero.
@@ -1262,35 +1269,39 @@ def export_histograms_to_root(plots, output_path, output_name="output.root"):
         Nested dictionary containing hist.Hist objects
     output_path : str
         Name of the output directory for the ROOT files
+    output_name : str
+        Name of the output ROOT file
     """
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    systematics = [
-        syst.replace("SR_high_temp", "")
-        for syst in plots["QCD_13TeV_2018"]
-        if "SR_high_temp_" in syst
+    # All regions that will be exported
+    all_regions = [
+        "CR_DY",
+        "CR_QCD",
+        "SR_low_temp",
+        "SR_high_temp",
     ]
 
+    systematics = set()
+    for sample_name, regions in plots.items():
+        for region in regions:
+            systematics.add(region.replace)
+
     with uproot.recreate(os.path.join(output_path, output_name)) as f:
-        for sample_name, regions in track(plots.items(), description="Exporting..."):
-            for region_name, histogram in regions.items():
-                syst_name = ""
-                for syst in systematics:
-                    if syst in region_name:
-                        region_name = region_name.replace(syst, "")
-                        syst_name = syst
+        for sample_name, region_vars in track(
+            plots.items(), description="Exporting..."
+        ):
+            for region_var, histogram in region_vars.items():
+                region_name = ""
+                for region in all_regions:
+                    if region in region_var:
+                        region_name = region
                         break
+                if region_name == "":
+                    continue
+                syst_name = region_var.replace(region_name, "")
                 sample_name = sample_name.replace("_13TeV_2018", "")
                 f[f"{region_name}/{sample_name}{syst_name}_13TeV_2018"] = (
                     uproot.from_pyroot(histogram)
                 )
-                # if add_null_obs and syst_name == "" and sample_name == "QCD":
-                #     null_hist = histogram.Clone()
-                #     null_hist.Reset()
-                #     null_hist.SetName(
-                #         null_hist.GetName().replace("QCD_Pt_MuEnrichedPt5", "data_obs")
-                #     )
-                #     f[f"{region_name}/data_obs_13TeV_2018"] = uproot.from_pyroot(
-                #         null_hist
-                #     )
