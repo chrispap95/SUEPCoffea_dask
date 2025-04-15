@@ -83,6 +83,7 @@ if "__main__" == __name__:
     signal_models = [model for model in plots if "SUEP" in model]
     SoverB_loose = {}
     SoverB_tight = {}
+    print(f"Processing {len(signal_models)} signal models.\n", flush=True)
     for model in sorted(signal_models):
         model_name = (
             model.replace("GluGluTo", "")

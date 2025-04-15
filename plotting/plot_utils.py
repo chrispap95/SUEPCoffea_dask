@@ -24,11 +24,15 @@ from rich.progress import track  # type: ignore[import]
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
-    "2016_apv": 19497.914,
+    "2016APV": 19497.914,
     "2016": 16810.813,
     "2017": 41471.589,
     # NOTE: Only 2018 lumi has been properly calculated
     "2018": 59795.400422,
+    "2022": 7980.4,
+    "2022EE": 26671.7,
+    "2023": 17794.0,
+    "2023BPix": 9451.0,
 }
 
 
@@ -146,10 +150,15 @@ def load_samples(
         for plot in plots[sample]:
             plots[sample][plot] = plots[sample][plot] * lumi
 
+    # Pick correct dataset groups dict
+    dataset_groups_dict = dataset_groups.dataset_groups_Run2
+    if str(year).startswith("202"):
+        dataset_groups_dict = dataset_groups.dataset_groups_Run3
+
     # Create combined histograms
-    for combined_dataset in dataset_groups.dataset_groups_new:
+    for combined_dataset in dataset_groups_dict:
         temp_dict = {}
-        for pattern in dataset_groups.dataset_groups_new[combined_dataset]:
+        for pattern in dataset_groups_dict[combined_dataset]:
             for sample in plots:
                 if re.search(pattern, sample):
                     for plot in plots[sample]:
@@ -164,6 +173,7 @@ def load_samples(
 
 def loader(
     tag: str,
+    era: str,
     custom_lumi: Optional[float] = None,
     load_data: bool = False,
     input_dir: Optional[str] = None,
@@ -216,32 +226,35 @@ def loader(
         pprint(files_bkg)
 
     # load histograms and scale to lumi
-    plots_SUEP_2018 = load_samples(files_SUEP, year=2018, custom_lumi=custom_lumi)
-    plots_bkg_2018 = load_samples(files_bkg, year=2018, custom_lumi=custom_lumi)
+    plots_SUEP = load_samples(files_SUEP, year=era, custom_lumi=custom_lumi)
+    plots_bkg = load_samples(files_bkg, year=era, custom_lumi=custom_lumi)
     if load_data:
-        plots_data_2018 = load_samples(files_data, year=2018, is_data=True)
+        plots_data = load_samples(files_data, year=era, is_data=True)
 
     if verbosity > 1:
-        pprint(plots_SUEP_2018)
+        pprint(plots_SUEP)
 
     # put everything in one dictionary
     plots = {}
-    for sample in plots_SUEP_2018:
-        if sample + "_2018" not in plots:
-            plots[sample + "_2018"] = plots_SUEP_2018[sample]
+    for sample in plots_SUEP:
+        new_name = f"{sample}_{era}"
+        if new_name not in plots:
+            plots[new_name] = plots_SUEP[sample]
         else:
-            plots[sample + "_2018"].update(plots_SUEP_2018[sample])
-    for sample in plots_bkg_2018:
-        if sample + "_2018" not in plots:
-            plots[sample + "_2018"] = plots_bkg_2018[sample]
+            plots[new_name].update(plots_SUEP[sample])
+    for sample in plots_bkg:
+        new_name = f"{sample}_{era}"
+        if new_name not in plots:
+            plots[new_name] = plots_bkg[sample]
         else:
-            plots[sample + "_2018"].update(plots_bkg_2018[sample])
+            plots[new_name].update(plots_bkg[sample])
     if load_data:
-        for sample in plots_data_2018:
-            if sample + "_2018" not in plots:
-                plots[sample + "_2018"] = plots_data_2018[sample]
+        for sample in plots_data:
+            new_name = f"{sample}_{era}"
+            if new_name not in plots:
+                plots[new_name] = plots_data[sample]
             else:
-                plots[sample + "_2018"].update(plots_data_2018[sample])
+                plots[new_name].update(plots_data[sample])
 
     return plots
 

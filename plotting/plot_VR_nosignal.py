@@ -226,7 +226,7 @@ def plot_VR(args, plots, region):
     fig, ax1 = plt.subplots(figsize=(7, 7))
 
     if args.ratio:
-        fig = plt.figure(figsize=(8, 10.5))
+        fig = plt.figure(figsize=(8.5, 10.5))
         plt.subplots_adjust(bottom=0.1, top=0.92, left=0.15, right=0.96)
         ax1 = plt.subplot2grid((5, 1), (0, 0), rowspan=3)
         ax2 = plt.subplot2grid((5, 1), (3, 0), rowspan=1, sharex=ax1)
@@ -313,7 +313,7 @@ def plot_VR(args, plots, region):
     plt.gca().xaxis.set_minor_locator(ticker.NullLocator())
     plt.ylim(1e-2, 1e10)
     plt.yscale("log")
-    plt.legend(ncol=2)
+    plt.legend(ncol=2, loc="upper right", columnspacing=1)
     plt.ylabel("events")
     plt.tight_layout()
     plt.savefig(f"{args.dest}/{region}_nosignal.pdf", bbox_inches="tight")

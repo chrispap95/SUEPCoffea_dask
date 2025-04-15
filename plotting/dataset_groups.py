@@ -5,55 +5,9 @@ multiple datasets, other groups, or even single datasets (for simpler naming).
 
 The dataset_group_new dictionary is used for the new UL18 datasets:
     Central MINIAOD -> SUEPNano, November 2024.
-
-The dataset_group_old dictionary is used for the old UL18 datasets:
-    Central NANOAOD -> SUEPSkimmer.
 """
 
-dataset_groups_old = {
-    "QCD_Pt_MuEnrichedPt5": [
-        r"QCD_Pt-.*_MuEnrichedPt5_TuneCP5_13TeV-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "TT_powheg": [
-        r"TTTo.*_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "DY_inclusive_NLO": [
-        r"DYJetsToLL_M-.*_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "ST_NLO": [
-        r"ST_t-channel_.*_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
-        r"ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "WJetsToLNu_HT_LO": [
-        r"WJetsToLNu_HT-.*_TuneCP5_13TeV-madgraphMLM-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "WJetsToLNu_inclusive_NLO": [
-        r"WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "WJetsToLNu": [
-        "WJetsToLNu_HT_LO",
-        "WJetsToLNu_inclusive_NLO",
-    ],
-    "VV_NLO": [
-        r"WWTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
-        r"WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
-        r"WZTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
-        r"WZTo1L3Nu_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
-        r"WZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8.*UL18.*NANOAODSIM$",
-        r"WZTo3LNu_mllmin4p0_TuneCP5_13TeV-powheg-pythia8.*UL18.*NANOAODSIM$",
-        r"ZZTo4L_TuneCP5_13TeV_powheg_pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "VVV_NLO": [
-        r"WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8.*UL18.*NANOAODSIM$",
-        r"ZZZ_TuneCP5_13TeV-amcatnlo-pythia8.*UL18.*NANOAODSIM$",
-    ],
-    "TTZ_inclusive_LO": [
-        r"ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8.*UL18.*NANOAODSIM$",
-    ],
-}
-
-
-dataset_groups_new = {
+dataset_groups_Run2 = {
     "DoubleMuon": [r"DoubleMuon_Run2018(A|B|C|D)-UL2018_MiniAODv2_GT36-v1_MINIAOD"],
     "DY_NJets_LO": [
         r"DY(1|2|3|4)JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -182,5 +136,51 @@ dataset_groups_new = {
     ],
     "WH_HToZZTo4L": [
         r"W(minus|plus)H_HToZZTo4L_M125_TuneCP5_13TeV_powheg2-minlo-HWJ_JHUGenV7011_pythia8",
+    ],
+}
+
+dataset_groups_Run3 = {
+    "QCD_Pt_MuEnrichedPt5": [r"QCD_PT-.*_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8"],
+    "DY_NJets_NLO": [r"DYto2L-2Jets_MLL-50_.J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"],
+    "DY_NJets_LO": [r"DYto2L-4Jets_MLL-50_.J_TuneCP5_13p6TeV_madgraphMLM-pythia8"],
+    "DY_low_mass": ["DYto2L-4Jets_MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8"],
+    "DY": [
+        "DY_low_mass",
+        r"DYto2L-2Jets_MLL-50_(0|1|2)J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        r"DYto2L-4Jets_MLL-50_(3|4)J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+    ],
+    "TT_powheg": [r"TTto(LNu2Q|2L2Nu|4Q)_TuneCP5_13p6TeV_powheg-pythia8"],
+    "WW": [r"WWto(2L2Nu|4Q|LNu2Q)_TuneCP5_13p6TeV_powheg-pythia8"],
+    "WZ": [
+        r"WZto(2L2Q|3LNu)_TuneCP5_13p6TeV_powheg-pythia8",
+        "WZto4Q-1Jets-4FS_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+    ],
+    "ZZ": [r"ZZto(2L2Q|4L)_TuneCP5_13p6TeV_powheg-pythia8"],
+    "VV": ["WW", "WZ", "ZZ"],
+    "WWW": ["WWW_4F_TuneCP5_13p6TeV_amcatnlo-madspin-pythia8"],
+    "WWZ": ["WWZ_4F_TuneCP5_13p6TeV_amcatnlo-pythia8"],
+    "WZZ": ["WZZ_TuneCP5_13p6TeV_amcatnlo-pythia8"],
+    "ZZZ": ["ZZZ_TuneCP5_13p6TeV_amcatnlo-pythia8"],
+    "VVV": ["WWW", "WWZ", "WZZ", "ZZZ"],
+    "VV+VVV": ["VV", "VVV"],
+    "WtoLNu_NLO": [r"WtoLNu-2Jets_.J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"],
+    "WtoLNu_LO": [r"WtoLNu-4Jets_.J_TuneCP5_13p6TeV_madgraphMLM-pythia8"],
+    "WJets": [
+        r"WtoLNu-2Jets_(0|1|2)J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        r"WtoLNu-4Jets_(3|4)J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        r"Wto2Q-3Jets_HT-.*_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+    ],
+    "Higgs": [
+        # NOTE: Some of these appear to be duplicates, but they correspond only to 2022 or 2023
+        "GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8",
+        "GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg-jhugen-pythia8",
+        "VBFHto2Zto4L_M125_TuneCP5_13p6TeV_powheg-jhugenv752-pythia8",
+        "VBFHto2Zto4L_M-125_TuneCP5_13p6TeV_powheg-jhugen-pythia8",
+        r"W(minus|plus)H_Hto2Zto4L_M-125_TuneCP5_13p6TeV_powheg2-minlo-HWJ-JHUGenV752-pythia8",
+        "ZHto2Zto4L_M125_TuneCP5_13p6TeV_powheg2-minlo-HZJ-JHUGenV752-pythia8",
+        "ZH_Hto2Z_4LFilter_M-125_TuneCP5_13p6TeV_powheg-jhugenv752-pythia8",
+        "TTH_Hto2Z_M-125_4LFilter_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8",
+        "TTH_Hto2Z_4LFilter_M-125_TuneCP5_13p6TeV_powheg-jhugenv752-pythia8",
+        "bbH_Hto2Zto4L_M-125_TuneCP5_13p6TeV_JHUGenV752-pythia8",
     ],
 }
