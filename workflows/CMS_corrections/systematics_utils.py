@@ -27,28 +27,47 @@ def pileup_weight(events, era, syst=""):
     weights: array
         The pileup weights
     """
-    if era == "2016APV":
-        era = "2016"
-    if era not in ["2016", "2017", "2018"]:
+    if era == "2016" or era == "2016APV":
+        mc_filename = "mc_pileup_UL16.root"
+        data_filename = "PileupHistogram-goldenJSON-13tev-2016-withvars-99bins.root"
+    elif era == "2017":
+        mc_filename = "mc_pileup_UL17.root"
+        data_filename = "PileupHistogram-goldenJSON-13tev-2017-withvars-99bins.root"
+    elif era == "2018":
+        mc_filename = "mc_pileup_UL18.root"
+        data_filename = "PileupHistogram-goldenJSON-13tev-2018-withvars-99bins.root"
+    elif era == "2022":
+        mc_filename = "mc_pileup_2022.root"
+        data_filename = "pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-2022-withvars-99bins.root"
+    elif era == "2022EE":
+        mc_filename = "mc_pileup_2022EE.root"
+        data_filename = "pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-2022EE-withvars-99bins.root"
+    elif era == "2023":
+        mc_filename = "mc_pileup_2023.root"
+        data_filename = "pileupHistogram-Cert_Collisions2023_366403_369802_eraBC_GoldenJson-13p6TeV-2023-withvars-99bins.root"
+    elif era == "2023BPix":
+        mc_filename = "mc_pileup_2023BPix.root"
+        data_filename = "pileupHistogram-Cert_Collisions2023_369803_370790_eraD_GoldenJson-13p6TeV-2023BPix-withvars-99bins.root"
+    else:
         raise ValueError(
             "no pileup weights because no year was selected for function pileup_weight"
         )
 
-    f_MC = uproot.open(f"data/pileup/mcPileupUL{era}.root")
-    f_data = uproot.open(f"data/pileup/PileupHistogram-UL{era}-100bins_withVar.root")
+    f_mc = uproot.open(f"data/pileup/{mc_filename}")
+    f_data = uproot.open(f"data/pileup/{data_filename}")
 
     variation = ""
     if "up" in syst:
-        variation = "_plus"
+        variation = "_up"
     elif "down" in syst:
-        variation = "_minus"
+        variation = "_down"
 
-    hist_MC = f_MC["pu_mc"].to_numpy()  # type: ignore[no-untyped-call]
+    hist_mc = f_mc["mc_pileup"].to_numpy()  # type: ignore[no-untyped-call]
     hist_data = f_data["pileup" + variation].to_numpy()  # type: ignore[no-untyped-call]
-    hist_data[0].sum()
-    norm_data = hist_data[0] / hist_data[0].sum()
+    normed_mc = hist_mc[0] / hist_mc[0].sum()
+    normed_data = hist_data[0] / hist_data[0].sum()
     weights = np.divide(
-        norm_data, hist_MC[0], out=np.ones_like(norm_data), where=hist_MC[0] != 0
+        normed_data, normed_mc, out=np.ones_like(normed_data), where=normed_mc != 0
     )
 
     nTrueInt = ak.values_astype(events.Pileup.nTrueInt, np.int32)
@@ -253,10 +272,11 @@ def get_scale_variations(events, allow_manual=True):
 
 def track_killing(tracks, era):
     """
-    Drop 2.7%, 2.2%, and 2.1% of the tracks randomly at reco-level
-    for charged-particles with pT < 20 GeV in simulation for 2016, 2017, and
-    2018, respectively when reclustering the constituents.
-    For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
+    Drop 2.7%, 2.2%, and 2.1% of the tracks randomly at reco-level for
+    charged-particles with pT < 20 GeV in simulation for 2016, 2017, and
+    2018, respectively when reclustering the constituents. Setting this
+    to 3% for Run 3 eras for now. For charged-particles with pT > 20 GeV,
+    1% of the tracks are dropped randomly.
     """
 
     low_pt_tracks = tracks[tracks.pt < 20]
@@ -271,8 +291,16 @@ def track_killing(tracks, era):
         rng.random(ak.sum(high_pt_trk_cnts)), high_pt_trk_cnts
     )
 
-    year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027, "2016APV": 0.027}
-    era = "2018"
+    year_percent = {
+        "2016": 0.027,
+        "2016APV": 0.027,
+        "2017": 0.022,
+        "2018": 0.021,
+        "2022": 0.03,
+        "2022EE": 0.03,
+        "2023": 0.03,
+        "2023BPix": 0.03,
+    }
     low_pt_percent = year_percent[era]
     high_pt_percent = 0.01
     low_pt_tracks_cut = low_pt_tracks[low_pt_rnd_arr > low_pt_percent]

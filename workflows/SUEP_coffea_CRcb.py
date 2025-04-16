@@ -71,15 +71,15 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_cb.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, syst="up"),
+                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="up"),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, syst="down"),
+                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="down"),
                     axis=-1,
                 ),
             )

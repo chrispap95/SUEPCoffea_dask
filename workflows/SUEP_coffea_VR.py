@@ -103,30 +103,38 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_VR_tight.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_tight, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_VR_tight, self.era, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_tight, syst="up"),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_VR_tight, self.era, syst="up"
+                    ),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_tight, syst="down"),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_VR_tight, self.era, syst="down"
+                    ),
                     axis=-1,
                 ),
             )
             weights_VR_loose.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_loose, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_VR_loose, self.era, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_loose, syst="up"),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_VR_loose, self.era, syst="up"
+                    ),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_loose, syst="down"),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_VR_loose, self.era, syst="down"
+                    ),
                     axis=-1,
                 ),
             )

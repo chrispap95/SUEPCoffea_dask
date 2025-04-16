@@ -59,10 +59,11 @@ class SUEP_processor(SUEP_common.SUEP_base):
         candidates_indices = candidates_indices[inside_mass_window]
 
         # Make sure both muons from the Z candidates are prompt
+        # Apply tight miniIso id corresponding to miniIso < 0.1
         candidate_muons = muons[candidates_indices]
         prompt_muons = muons[
             (candidate_muons.pt > 25)
-            & (candidate_muons.miniPFRelIso_all < 0.1)
+            & (candidate_muons.miniIsoId >= 3)
             & (abs(candidate_muons.dxy) < 0.008)
             & (abs(candidate_muons.dz) < 0.01)
             & (abs(candidate_muons.ip3d) < 0.01)
@@ -73,7 +74,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Non prompt muons – these are orthogonal to the previous selection so they can just be added
         qcd_muons = muons[
-            (muons.miniPFRelIso_all > 0.1)
+            (muons.miniIsoId < 3)
             & (abs(muons.dxy) > 0.01)
             & (abs(muons.dz) > 0.01)
             & (abs(muons.ip3d) > 0.015)
@@ -132,15 +133,19 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, self.era, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, syst="up"),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_CR_prompt, self.era, syst="up"
+                    ),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, syst="down"),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_CR_prompt, self.era, syst="down"
+                    ),
                     axis=-1,
                 ),
             )
@@ -165,15 +170,15 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_cb.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, syst=""),
+                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
                     axis=-1,
                 ),
                 weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, syst="up"),
+                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="up"),
                     axis=-1,
                 ),
                 weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, syst="down"),
+                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="down"),
                     axis=-1,
                 ),
             )

@@ -121,8 +121,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weight=weights_VR[enough_muons],
             )
 
-            events_VR_Zcand, muons_VR_Zcand, Z_cands = self.find_Z_candidates(
-                events_VR, muons_VR
+            events_VR_Zcand, muons_VR_Zcand, Z_cands, muon_indices = (
+                self.find_Z_candidates(events_VR, muons_VR)
             )
             output[dataset]["histograms"]["dimuon_mass_best_vs_nMuon"].fill(
                 Z_cands.mass,

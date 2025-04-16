@@ -263,7 +263,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_tight, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_tight, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -282,7 +284,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_loose, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_loose, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -309,7 +313,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_tight, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_tight, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -328,7 +334,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_loose, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_loose, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -355,7 +363,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_tight, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_tight, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -380,7 +390,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_loose, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_loose, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -415,7 +427,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_tight.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_tight, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_tight, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )
@@ -427,7 +441,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_loose.add(
                 "MuonSF",
                 weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_SR_high_temp_loose, syst=""),
+                    muon_sf_utils.muon_efficiencies(
+                        muons_SR_high_temp_loose, self.era, syst=""
+                    ),
                     axis=-1,
                 ),
             )

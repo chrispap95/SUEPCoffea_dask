@@ -102,7 +102,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weights_loose_cut.add(
                     "MuonSF",
                     weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(muons_loose_cut, syst=""),
+                        muon_sf_utils.muon_efficiencies(
+                            muons_loose_cut, self.era, syst=""
+                        ),
                         axis=-1,
                     ),
                 )
@@ -119,7 +121,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weights_tight_cut.add(
                     "MuonSF",
                     weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(muons_tight_cut, syst=""),
+                        muon_sf_utils.muon_efficiencies(
+                            muons_tight_cut, self.era, syst=""
+                        ),
                         axis=-1,
                     ),
                 )
@@ -142,7 +146,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weights_loose_cut.add(
                     "MuonSF",
                     weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(muons_loose_cut, syst=""),
+                        muon_sf_utils.muon_efficiencies(
+                            muons_loose_cut, self.era, syst=""
+                        ),
                         axis=-1,
                     ),
                 )
@@ -159,7 +165,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weights_tight_cut.add(
                     "MuonSF",
                     weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(muons_tight_cut, syst=""),
+                        muon_sf_utils.muon_efficiencies(
+                            muons_tight_cut, self.era, syst=""
+                        ),
                         axis=-1,
                     ),
                 )
