@@ -1,0 +1,41 @@
+{
+    "GluGluToSUEP_mS1000.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS1000.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS125.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS200.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS200.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS300.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS300.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS400.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS400.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS500.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS500.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS600.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS600.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS800.000_mPhi1.000_T0.250_modeleptonic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p25_TuneCP5_13p6TeV_pythia8_split/SUEP_mS800.000_mPhi1.000_T0.250_modeleptonic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS1000.000_mPhi1.400_T0.350_modehadronic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p35_TuneCP5_13p6TeV_pythia8_split/SUEP_mS1000.000_mPhi1.400_T0.350_modehadronic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS200.000_mPhi1.400_T0.350_modehadronic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p35_TuneCP5_13p6TeV_pythia8_split/SUEP_mS200.000_mPhi1.400_T0.350_modehadronic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS300.000_mPhi1.400_T0.350_modehadronic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p35_TuneCP5_13p6TeV_pythia8_split/SUEP_mS300.000_mPhi1.400_T0.350_modehadronic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS400.000_mPhi1.400_T0.350_modehadronic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p35_TuneCP5_13p6TeV_pythia8_split/SUEP_mS400.000_mPhi1.400_T0.350_modehadronic/merged_0.root"
+    ],
+    "GluGluToSUEP_mS500.000_mPhi1.400_T0.350_modehadronic_13p6TeV": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_May2025_merged/GluGluToSUEP_T0p35_TuneCP5_13p6TeV_pythia8_split/SUEP_mS500.000_mPhi1.400_T0.350_modehadronic/merged_0.root"
+    ]
+}

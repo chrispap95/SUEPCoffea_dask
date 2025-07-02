@@ -1,0 +1,3136 @@
+{
+    "schema_version": 2,
+    "description": "This json file contains different scale factors centrally derived by the Muon POG. Corrections are supplied for various reconstructions, working points, IDs, isolation cuts, and resonances (Z or JPsi). In general, the scale factors are factorized into ID*ISO*HLT, and the names follow the next convention: NUM_{NumeratorNAME}_DEN_{DenominatorNAME} where 'NumeratorNAME' can be 'TightID' and denominator can be 'TrackerMuons', for example. Nominal scale factors and uncertainties are provided. 'nominal', 'stat', 'syst', 'systup', and 'systdown' are provided for all the cases. Additional systematic uncertainties may be included such as 'massBin', 'AltSig', etc. Please note the different meanings of the input labels.    \n 'nominal'  : Nominal central scale factor value    \n 'systup'   : Combined statistical+systematic up boundary (Consistent with XPOG format)    \n 'systdown' : Combined statistical+systematic down boundary (Consistent with XPOG format)    \n 'stat'     : Statistical uncertainty    \n 'syst'     : Systematic uncertainty    \n",
+    "corrections": [
+        {
+            "name": "NUM_MediumID_DEN_TrackerMuons",
+            "description": "NUM_MediumID_DEN_TrackerMuons",
+            "version": 2,
+            "inputs": [
+                {
+                    "name": "eta",
+                    "type": "real",
+                    "description": "Probe eta"
+                },
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal scale factor or one of the uncertainties"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor (nominal) or uncertainty"
+            },
+            "data": {
+                "nodetype": "transform",
+                "input": "eta",
+                "rule": {
+                    "nodetype": "formula",
+                    "expression": "abs(x)",
+                    "parser": "TFormula",
+                    "variables": [
+                        "eta"
+                    ]
+                },
+                "content": {
+                    "nodetype": "binning",
+                    "input": "eta",
+                    "edges": [
+                        0.0,
+                        0.9,
+                        1.2,
+                        2.1,
+                        2.4
+                    ],
+                    "content": [
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0040371596856734
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.19268940957657862
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.196726569262252
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8113477501090948
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0815990813458694
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.08359759300906823
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1651966743549376
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9980014883368011
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0435395658987878
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.06911650908224976
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1126560749810377
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9744230568165381
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0086850403431724
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.04885463532570796
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0575396756688804
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9598304050174644
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0011376440104545
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.034746879020569645
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.035884523031024
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9663907649898849
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.006787224517577
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.017513868590132403
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0243010931077094
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9892733559274447
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9970593490304513
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.016579510315571658
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.013638859346023
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9804798387148796
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9484224471263462
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.03557996616143783
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 0.984002413287784
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9128424809649083
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.982446751763857
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.019331424749505565
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0017781765133627
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9631153270143514
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.007012066395779
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.038609933103272175
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.045621999499051
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9684021332925067
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.952689132760627
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.07916069055608878
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.031849823316716
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8735284422045383
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0081882080873394
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 1.0081908107919368
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 2.0163790188792765
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": -2.602704597398642e-06
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        },
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.1931873265999193
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.561492979771248
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.7546803063711673
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.6316943468286713
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.1406555982846873
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.20004308741012575
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.340698685694813
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9406125108745615
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9682981788416416
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.12875149508367703
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0970496739253186
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8395466837579646
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0769629067587496
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.04072516039244329
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1176880671511928
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0362377463663064
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9365330816224628
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.07935847990574915
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.015891561528212
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8571746017167137
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9767586740054937
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.042626971964233436
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.019385645969727
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9341317020412602
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0152588755004466
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0439385627664526
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0591974382668992
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.971320312733994
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.01397235823874
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.04451648571746448
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0584888439562046
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9694558725212756
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0090210462575462
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.1170494786254817
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1260705248830278
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8919715676320645
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0071373008688846
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.31142356644285873
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.3185608673117435
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.6957137344260259
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        },
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0380344784756352
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.06844077805674864
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1064752565323839
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9695937004188866
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0353979033991303
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.06616293921019281
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.101560842609323
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9692349641889375
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0308284878818488
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.017384378949399662
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0482128668312485
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.013444108932449
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.015565366593884
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.028899770691673404
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0444651372855573
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9866655959022106
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0199703516482905
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.03435162182502843
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.054321973473319
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9856187298232622
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0160621733528503
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.025558623427437064
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0416207967802873
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9905035499254132
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9903107710265845
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0194795013948969
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0097902724214813
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9708312696316876
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0044751237432477
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.009785612708031768
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0142607364512795
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9946895110352159
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9868139171117374
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.029708030616380606
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.016521947728118
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9571058864953568
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.00420785492367
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.15542253354634136
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1596303884700112
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8487853213773285
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0042909748220044
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.605980517307417
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.6102714921294212
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.3983104575145874
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        },
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9399816942334271
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.16781965363209103
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1078013478655182
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7721620406013361
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.043033355142591
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.5165552479265765
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.5595886030691675
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.5264781072160145
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.5598170957570124
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.4221540092108062
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 0.9819711049678186
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.13766308654620624
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9007124986266569
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.48518612527762944
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.3858986239042863
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.4155263733490275
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0238300625743761
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.27161334393075676
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2954434065051328
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7522167186436194
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0222030755001983
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.2713220325407104
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2935251080409087
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7508810429594879
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0210664432810002
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 1.0210691946139627
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 2.0421356378949627
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": -2.751332962569464e-06
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0189238242071277
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.19268375951613603
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2116075837232638
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8262400646909916
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0152369524211053
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.46745833821466387
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.4826952906357693
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.5477786142064415
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0156466849063197
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.23583963767396118
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2514863225802808
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7798070472323585
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9137191195703422
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.3302466337370871
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2439657533074293
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.5834724858332552
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.014656459932468
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.2275201956768117
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2421766556092795
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7871362642556562
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        }
+                    ],
+                    "flow": "error"
+                }
+            }
+        },
+        {
+            "name": "NUM_TrackerMuons_DEN_genTracks",
+            "description": "NUM_TrackerMuons_DEN_genTracks",
+            "version": 2,
+            "inputs": [
+                {
+                    "name": "eta",
+                    "type": "real",
+                    "description": "Probe eta"
+                },
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal scale factor or one of the uncertainties"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor (nominal) or uncertainty"
+            },
+            "data": {
+                "nodetype": "transform",
+                "input": "eta",
+                "rule": {
+                    "nodetype": "formula",
+                    "expression": "abs(x)",
+                    "parser": "TFormula",
+                    "variables": [
+                        "eta"
+                    ]
+                },
+                "content": {
+                    "nodetype": "binning",
+                    "input": "eta",
+                    "edges": [
+                        0.0,
+                        0.9,
+                        1.2,
+                        2.1,
+                        2.4
+                    ],
+                    "content": [
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.2735928307942586
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.1126311262426685
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.16096170455159
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.386223957036927
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.038536665892633
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.07291130380959449
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9656253620830384
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1114479697022275
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0179272663626346
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.04505366672315038
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9728735996394843
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0629809330857851
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0064396337144235
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.027612782734366327
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9788268509800572
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0340524164487899
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9952610380311436
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.025387667213245226
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9698733708178984
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0206487052443889
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9886617311126424
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.01953658650444682
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9691251446081957
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0081983176170892
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.007158929005355
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.005281123527064541
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0018778054782906
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0124400525324195
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.006647891756716
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.005118321475476306
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.0015295702812397
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0117662132321925
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0066631686152465
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0045658616234896
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1.002097306991757
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0112290302387361
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0058808727351949
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.013272066480558953
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9926088062546359
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.019152939215754
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0058399541473997
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.09548591195348576
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9103540421939139
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1013258661008853
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0047417021410996
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 1.0047432037198978
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": -1.5015787981909057e-06
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 2.0094849058609974
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        },
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.6185253969882053
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.39036338589005803
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.22816201109814727
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0088887828782633
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9469166415007371
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.11251015088000559
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8344064906207315
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0594267923807426
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0161847682127974
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.028105655473672015
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9880791127391253
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0442904236864694
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9310484767223539
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.08390231200549203
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8471461647168619
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.014950788727846
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.009897339326928
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.050554803273603434
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9593425360533245
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0604521426005313
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.007027508403878
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0225683236529397
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9844591847509383
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0295958320568177
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0062041003034161
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.04354210261098553
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9626619976924305
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0497462029144016
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0099097794293355
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.08274636810319634
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9271634113261391
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0926561475325318
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0065290007296392
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.11675884430113558
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8897701564285037
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1232878450307748
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0047119930493842
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.3106718678533123
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.6940401251960719
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.3153838609026964
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        },
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9455725240692203
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.09051123511181855
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8550612889574017
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0360837591810388
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0046655328938918
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.02864192874252308
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9760236041513688
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0333074616364148
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9912556590431282
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.0363592687939075
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9548963902492207
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0276149278370357
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.961200145010141
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.055150870895074325
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9060492741150666
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0163510159052154
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0035208543548175
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.019031208868073586
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9844896454867439
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.022552063222891
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0028236667446566
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.025221824327802383
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9776018424168542
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.028045491072459
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.002243448904213
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.014635809729241167
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9876076391749717
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.016879258633454
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 0.9842686913959845
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.02963206541364877
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.9546366259823357
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0139007568096332
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0045166286019926
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.03544277198028373
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.969073856621709
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.0399594005822763
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.003137641796382
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.15525653333299372
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8478811084633883
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1583941751293758
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0023685314073512
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.22172800213337931
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7806405292739719
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2240965335407306
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        },
+                        {
+                            "nodetype": "binning",
+                            "input": "pt",
+                            "edges": [
+                                2.0,
+                                2.5,
+                                2.75,
+                                3.0,
+                                3.25,
+                                3.5,
+                                3.75,
+                                4.0,
+                                4.5,
+                                5.0,
+                                6.0,
+                                8.0,
+                                10.0,
+                                15.0,
+                                20.0,
+                                30.0,
+                                Infinity
+                            ],
+                            "content": [
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.003101641969965
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.155266232580708
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8478354093892569
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.158367874550673
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0015080593564991
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.17132524711841202
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8301828122380871
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.172833306474911
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0020953201750005
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.29593485479273796
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7061604653822625
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2980301749677383
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0010844193841386
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.20667774660664287
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7944066727774958
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.2077621659907816
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0014976086683698
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.26567944661749526
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7358181620508746
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.267177055285865
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0013997659539167
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.2657935339218712
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7356062320320454
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.267193299875788
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0015739076237173
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.525138116826038
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.4764357907976794
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.5267120244497554
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.000494083914997
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.18919255742002172
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8113015264949752
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1896866413350187
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0011590620754274
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.460722385338737
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.5404366767366904
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.4618814474141644
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.000262108470239
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.23226375875167213
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.7679983497185668
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.232525867221911
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.0004848395299055
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.1689451220387189
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.8315397174911866
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.1694299615686243
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1.000224534964638
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0.6633788139988811
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 0.3368457209657568
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1.6636033489635191
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "nodetype": "category",
+                                    "input": "scale_factors",
+                                    "content": [
+                                        {
+                                            "key": "nominal",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "error",
+                                            "value": 0
+                                        },
+                                        {
+                                            "key": "systdown",
+                                            "value": 1
+                                        },
+                                        {
+                                            "key": "systup",
+                                            "value": 1
+                                        }
+                                    ]
+                                }
+                            ],
+                            "flow": "error"
+                        }
+                    ],
+                    "flow": "error"
+                }
+            }
+        }
+    ]
+}

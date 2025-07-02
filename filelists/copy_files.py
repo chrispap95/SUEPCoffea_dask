@@ -53,7 +53,8 @@ def copy_file(src, dest, force=False, dry_run=False):
     #     return True
 
     # Construct xrdcp command
-    cmd = ["xrdcp", "--nopbar", "--silent", src, dest]
+    # cmd = ["xrdcp", "--nopbar", "--silent", src, dest]
+    cmd = ["xrdcp", src, dest]
 
     if dry_run:
         logging.info(f"DRY RUN: {' '.join(cmd)}")
@@ -97,7 +98,8 @@ def main():
     args = setup_args()
 
     # Ensure output directory exists
-    os.makedirs(args.output, exist_ok=True)
+    if not args.output.startswith("root://"):
+        os.makedirs(args.output, exist_ok=True)
 
     # Load the JSON file with dataset information
     try:

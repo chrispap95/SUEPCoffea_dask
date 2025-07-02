@@ -81,7 +81,7 @@ def create_lumi_json(filename, output_json="lumi_ranges.json"):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python create_lumi_json.py <nanoaod_file> [output_json]")
+        print("Usage: python nano_to_brilcalc.py <nanoaod_file> [output_json]")
         sys.exit(1)
 
     input_file = sys.argv[1]

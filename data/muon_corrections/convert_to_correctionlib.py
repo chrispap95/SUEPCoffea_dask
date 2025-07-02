@@ -1,13 +1,27 @@
+import argparse
 import json
 
-from rich import print  # type: ignore[import]
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Convert old CMS JSON to correctionlib format"
+    )
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        help="Path to the old CMS JSON file",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="Path to save the new correctionlib JSON file",
+    )
+    return parser.parse_args()
 
 
-def create_eta_pt_correction(
-    name,
-    description,
-    data,
-):
+def create_eta_pt_correction(name, description, data):
     """
     Create a correctionlib JSON structure for 2D binned data.
 
@@ -151,10 +165,11 @@ def parse_old_CMS_JSON(input_json):
 
 
 if __name__ == "__main__":
+    # Parse command line arguments
+    args = parse_args()
+
     # Input old CMS JSON file
-    with open(
-        "low_pt_muons/Efficiency_muon_generalTracks_Run2018_UL_trackerMuon.json", "r"
-    ) as f:
+    with open(args.input, "r") as f:
         old_json = json.load(f)
 
     # Parse the old JSON file
@@ -168,5 +183,5 @@ if __name__ == "__main__":
     )
 
     # Save to file
-    with open("my_correction.json", "w") as f:
+    with open(args.output, "w") as f:
         json.dump(correction, f, indent=4)

@@ -114,6 +114,46 @@
         "br": 0.43924356,
         "eff": 1.0
     },
+    "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8": {
+        "xsec": 123.8,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8": {
+        "xsec": 2.278,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8": {
+        "xsec": 35.99,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8": {
+        "xsec": 75.47,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8": {
+        "xsec": 1.43,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8": {
+        "xsec": 36.05,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8": {
+        "xsec": 0.6603,
+        "br": 1.0,
+        "eff": 1.0
+    },
+    "TTZ_Zto2L_SMEFT_TuneCP5_13p6TeV_amcatnlo-pythia8": {
+        "xsec": 0.08385,
+        "br": 1.0,
+        "eff": 1.0
+    },
     "Wto2Q-3Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8": {
         "xsec": 2723.0,
         "br": 1.0,
@@ -243,7 +283,7 @@
     },
     "VBFHto2Zto4L_M-125_TuneCP5_13p6TeV_powheg-jhugen-pythia8": {
         "xsec": 4.078,
-        "br": 1.0,
+        "br": 0.0002745,
         "eff": 1.0,
         "description": "xsecs & BRs from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHWG136TeVxsec_extrap"
     },

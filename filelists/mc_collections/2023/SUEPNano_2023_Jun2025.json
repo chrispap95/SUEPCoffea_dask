@@ -1,0 +1,25 @@
+{
+    "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/merged_0.root"
+    ],
+    "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8/merged_0.root"
+    ],
+    "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/merged_0.root"
+    ],
+    "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/merged_0.root",
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/merged_1.root"
+    ],
+    "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/merged_0.root"
+    ],
+    "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8/merged_0.root"
+    ],
+    "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8": [
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/merged_0.root",
+        "root://cmseos.fnal.gov//store/group/lpcsuep/Muon_counting_search/SUEPNano_2023_Jun2025_merged/TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/merged_1.root"
+    ]
+}
