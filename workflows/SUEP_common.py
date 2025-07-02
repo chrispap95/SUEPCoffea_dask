@@ -23,53 +23,259 @@ class SUEP_base(processor.ProcessorABC):
         self.gensumweight = 1.0
         self.do_rochester = do_rochester
 
+    hlt_path_lumi = {
+        "2016APV": {
+            "HLT_TripleMu_5_3_3": {
+                "total lumi": 19.501601622,
+                "path lumi": 7.657859683,
+                "simulated": True,
+            },
+            "HLT_TripleMu_12_10_5": {
+                "total lumi": 19.501601622,
+                "path lumi": 19.497897120,
+                "simulated": True,
+            },
+        },
+        "2016": {
+            "HLT_TripleMu_5_3_3": {
+                "total lumi": 16.812151722,
+                "path lumi": 0.388200744,
+                "simulated": True,
+            },
+            "HLT_TripleMu_5_3_3_DZ_Mass3p8": {
+                "total lumi": 16.812151722,
+                "path lumi": 8.740119304,
+                "simulated": False,
+            },
+            "HLT_TripleMu_12_10_5": {
+                "total lumi": 16.812151722,
+                "path lumi": 16.812151722,
+                "simulated": True,
+            },
+        },
+        "2017": {
+            "HLT_TripleMu_5_3_3_Mass3p8to60_DZ": {
+                "total lumi": 41.479849142,
+                "path lumi": 24.259691276,
+                "simulated": True,
+            },
+            "HLT_TripleMu_10_5_5_DZ": {
+                "total lumi": 41.479849142,
+                "path lumi": 41.478046012,
+                "simulated": True,
+            },
+            "HLT_TripleMu_12_10_5": {
+                "total lumi": 41.479849142,
+                "path lumi": 41.478046012,
+                "simulated": True,
+            },
+        },
+        "2018": {
+            "HLT_TripleMu_5_3_3_Mass3p8_DZ": {
+                "total lumi": 59.832422397,
+                "path lumi": 54.536814521,
+                "simulated": True,
+            },
+            "HLT_TripleMu_5_3_3_Mass3p8to60_DZ": {
+                "total lumi": 59.832422397,
+                "path lumi": 5.291012014,
+                "simulated": False,
+            },
+            "HLT_TripleMu_10_5_5_DZ": {
+                "total lumi": 59.832422397,
+                "path lumi": 59.827826535,
+                "simulated": True,
+            },
+            "HLT_TripleMu_12_10_5": {
+                "total lumi": 59.832422397,
+                "path lumi": 59.827826535,
+                "simulated": True,
+            },
+        },
+    }
+
+    def emulate_HLT_TripleMu_5_3_3_DZ_Mass3p8(self, events):
+        # Begin from the HLT_TripleMu_5_3_3 trigger
+        trigger = events.HLT.TripleMu_5_3_3
+        events = ak.mask(events, trigger)
+
+        # Check if there are at least 3 muons
+        trigger = trigger & (ak.num(events.Muon) > 2)
+        events = ak.mask(events, ak.num(events.Muon) > 2)
+        muons = events.Muon
+
+        # Make unique muon pairs
+        muon_idx = ak.local_index(muons)
+        muon_pairs = ak.unzip(ak.cartesian([muons, muons]))
+        muon_pairs_idx = ak.unzip(ak.cartesian([muon_idx, muon_idx]))
+        unique_pairs = muon_pairs_idx[0] < muon_pairs_idx[1]  # type: ignore[attr-defined]
+        muons1 = ak.mask(muon_pairs[0], unique_pairs)
+        muons2 = ak.mask(muon_pairs[1], unique_pairs)  # type: ignore[attr-defined]
+
+        # Reject pairs with large dz
+        dz = muons1.dz - muons2.dz
+        muons1 = ak.mask(muons1, abs(dz) < 0.2)
+        muons2 = ak.mask(muons2, abs(dz) < 0.2)
+
+        # Check if there is at least one pair with mass > 3.8
+        os_dimuons = muons1 + muons2
+        trigger = trigger & (ak.sum(os_dimuons.mass > 3.8, axis=-1) > 0)
+        return ak.fill_none(trigger, False)
+
+    def emulate_HLT_TripleMu_5_3_3_Mass3p8to60_DZ(self, events):
+        # Begin from the HLT_TripleMu_5_3_3_Mass3p8 trigger
+        trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ
+        events = ak.mask(events, trigger)
+
+        # Check if there are at least 3 muons
+        trigger = trigger & (ak.num(events.Muon) > 2)
+        events = ak.mask(events, ak.num(events.Muon) > 2)
+        muons = events.Muon
+
+        # Make unique muon pairs
+        muon_idx = ak.local_index(muons)
+        muon_pairs = ak.unzip(ak.cartesian([muons, muons]))
+        muon_pairs_idx = ak.unzip(ak.cartesian([muon_idx, muon_idx]))
+        unique_pairs = muon_pairs_idx[0] < muon_pairs_idx[1]  # type: ignore[attr-defined]
+        muons1 = ak.mask(muon_pairs[0], unique_pairs)
+        muons2 = ak.mask(muon_pairs[1], unique_pairs)  # type: ignore[attr-defined]
+
+        # Reject pairs with large dz
+        dz = muons1.dz - muons2.dz
+        muons1 = ak.mask(muons1, abs(dz) < 0.2)
+        muons2 = ak.mask(muons2, abs(dz) < 0.2)
+
+        # Check if there is at least one pair with mass > 3.8
+        os_dimuons = muons1 + muons2
+        trigger = (
+            trigger
+            & (ak.sum(os_dimuons.mass > 3.8, axis=-1) > 0)
+            & (ak.sum(os_dimuons.mass < 60, axis=-1) > 0)
+        )
+        return ak.fill_none(trigger, False)
+
     def trigger_selection(self, events):
         """
         Applies trigger, returns events.
+
+        Parameters
+        ----------
+        events : awkward array
+            The events to be filtered.
         """
         trigger = np.zeros(len(events), dtype=bool)
-        if self.era in ["2016", "2016APV"]:
+        if self.era == "2016APV":
             if "TripleMu_5_3_3" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_5_3_3 == 1)
-            if "TripleMu_5_3_3_DZ_Mass3p8" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_5_3_3_DZ_Mass3p8 == 1)
-            if "TripleMu_12_10_5" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
+                trigger = trigger | events.HLT.TripleMu_5_3_3
+            trigger = trigger | events.HLT.TripleMu_12_10_5
+        elif self.era == "2016":
+            if "TripleMu_5_3_3" in events.HLT.fields:
+                trigger = trigger | events.HLT.TripleMu_5_3_3
+            # if "TripleMu_5_3_3_DZ_Mass3p8" in events.HLT.fields:
+            #     trigger = trigger | events.HLT.TripleMu_5_3_3_DZ_Mass3p8
+            # elif "TripleMu_5_3_3" in events.HLT.fields and self.isMC:
+            #     missing_path_2016 = self.emulate_HLT_TripleMu_5_3_3_DZ_Mass3p8(events)
+            #     trigger = trigger | missing_path_2016
+            trigger = trigger | events.HLT.TripleMu_12_10_5
         elif self.era == "2017":
             if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1)
-            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_10_5_5_DZ == 1)
-            if "TripleMu_12_10_5" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
+                trigger = trigger | events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ
+            trigger = trigger | events.HLT.TripleMu_10_5_5_DZ
+            trigger = trigger | events.HLT.TripleMu_12_10_5
         elif self.era == "2018":
-            if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1)
             if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1)
-            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_10_5_5_DZ == 1)
-            if "TripleMu_12_10_5" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
-        elif self.era in ["2022", "2023"]:
-            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1)
-            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_10_5_5_DZ == 1)
-            if "TripleMu_12_10_5" in events.HLT.fields:
-                trigger = trigger | (events.HLT.TripleMu_12_10_5 == 1)
+                trigger = trigger | events.HLT.TripleMu_5_3_3_Mass3p8_DZ
+            # if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
+            #     trigger = trigger | events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ
+            # elif "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields and self.isMC:
+            #     missing_path_2018 = self.emulate_HLT_TripleMu_5_3_3_Mass3p8to60_DZ(
+            #         events
+            #     )
+            #     trigger = trigger | missing_path_2018
+            trigger = trigger | events.HLT.TripleMu_10_5_5_DZ
+            trigger = trigger | events.HLT.TripleMu_12_10_5
+        elif self.era in ["2022", "2022EE", "2023", "2023BPix"]:
+            trigger = trigger | events.HLT.TripleMu_5_3_3_Mass3p8_DZ
+            trigger = trigger | events.HLT.TripleMu_10_5_5_DZ
+            trigger = trigger | events.HLT.TripleMu_12_10_5
         else:
             raise ValueError(f"Invalid era: {self.era}")
         events = events[trigger]
         return events
 
-    def get_weights(self, events, do_vars: bool = False):
+    def get_lumi_factors(self, events):
+        lumi_factors = np.ones(len(events))
+        if self.era == "2016APV":
+            lumi_factors = np.where(
+                events.HLT.TripleMu_5_3_3 & ~events.HLT.TripleMu_12_10_5,
+                7.657859683 / 19.497897120,
+                lumi_factors,
+            )
+        if self.era == "2016":
+            lumi_factors = np.where(
+                events.HLT.TripleMu_5_3_3 & ~events.HLT.TripleMu_12_10_5,
+                0.3882007446 / 16.812151722,
+                lumi_factors,
+            )
+            # lumi_factors_2 = np.where(
+            #     self.emulate_HLT_TripleMu_5_3_3_DZ_Mass3p8(events)
+            #     & ~events.HLT.TripleMu_12_10_5,
+            #     8.740119304 / 16.812151722,
+            #     0,
+            # )
+            # lumi_factors = np.where(
+            #     (lumi_factors_1 + lumi_factors_2) > 0,
+            #     lumi_factors_1 + lumi_factors_2,
+            #     lumi_factors,
+            # )
+        if self.era == "2017":
+            lumi_factors = np.where(
+                events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ
+                & ~events.HLT.TripleMu_10_5_5_DZ
+                & ~events.HLT.TripleMu_12_10_5,
+                24.259691276 / 41.478046012,
+                lumi_factors,
+            )
+        if self.era == "2018":
+            lumi_factors = np.where(
+                events.HLT.TripleMu_5_3_3_Mass3p8_DZ
+                & ~events.HLT.TripleMu_10_5_5_DZ
+                & ~events.HLT.TripleMu_12_10_5,
+                54.536814521 / 59.827826535,
+                lumi_factors,
+            )
+            # lumi_factors_2 = np.where(
+            #     self.emulate_HLT_TripleMu_5_3_3_Mass3p8to60_DZ(events)
+            #     & ~events.HLT.TripleMu_10_5_5_DZ
+            #     & ~events.HLT.TripleMu_12_10_5,
+            #     5.291012014 / 59.827826535,
+            #     0,
+            # )
+            # lumi_factors = np.where(
+            #     (lumi_factors_1 + lumi_factors_2) > 0,
+            #     lumi_factors_1 + lumi_factors_2,
+            #     lumi_factors,
+            # )
+        return lumi_factors
+
+    def get_weights(
+        self, events, do_vars: bool = False, apply_lumi_factors: bool = False
+    ):
         weights = Weights(len(events))
         if not self.isMC or len(events) == 0:
             return weights
 
         # Generator weights
         weights.add("genWeight", events.genWeight)
+
+        # Lumi weights
+        if apply_lumi_factors:
+            lumi_factors = self.get_lumi_factors(events)
+            # print(f"lumi_factors: {lumi_factors}")
+            # print(
+            #     f"lumi_factors stats: {np.unique(lumi_factors)}, {np.histogram(lumi_factors, len(np.unique(lumi_factors)))}"
+            # )
+            weights.add("lumiWeight", lumi_factors)
 
         # Pileup weights
         weights.add(
@@ -81,12 +287,13 @@ class SUEP_base(processor.ProcessorABC):
 
         # L1 prefire weights
         # Reference: https://twiki.cern.ch/twiki/bin/view/CMS/L1PrefiringWeightRecipe
-        weights.add(
-            "L1PreFire",
-            weight=events.L1PreFiringWeight.Nom,
-            weightUp=events.L1PreFiringWeight.Up,
-            weightDown=events.L1PreFiringWeight.Dn,
-        )
+        if self.era in ["2016", "2016APV", "2017", "2018"]:
+            weights.add(
+                "L1PreFire",
+                weight=events.L1PreFiringWeight.Nom,
+                weightUp=events.L1PreFiringWeight.Up,
+                weightDown=events.L1PreFiringWeight.Dn,
+            )
 
         # Some of these systematics are CPU intensive, so only compute them when needed
         if do_vars:
@@ -130,7 +337,44 @@ class SUEP_base(processor.ProcessorABC):
 
         return weights
 
-    def find_Z_candidates(self, events, muons):
+    # def find_Z_candidates(self, events, muons):
+    #     """
+    #     Find the Z candidates by forming all possible pairs of OS muons
+    #     and selecting the one closest to the Z mass.
+    #     """
+    #     # Make sure there are at least two muons with opposite charge
+    #     muons_idx = ak.local_index(muons)
+    #     muons1 = muons[muons.charge == 1]
+    #     muons2 = muons[muons.charge == -1]
+    #     muons1_idx = muons_idx[muons.charge == 1]
+    #     muons2_idx = muons_idx[muons.charge == -1]
+    #     enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+    #     muons1 = muons1[enough_muons]
+    #     muons2 = muons2[enough_muons]
+    #     muons1_idx = muons1_idx[enough_muons]
+    #     muons2_idx = muons2_idx[enough_muons]
+    #     muons = muons[enough_muons]
+    #     events = events[enough_muons]
+
+    #     # Create all possible pairs of OS muons
+    #     muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+    #     muon_pairs_idx = ak.unzip(ak.cartesian([muons1_idx, muons2_idx]))
+
+    #     # Find the pair closest to the Z mass
+    #     Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore[attr-defined]
+    #     closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_MASS), axis=1)
+    #     Z_cands = ak.firsts(Z_cands[ak.singletons(closest_to_peak)])
+    #     muon_indices = ak.concatenate(
+    #         [
+    #             muon_pairs_idx[0][ak.singletons(closest_to_peak)],
+    #             muon_pairs_idx[1][ak.singletons(closest_to_peak)],  # type: ignore[index]
+    #         ],
+    #         axis=-1,
+    #     )
+
+    #     return events, muons, Z_cands, muon_indices
+
+    def find_Z_candidates(self, events, muons, *arrays, apply_dR_cut: bool = False):
         """
         Find the Z candidates by forming all possible pairs of OS muons
         and selecting the one closest to the Z mass.
@@ -148,24 +392,44 @@ class SUEP_base(processor.ProcessorABC):
         muons2_idx = muons2_idx[enough_muons]
         muons = muons[enough_muons]
         events = events[enough_muons]
+        arrays = [arr[enough_muons] for arr in arrays]
 
         # Create all possible pairs of OS muons
         muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
         muon_pairs_idx = ak.unzip(ak.cartesian([muons1_idx, muons2_idx]))
 
+        # Place a dR cut on the muon pairs
+        if apply_dR_cut:
+            dR_cut = muon_pairs[0].delta_r(muon_pairs[1]) > 0.3  # type: ignore[index]
+            muon_pairs_0 = muon_pairs[0][dR_cut]  # type: ignore[index]
+            muon_pairs_1 = muon_pairs[1][dR_cut]  # type: ignore[index]
+            enough_muons = ak.num(muon_pairs[0]) > 0
+            muon_pairs_0 = muon_pairs_0[enough_muons]  # type: ignore[index]
+            muon_pairs_1 = muon_pairs_1[enough_muons]  # type: ignore[index]
+            muon_pairs_idx_0 = muon_pairs_idx[0][enough_muons]  # type: ignore[index]
+            muon_pairs_idx_1 = muon_pairs_idx[1][enough_muons]  # type: ignore[index]
+            muons = muons[enough_muons]
+            events = events[enough_muons]
+            arrays = [arr[enough_muons] for arr in arrays]
+        else:
+            muon_pairs_0 = muon_pairs[0]  # type: ignore[index]
+            muon_pairs_1 = muon_pairs[1]  # type: ignore[index]
+            muon_pairs_idx_0 = muon_pairs_idx[0]  # type: ignore[index]
+            muon_pairs_idx_1 = muon_pairs_idx[1]  # type: ignore[index]
+
         # Find the pair closest to the Z mass
-        Z_cands = muon_pairs[0] + muon_pairs[1]  # type: ignore[attr-defined]
+        Z_cands = muon_pairs_0 + muon_pairs_1  # type: ignore[index]
         closest_to_peak = ak.argmin(abs(Z_cands.mass - Z_MASS), axis=1)
         Z_cands = ak.firsts(Z_cands[ak.singletons(closest_to_peak)])
         muon_indices = ak.concatenate(
             [
-                muon_pairs_idx[0][ak.singletons(closest_to_peak)],
-                muon_pairs_idx[1][ak.singletons(closest_to_peak)],  # type: ignore[index]
+                muon_pairs_idx_0[ak.singletons(closest_to_peak)],
+                muon_pairs_idx_1[ak.singletons(closest_to_peak)],  # type: ignore[index]
             ],
             axis=-1,
         )
 
-        return events, muons, Z_cands, muon_indices
+        return events, muons, Z_cands, muon_indices, *arrays
 
     def muon_filter(self, events):
         """

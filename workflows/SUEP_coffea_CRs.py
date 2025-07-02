@@ -43,41 +43,44 @@ class SUEP_processor(SUEP_common.SUEP_base):
             (muons.mediumId)
             & (muons.pt > 3)
             & (abs(muons.eta) < 2.4)
+            & (abs(muons.dxy) < 0.2)
             & (abs(muons.dz) < 0.2)
         )
+        muons = muons[clean_muons]
+
+        # Apply tight miniIso id corresponding to miniIso < 0.1
+        prompt_muons = muons[
+            (muons.pt > 25)
+            & (muons.miniIsoId >= 3)
+            & (abs(muons.dxy) < 0.01)
+            & (abs(muons.dz) < 0.01)
+            # & (abs(muons.ip3d) < 0.01)
+        ]
+        enough_prompt_muons = ak.num(prompt_muons, axis=-1) > 1
+        os_muons_mask = ak.prod(prompt_muons.charge, axis=-1) < 0
+        muons = muons[enough_prompt_muons & os_muons_mask]
+        events = events[enough_prompt_muons & os_muons_mask]
+        prompt_muons = prompt_muons[enough_prompt_muons & os_muons_mask]
 
         # Get the Z candidates and make sure they are close to the peak
-        muons = muons[clean_muons]
-        events, muons, Z_cands, candidates_indices = self.find_Z_candidates(
-            events, muons
+        events, prompt_muons, Z_cands, candidates_indices, muons = (
+            self.find_Z_candidates(events, prompt_muons, muons, apply_dR_cut=False)
         )
         inside_mass_window = (
             abs(Z_cands.mass - SUEP_common.Z_MASS) < 2 * SUEP_common.Z_WIDTH
         )
         muons = muons[inside_mass_window]
         events = events[inside_mass_window]
+        prompt_muons = prompt_muons[inside_mass_window]
         candidates_indices = candidates_indices[inside_mass_window]
-
-        # Make sure both muons from the Z candidates are prompt
-        # Apply tight miniIso id corresponding to miniIso < 0.1
-        candidate_muons = muons[candidates_indices]
-        prompt_muons = muons[
-            (candidate_muons.pt > 25)
-            & (candidate_muons.miniIsoId >= 3)
-            & (abs(candidate_muons.dxy) < 0.008)
-            & (abs(candidate_muons.dz) < 0.01)
-            & (abs(candidate_muons.ip3d) < 0.01)
-        ]
-        muons = muons[ak.num(prompt_muons, axis=-1) > 0]
-        events = events[ak.num(prompt_muons, axis=-1) > 0]
-        prompt_muons = prompt_muons[ak.num(prompt_muons, axis=-1) > 0]
 
         # Non prompt muons – these are orthogonal to the previous selection so they can just be added
         qcd_muons = muons[
-            (muons.miniIsoId < 3)
+            (muons.miniIsoId < 3)  # miniIsoId < 3 corresponds to miniIso > 0.1
             & (abs(muons.dxy) > 0.01)
             & (abs(muons.dz) > 0.01)
-            & (abs(muons.ip3d) > 0.015)
+            # & (abs(muons.ip3d) > 0.015)
+            # & (muons.dzErr > 0.003)
         ]
         muons = ak.concatenate([prompt_muons, qcd_muons], axis=-1)
 
@@ -86,7 +89,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events = events[select_by_muons_low]
         muons = muons[select_by_muons_low]
 
-        return events, muons
+        return events, muons, prompt_muons, qcd_muons
 
     def apply_CR_cb(self, events):
         """
@@ -106,6 +109,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & (muons.pt > 3)
             & (abs(muons.eta) < 2.4)
             & (abs(muons.dz) < 0.2)
+            # & (muons.dzErr > 0.003)
         )
 
         # Apply extra very tight cuts for CR_cb
@@ -127,28 +131,97 @@ class SUEP_processor(SUEP_common.SUEP_base):
         if len(events_) == 0:
             return
 
-        events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
+        systematics = [
+            "MuonSF",
+            "L1PreFire",
+            "PUReweight",
+            "ISR",
+            "FSR",
+            "LHEPdf",
+            "LHEScaleMuF",
+            "LHEScaleMuR",
+        ]
+        if self.do_syst:
+            for syst in systematics:
+                for var in ["Up", "Down"]:
+                    output[dataset]["histograms"][f"CR_prompt_{syst}{var}"] = (
+                        output[dataset]["histograms"]["CR_prompt"].copy().reset()
+                    )
+                    output[dataset]["histograms"][f"CR_cb_{syst}{var}"] = (
+                        output[dataset]["histograms"]["CR_cb"].copy().reset()
+                    )
+
+        (
+            events_CR_prompt,
+            muons_CR_prompt,
+            prompt_muons_CR_prompt,
+            qcd_muons_CR_prompt,
+        ) = self.apply_CR_prompt(events_)
         if len(events_CR_prompt) > 0:
-            weights_CR_prompt = self.get_weights(events_CR_prompt, do_vars=True)
-            weights_CR_prompt.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, self.era, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_CR_prompt, self.era, syst="up"
-                    ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_CR_prompt, self.era, syst="down"
-                    ),
-                    axis=-1,
-                ),
+            weights_CR_prompt = self.get_weights(
+                events_CR_prompt, do_vars=True, apply_lumi_factors=True
             )
+            if self.isMC:
+                prompt_muon_SFs = ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        prompt_muons_CR_prompt,
+                        era=self.era,
+                        region="CR_prompt_prompt",
+                        syst="",
+                    ),
+                    axis=-1,
+                )
+                prompt_muon_SFs_up = ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        prompt_muons_CR_prompt,
+                        era=self.era,
+                        region="CR_prompt_prompt",
+                        syst="up",
+                    ),
+                    axis=-1,
+                )
+                prompt_muon_SFs_down = ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        prompt_muons_CR_prompt,
+                        era=self.era,
+                        region="CR_prompt_prompt",
+                        syst="down",
+                    ),
+                    axis=-1,
+                )
+                qcd_muon_SFs = ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        qcd_muons_CR_prompt,
+                        era=self.era,
+                        region="CR_prompt_qcd",
+                        syst="",
+                    ),
+                    axis=-1,
+                )
+                qcd_muon_SFs_up = ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        qcd_muons_CR_prompt,
+                        era=self.era,
+                        region="CR_prompt_qcd",
+                        syst="up",
+                    ),
+                    axis=-1,
+                )
+                qcd_muon_SFs_down = ak.prod(
+                    muon_sf_utils.muon_efficiencies(
+                        qcd_muons_CR_prompt,
+                        era=self.era,
+                        region="CR_prompt_qcd",
+                        syst="down",
+                    ),
+                    axis=-1,
+                )
+                weights_CR_prompt.add(
+                    "MuonSF",
+                    weight=prompt_muon_SFs * qcd_muon_SFs,
+                    weightUp=prompt_muon_SFs_up * qcd_muon_SFs_up,
+                    weightDown=prompt_muon_SFs_down * qcd_muon_SFs_down,
+                )
             nMuon_CR_prompt = ak.num(muons_CR_prompt, axis=-1)
             output[dataset]["histograms"]["CR_prompt"].fill(
                 ak.where(nMuon_CR_prompt > 5, 5, nMuon_CR_prompt),
@@ -156,9 +229,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if self.do_syst:
                 for syst in weights_CR_prompt.variations:
-                    output[dataset]["histograms"][f"CR_prompt_{syst}"] = (
-                        output[dataset]["histograms"]["CR_prompt"].copy().reset()
-                    )
                     output[dataset]["histograms"][f"CR_prompt_{syst}"].fill(
                         ak.where(nMuon_CR_prompt > 5, 5, nMuon_CR_prompt),
                         weight=weights_CR_prompt.weight(syst),
@@ -166,22 +236,31 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
         if len(events_CR_cb) > 0:
-            weights_CR_cb = self.get_weights(events_CR_cb, do_vars=True)
-            weights_CR_cb.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="up"),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="down"),
-                    axis=-1,
-                ),
+            weights_CR_cb = self.get_weights(
+                events_CR_cb, do_vars=True, apply_lumi_factors=True
             )
+            if self.isMC:
+                weights_CR_cb.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_cb, self.era, region="CR_cb", syst=""
+                        ),
+                        axis=-1,
+                    ),
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_cb, self.era, region="CR_cb", syst="up"
+                        ),
+                        axis=-1,
+                    ),
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_cb, self.era, region="CR_cb", syst="down"
+                        ),
+                        axis=-1,
+                    ),
+                )
             nMuon_CR_cb = ak.num(muons_CR_cb, axis=-1)
             output[dataset]["histograms"]["CR_cb"].fill(
                 ak.where(nMuon_CR_cb > 4, 4, nMuon_CR_cb),
@@ -189,9 +268,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if self.do_syst:
                 for syst in weights_CR_cb.variations:
-                    output[dataset]["histograms"][f"CR_cb_{syst}"] = (
-                        output[dataset]["histograms"]["CR_cb"].copy().reset()
-                    )
                     output[dataset]["histograms"][f"CR_cb_{syst}"].fill(
                         ak.where(nMuon_CR_cb > 4, 4, nMuon_CR_cb),
                         weight=weights_CR_cb.weight(syst),
@@ -200,11 +276,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
         return
 
     def analysis(self, events, output):
-        #######################################################################
-        # ---- Trigger event selection
-        # Cut based on ak4 jets to replicate the trigger
-        #######################################################################
-
         # get dataset name
         dataset = events.metadata["dataset"]
 
@@ -219,6 +290,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.trigger_selection(events)
+        # events = self.trigger_plateau(events)
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:

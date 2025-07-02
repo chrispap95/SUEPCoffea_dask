@@ -195,8 +195,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
-        events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
-            self.find_Z_candidates(events, muons_tight_cut)
+        events_tight_cut, _, Z_cands_tight_cut, _, muons_tight_cut = (
+            self.find_Z_candidates(events, muons, muons_tight_cut)
         )
         mass_cut = Z_cands_tight_cut.mass < 35
         events_tight_cut = events_tight_cut[mass_cut]
@@ -250,8 +250,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
-        events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
-            self.find_Z_candidates(events, muons_loose_cut)
+        events_loose_cut, _, Z_cands_loose_cut, _, muons_loose_cut = (
+            self.find_Z_candidates(events, muons, muons_loose_cut)
         )
         mass_cut = Z_cands_loose_cut.mass < 45
         events_loose_cut = events_loose_cut[mass_cut]
@@ -338,10 +338,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
         )
         muons_tight_cut = muons[clean_muons & tight_cut]
-        events_tight_cut, muons_tight_cut, Z_cands_tight_cut, _ = (
-            self.find_Z_candidates(events, muons_tight_cut)
+        events_tight_cut, _, Z_cands_tight_cut, _, muons_tight_cut = (
+            self.find_Z_candidates(events, muons, muons_tight_cut)
         )
-        mass_cut = Z_cands_tight_cut.mass < 70
+        mass_cut = ~ak.is_none(Z_cands_tight_cut) & (Z_cands_tight_cut.mass < 70)
         events_tight_cut = events_tight_cut[mass_cut]
         muons_tight_cut = muons_tight_cut[mass_cut]
 
@@ -356,10 +356,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 3)
         )
         muons_loose_cut = muons[clean_muons & loose_cut]
-        events_loose_cut, muons_loose_cut, Z_cands_loose_cut, _ = (
-            self.find_Z_candidates(events, muons_loose_cut)
+        events_loose_cut, _, Z_cands_loose_cut, _, muons_loose_cut = (
+            self.find_Z_candidates(events, muons, muons_loose_cut)
         )
-        mass_cut = Z_cands_loose_cut.mass < 70
+        mass_cut = ~ak.is_none(Z_cands_loose_cut) & (Z_cands_loose_cut.mass < 70)
         events_loose_cut = events_loose_cut[mass_cut]
         muons_loose_cut = muons_loose_cut[mass_cut]
         select_by_muons_loose_cut = ak.num(muons_loose_cut, axis=-1) > 2
@@ -375,6 +375,29 @@ class SUEP_processor(SUEP_common.SUEP_base):
         if len(events_) == 0:
             return
 
+        systematics = [
+            "MuonSF",
+            "L1PreFire",
+            "PUReweight",
+            "ISR",
+            "FSR",
+            "LHEPdf",
+            "LHEScaleMuF",
+            "LHEScaleMuR",
+        ]
+        if self.do_syst:
+            for syst in systematics:
+                for var in ["Up", "Down"]:
+                    output[dataset]["histograms"][f"SR_high_temp_loose_{syst}{var}"] = (
+                        output[dataset]["histograms"]["SR_high_temp_loose"]
+                        .copy()
+                        .reset()
+                    )
+                    output[dataset]["histograms"][f"SR_high_temp_tight_{syst}{var}"] = (
+                        output[dataset]["histograms"]["SR_high_temp_tight"]
+                        .copy()
+                        .reset()
+                    )
         (
             events_SR_high_temp_tight,
             events_SR_high_temp_loose,
@@ -384,29 +407,39 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         if len(events_SR_high_temp_tight) > 0:
             weights_SR_high_temp_tight = self.get_weights(
-                events_SR_high_temp_tight, do_vars=True
+                events_SR_high_temp_tight, do_vars=True, apply_lumi_factors=True
             )
-            weights_SR_high_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_high_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight,
+                            era=self.era,
+                            region="SR_high_temp_tight",
+                            syst="",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst="up"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight,
+                            era=self.era,
+                            region="SR_high_temp_tight",
+                            syst="up",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst="down"
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight,
+                            era=self.era,
+                            region="SR_high_temp_tight",
+                            syst="down",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_high_temp_tight = ak.num(muons_SR_high_temp_tight, axis=-1)
             output[dataset]["histograms"]["SR_high_temp_tight"].fill(
                 ak.where(nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight),
@@ -414,11 +447,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if self.do_syst:
                 for syst in weights_SR_high_temp_tight.variations:
-                    output[dataset]["histograms"][f"SR_high_temp_tight_{syst}"] = (
-                        output[dataset]["histograms"]["SR_high_temp_tight"]
-                        .copy()
-                        .reset()
-                    )
                     output[dataset]["histograms"][f"SR_high_temp_tight_{syst}"].fill(
                         ak.where(
                             nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight
@@ -428,29 +456,39 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         if len(events_SR_high_temp_loose) > 0:
             weights_SR_high_temp_loose = self.get_weights(
-                events_SR_high_temp_loose, do_vars=True
+                events_SR_high_temp_loose, do_vars=True, apply_lumi_factors=True
             )
-            weights_SR_high_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_high_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose,
+                            era=self.era,
+                            region="SR_high_temp_loose",
+                            syst="",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst="up"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose,
+                            era=self.era,
+                            region="SR_high_temp_loose",
+                            syst="up",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst="down"
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose,
+                            era=self.era,
+                            region="SR_high_temp_loose",
+                            syst="down",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_high_temp_loose = ak.num(muons_SR_high_temp_loose, axis=-1)
             output[dataset]["histograms"]["SR_high_temp_loose"].fill(
                 ak.where(nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose),
@@ -458,11 +496,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if self.do_syst:
                 for syst in weights_SR_high_temp_loose.variations:
-                    output[dataset]["histograms"][f"SR_high_temp_loose_{syst}"] = (
-                        output[dataset]["histograms"]["SR_high_temp_loose"]
-                        .copy()
-                        .reset()
-                    )
                     output[dataset]["histograms"][f"SR_high_temp_loose_{syst}"].fill(
                         ak.where(
                             nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose
@@ -470,6 +503,25 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         weight=weights_SR_high_temp_loose.weight(syst),
                     )
 
+        if self.do_syst:
+            for syst in systematics:
+                for var in ["Up", "Down"]:
+                    output[dataset]["histograms"][f"SR_low_temp_loose_{syst}{var}"] = (
+                        output[dataset]["histograms"]["SR_low_temp_loose"]
+                        .copy()
+                        .reset()
+                    )
+                    output[dataset]["histograms"][f"SR_low_temp_tight_{syst}{var}"] = (
+                        output[dataset]["histograms"]["SR_low_temp_tight"]
+                        .copy()
+                        .reset()
+                    )
+            output[dataset]["histograms"][f"SR_low_temp_loose_TrkEffDown"] = (
+                output[dataset]["histograms"]["SR_low_temp_loose"].copy().reset()
+            )
+            output[dataset]["histograms"][f"SR_low_temp_tight_TrkEffDown"] = (
+                output[dataset]["histograms"]["SR_low_temp_tight"].copy().reset()
+            )
         (
             events_SR_low_temp_tight,
             events_SR_low_temp_tight_trk_kill,
@@ -483,29 +535,39 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(
-                events_SR_low_temp_tight, do_vars=True
+                events_SR_low_temp_tight, do_vars=True, apply_lumi_factors=True
             )
-            weights_SR_low_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight,
+                            era=self.era,
+                            region="SR_low_temp_tight",
+                            syst="",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst="up"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight,
+                            era=self.era,
+                            region="SR_low_temp_tight",
+                            syst="up",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst="down"
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight,
+                            era=self.era,
+                            region="SR_low_temp_tight",
+                            syst="down",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_low_temp_tight = ak.num(muons_SR_low_temp_tight, axis=-1)
             output[dataset]["histograms"]["SR_low_temp_tight"].fill(
                 ak.where(nMuon_SR_low_temp_tight > 7, 7, nMuon_SR_low_temp_tight),
@@ -513,11 +575,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if self.do_syst:
                 for syst in weights_SR_low_temp_tight.variations:
-                    output[dataset]["histograms"][f"SR_low_temp_tight_{syst}"] = (
-                        output[dataset]["histograms"]["SR_low_temp_tight"]
-                        .copy()
-                        .reset()
-                    )
                     output[dataset]["histograms"][f"SR_low_temp_tight_{syst}"].fill(
                         ak.where(
                             nMuon_SR_low_temp_tight > 7, 7, nMuon_SR_low_temp_tight
@@ -527,86 +584,70 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Systematic for track killing
         # Needs to be handled manually
-        if len(events_SR_low_temp_tight_trk_kill) > 0:
+        if len(events_SR_low_temp_tight_trk_kill) > 0 and self.do_syst:
             weights_SR_low_temp_tight_trk_kill = self.get_weights(
-                events_SR_low_temp_tight_trk_kill
+                events_SR_low_temp_tight_trk_kill, apply_lumi_factors=True
             )
-            weights_SR_low_temp_tight_trk_kill.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight_trk_kill, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight_trk_kill.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight_trk_kill,
+                            era=self.era,
+                            region="SR_low_temp_tight",
+                            syst="",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_low_temp_tight_trk_kill = ak.num(
                 muons_SR_low_temp_tight_trk_kill, axis=-1
             )
-            output[dataset]["histograms"]["SR_low_temp_tight_TrkEffDown"] = (
-                output[dataset]["histograms"]["SR_low_temp_tight"]
-                .copy()
-                .reset()
-                .fill(
-                    ak.where(
-                        nMuon_SR_low_temp_tight_trk_kill > 7,
-                        7,
-                        nMuon_SR_low_temp_tight_trk_kill,
-                    ),
-                    weight=weights_SR_low_temp_tight_trk_kill.weight(),
-                )
+            output[dataset]["histograms"]["SR_low_temp_tight_TrkEffDown"].fill(
+                ak.where(
+                    nMuon_SR_low_temp_tight_trk_kill > 7,
+                    7,
+                    nMuon_SR_low_temp_tight_trk_kill,
+                ),
+                weight=weights_SR_low_temp_tight_trk_kill.weight(),
             )
-            # The Up variation is calculated manually by symmetrizing the Down variation
-            nominal_yields = output[dataset]["histograms"]["SR_low_temp_tight"].values()
-            down_yields = output[dataset]["histograms"][
-                "SR_low_temp_tight_TrkEffDown"
-            ].values()
-            down_rel_unc = (
-                np.sqrt(
-                    output[dataset]["histograms"][
-                        "SR_low_temp_tight_TrkEffDown"
-                    ].variances()
-                )
-                / down_yields
-            )
-            up_yields = 2 * nominal_yields - down_yields
-            up_vars = (up_yields * down_rel_unc) ** 2
-            output[dataset]["histograms"]["SR_low_temp_tight_TrkEffUp"] = (
-                output[dataset]["histograms"]["SR_low_temp_tight_TrkEffDown"]
-                .copy()
-                .reset()
-            )
-            for i, (val, var) in enumerate(zip(up_yields, up_vars)):
-                output[dataset]["histograms"]["SR_low_temp_tight_TrkEffUp"][i] = (
-                    val,
-                    var,
-                )
 
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(
-                events_SR_low_temp_loose, do_vars=True
+                events_SR_low_temp_loose, do_vars=True, apply_lumi_factors=True
             )
-            weights_SR_low_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose,
+                            era=self.era,
+                            region="SR_low_temp_loose",
+                            syst="",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst="up"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose,
+                            era=self.era,
+                            region="SR_low_temp_loose",
+                            syst="up",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst="down"
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose,
+                            era=self.era,
+                            region="SR_low_temp_loose",
+                            syst="down",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_low_temp_loose = ak.num(muons_SR_low_temp_loose, axis=-1)
             output[dataset]["histograms"]["SR_low_temp_loose"].fill(
                 ak.where(nMuon_SR_low_temp_loose > 7, 7, nMuon_SR_low_temp_loose),
@@ -614,11 +655,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if self.do_syst:
                 for syst in weights_SR_low_temp_loose.variations:
-                    output[dataset]["histograms"][f"SR_low_temp_loose_{syst}"] = (
-                        output[dataset]["histograms"]["SR_low_temp_loose"]
-                        .copy()
-                        .reset()
-                    )
                     output[dataset]["histograms"][f"SR_low_temp_loose_{syst}"].fill(
                         ak.where(
                             nMuon_SR_low_temp_loose > 7, 7, nMuon_SR_low_temp_loose
@@ -628,69 +664,38 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Systematic for track killing
         # Needs to be handled manually
-        if len(events_SR_low_temp_loose_trk_kill) > 0:
+        if len(events_SR_low_temp_loose_trk_kill) > 0 and self.do_syst:
             weights_SR_low_temp_loose_trk_kill = self.get_weights(
-                events_SR_low_temp_loose_trk_kill
+                events_SR_low_temp_loose_trk_kill, apply_lumi_factors=True
             )
-            weights_SR_low_temp_loose_trk_kill.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose_trk_kill, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose_trk_kill.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose_trk_kill,
+                            era=self.era,
+                            region="SR_low_temp_loose",
+                            syst="",
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_low_temp_loose_trk_kill = ak.num(
                 muons_SR_low_temp_loose_trk_kill, axis=-1
             )
-            output[dataset]["histograms"]["SR_low_temp_loose_TrkEffDown"] = (
-                output[dataset]["histograms"]["SR_low_temp_loose"]
-                .copy()
-                .reset()
-                .fill(
-                    ak.where(
-                        nMuon_SR_low_temp_loose_trk_kill > 7,
-                        7,
-                        nMuon_SR_low_temp_loose_trk_kill,
-                    ),
-                    weight=weights_SR_low_temp_loose_trk_kill.weight(),
-                )
+            output[dataset]["histograms"]["SR_low_temp_loose_TrkEffDown"].fill(
+                ak.where(
+                    nMuon_SR_low_temp_loose_trk_kill > 7,
+                    7,
+                    nMuon_SR_low_temp_loose_trk_kill,
+                ),
+                weight=weights_SR_low_temp_loose_trk_kill.weight(),
             )
-            # The Up variation is calculated manually by symmetrizing the Down variation
-            nominal_yields = output[dataset]["histograms"]["SR_low_temp_loose"].values()
-            down_yields = output[dataset]["histograms"][
-                "SR_low_temp_loose_TrkEffDown"
-            ].values()
-            down_rel_unc = (
-                np.sqrt(
-                    output[dataset]["histograms"][
-                        "SR_low_temp_loose_TrkEffDown"
-                    ].variances()
-                )
-                / down_yields
-            )
-            up_yields = 2 * nominal_yields - down_yields
-            up_vars = (up_yields * down_rel_unc) ** 2
-            output[dataset]["histograms"]["SR_low_temp_loose_TrkEffUp"] = (
-                output[dataset]["histograms"]["SR_low_temp_loose_TrkEffDown"]
-                .copy()
-                .reset()
-            )
-            for i, (val, var) in enumerate(zip(up_yields, up_vars)):
-                output[dataset]["histograms"]["SR_low_temp_loose_TrkEffUp"][i] = (
-                    val,
-                    var,
-                )
 
         return
 
     def analysis(self, events, output):
-        #####################################################################################
-        # ---- Trigger event selection
-        # Cut based on ak4 jets to replicate the trigger
-        #####################################################################################
-
         # get dataset name
         dataset = events.metadata["dataset"]
 

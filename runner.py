@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import importlib
 import inspect
 import json
@@ -21,6 +22,32 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
+
+
+class TimeoutProcessor(processor.ProcessorABC):
+    def __init__(self, base_processor, timeout_seconds=120):
+        self._base = base_processor
+        self.timeout = timeout_seconds
+
+    def process(self, events):
+        def _run():
+            return self._base.process(events)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run)
+            try:
+                return future.result(timeout=self.timeout)
+            except concurrent.futures.TimeoutError:
+                fname = events.metadata.get("filename", "unknown")
+                print(
+                    f"\n[TIMEOUT] Chunk from {fname} exceeded {self.timeout}s, skipping.\n"
+                )
+                raise RuntimeError(
+                    f"Chunk from {fname} timed out after {self.timeout}s"
+                )
+
+    def postprocess(self, accumulator):
+        return self._base.postprocess(accumulator)
 
 
 def loadder(args: argparse.Namespace) -> dict:
@@ -336,7 +363,7 @@ def getWeights(sample_dict: dict) -> Accumulatable:
     from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
     genSumW_instance = GenSumWeightExtractor(use_new_format=True)
-    genSumW_executor = processor.IterativeExecutor()
+    genSumW_executor = processor.FuturesExecutor(workers=4)
     genSumW_run = processor.Runner(
         executor=genSumW_executor,
         schema=nanoevents.BaseSchema,  # type: ignore[import]
@@ -381,6 +408,8 @@ def execute(
     else:
         raise NotImplementedError
 
+    # processor_instance = TimeoutProcessor(processor_instance, timeout_seconds=300)  # type: ignore[call-arg]
+
     run = processor.Runner(
         executor=executor,
         chunksize=args.chunk,
@@ -408,11 +437,11 @@ def saveOutput(
     Will calculate weights if necessary
     """
 
-    if gensumweight is not None:
-        output["gensumweight"].value = gensumweight
-        output["cutflow"][0] = [gensumweight, gensumweight]
-
     if args.isMC:
+        if gensumweight is not None:
+            output["gensumweight"].value = gensumweight
+            if "cutflow" in output.keys():
+                output["cutflow"][0] = [gensumweight, gensumweight]
         xsection = getXSection(sample, args.era)
         scale = xsection / output["gensumweight"].value
         pretty.pprint(
@@ -467,6 +496,10 @@ if __name__ == "__main__":
     # Execute the workflow
     output = execute(args, processor_instance, sample_dict)
 
+    if args.verbose:
+        print("Output (original):")
+        pretty.pprint(output)
+
     # Calculate the gen sum weight for skimmed samples
     if args.skimmed:
         weights = getWeights(sample_dict)
@@ -490,4 +523,5 @@ if __name__ == "__main__":
             saveOutput(args, output[sample], sample)  # type: ignore[import]
 
     if args.verbose:
+        print("Output (scaled):")
         pretty.pprint(output)

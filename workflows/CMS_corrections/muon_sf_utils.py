@@ -4,12 +4,72 @@ import numpy as np
 from coffea.lookup_tools import rochester_lookup, txt_converters
 
 
-def muon_efficiencies(muons, era, syst=""):
+def muon_efficiencies(muons, era, region, syst):
     """
     This will return the total muon scale factors. The muon scale factors are the product of
-    muon RECO efficiency and muon ID efficiency. ISO efficiency is not included yet.
+    muon RECO efficiency, muon ID efficiency, and muon ISO efficiency. Following the MUO POG
+    recommendations:
+        - For RECO efficiency, use the JPsi derived scale factors for muons with pt < 10 GeV
+        and the Z derived scale factors for muons with pt > 10 GeV. It applies only to Run 2.
+        - For ID efficiency, use the JPsi derived scale factors for Medium ID for most regions.
+        For CR_prompt, use the Z derived scale factors for Medium ID since it contains medium
+        pt muons.
+        - For ISO efficiency, only Tight iso WP over MediumId for CR_prompt.
+
+    RECO efficiencies:
+        - Run 2:
+            - JPsi up to 10 GeV
+            - Z above 10 GeV
+        - Run 3:
+            - Not needed
+
+    ID efficiencies:
+        - Run 2:
+            - JPsi for most regions
+            - Z for CR_prompt
+        - Run 3:
+            - JPsi for most regions
+            - Z for CR_prompt
+
+    ISO efficiencies (TBD):
+        - Tight iso WP over MediumId for CR_prompt
+
+    Uncertainties:
+        - Run 2:
+            - Low pt:
+                - RECO: stat only
+                - ID: stat only
+            - Medium pt:
+                - RECO: stat + syst
+                - ID: stat + syst
+                - ISO: stat + syst
+        - Run 3:
+            - Low pt:
+                - ID: stat + syst
+            - Medium pt:
+                - ID: stat + syst
+                - ISO: stat + syst
+
     The muon scale factors are calculated for medium pt muons and low pt muons separately.
+
+    Parameters
+    ----------
+    muons : awkward array
+        Muon collection
+    era : str
+        Era of the data taking. Can be 2016, 2016APV, 2017, 2018, 2022, 2022EE, 2023, 2023BPix
+    syst : str
+        Systematic variation. Can be "up", "down", or "" (default) for nominal.
+    region : str
+        Region of the analysis. E.g., "CR_prompt_prompt", "CR_prompt_qcd", "CR_cb".
+
+    Returns
+    -------
+    muon_SF : awkward array
+        Muon scale factors. The shape is the same as the muon collection.
     """
+    # NOTE: systup and systdown have the stat + syst uncertainties added in quadrature
+    # In the case of Run 2 JPsi efficiencies, the systup and systdown are only the stat uncertainties
     var = "nominal"
     if syst == "up":
         var = "systup"
@@ -19,30 +79,97 @@ def muon_efficiencies(muons, era, syst=""):
     muons_flat = ak.flatten(muons)
     n_muons = ak.num(muons)
 
-    # medium pt muons
-    low_pt_json_file = "data/muon_corrections/low_pt_muons/muon_JPsi.json"
-    low_pt_corrs = correctionlib.CorrectionSet.from_file(low_pt_json_file)
-    low_pt_muon_corr_id = low_pt_corrs["NUM_MediumID_DEN_TrackerMuons"]
-    low_pt_muon_corr_eff = low_pt_corrs["NUM_TrackerMuons_DEN_genTracks"]
+    # Choose the peak for TnP
+    peak = "JPsi"
+    if region == "CR_prompt_prompt":
+        peak = "Z"
 
-    low_pt_muon_id = low_pt_muon_corr_id.evaluate(muons_flat.eta, muons_flat.pt, var)
-    low_pt_muon_eff = low_pt_muon_corr_eff.evaluate(muons_flat.eta, muons_flat.pt, var)
+    config = []
 
-    # medium pt muons
-    medium_pt_json_file = "data/muon_corrections/medium_pt_muons/muon_Z.json"
-    medium_pt_corrs = correctionlib.CorrectionSet.from_file(medium_pt_json_file)
-    medium_pt_muon_corr_id = medium_pt_corrs["NUM_MediumID_DEN_TrackerMuons"]
-    medium_pt_muon_corr_eff = medium_pt_corrs["NUM_TrackerMuons_DEN_genTracks"]
-    # muon_corr_iso = correctionlib.CorrectionSet.from_file(json_file)["NUM_LooseRelIso_DEN_LooseID"]
+    # Add RECO efficiency correction only for Run 2
+    if era.startswith("201"):
+        config += ["NUM_TrackerMuons_DEN_genTracks"]
 
-    medium_pt_muon_id = medium_pt_muon_corr_id.evaluate(muons_flat.eta, 50.0, var)
-    medium_pt_muon_eff = medium_pt_muon_corr_eff.evaluate(muons_flat.eta, 50.0, var)
+    # All muons have medium ID efficiency
+    config += ["NUM_MediumID_DEN_TrackerMuons"]
 
-    # Combine low and medium pt SFs
-    sf_muon_id = np.where(muons_flat.pt > 15, medium_pt_muon_id, low_pt_muon_id)
-    sf_muon_eff = np.where(muons_flat.pt > 15, medium_pt_muon_eff, low_pt_muon_eff)
+    # Add all other corrections for each region
+    match region:
+        case "CR_prompt_prompt":
+            config += [
+                "NUM_miniIsoLT01_DEN_MediumID",
+                "NUM_absdxyLT001_DEN_miniIsoLT01 and MediumID",
+                "NUM_absdzLT001_DEN_absdxyLT001 and miniIsoLT01 and MediumID",
+            ]
+        case "CR_prompt_qcd":
+            config += []
+        case "CR_cb":
+            config += []
+        case "VR_loose":
+            config += []
+        case "VR_tight":
+            config += []
+        case "SR_low_temp_loose":
+            config += ["absdxyLT01", "absdzLT01"]
+        case "SR_low_temp_tight":
+            config += ["absdxyLT0007", "absdzLT0007"]
+        case "SR_high_temp_loose":
+            config += [
+                "NUM_miniIsoLT5_DEN_MediumID",
+                "neutralIsoLT3",
+                "absdxyLT01",
+                "absdzLT01",
+            ]
+        case "SR_high_temp_tight":
+            config += [
+                "NUM_miniIsoLT065_DEN_MediumID",
+                "neutralIsoLT05",
+                "absdxyLT0007",
+                "absdzLT0007",
+            ]
 
-    muon_SF = sf_muon_id * sf_muon_eff
+    json_file_JPsi = f"data/muon_corrections/{era}/muon_JPsi.json"
+    corrs_JPsi = correctionlib.CorrectionSet.from_file(json_file_JPsi)
+
+    json_file_Z = f"data/muon_corrections/{era}/muon_Z.json"
+    corrs_Z = correctionlib.CorrectionSet.from_file(json_file_Z)
+
+    muon_SF = np.ones_like(muons_flat.pt)
+
+    # Evaluate RECO efficiency
+    # Only for Run 2. Muons with pt < 10 GeV use JPsi corrections.
+    if "NUM_TrackerMuons_DEN_genTracks" in config:
+        low_pt_muon_corr_eff = corrs_JPsi["NUM_TrackerMuons_DEN_genTracks"]
+        low_pt_muon_eff = low_pt_muon_corr_eff.evaluate(
+            muons_flat.eta, muons_flat.pt, var
+        )
+
+        medium_pt_muon_corr_eff = corrs_Z["NUM_TrackerMuons_DEN_genTracks"]
+        medium_pt_muon_eff = medium_pt_muon_corr_eff.evaluate(muons_flat.eta, 50.0, var)
+        muon_SF = muon_SF * np.where(
+            muons_flat.pt > 10, medium_pt_muon_eff, low_pt_muon_eff
+        )
+
+    # Evaluate medium ID efficiency
+    if peak == "JPsi":
+        muon_corr_id = corrs_JPsi["NUM_MediumID_DEN_TrackerMuons"]
+        muon_SF = muon_SF * muon_corr_id.evaluate(muons_flat.eta, muons_flat.pt, var)
+    elif peak == "Z":
+        muon_corr_id = corrs_Z["NUM_MediumID_DEN_TrackerMuons"]
+        muon_SF = muon_SF * muon_corr_id.evaluate(muons_flat.eta, 50.0, var)
+
+    # Evaluate all other efficiencies
+    for corr_name in config:
+        if corr_name in [
+            "NUM_TrackerMuons_DEN_genTracks",
+            "NUM_MediumID_DEN_TrackerMuons",
+        ]:
+            continue
+        if peak == "JPsi":
+            corr = corrs_JPsi[corr_name]
+        elif peak == "Z":
+            corr = corrs_Z[corr_name]
+        muon_SF = muon_SF * corr.evaluate(abs(muons_flat.eta), muons_flat.pt, var)
 
     return ak.unflatten(muon_SF, n_muons)
 

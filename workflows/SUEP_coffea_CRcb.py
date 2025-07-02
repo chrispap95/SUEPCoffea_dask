@@ -68,21 +68,26 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
         if len(events_CR_cb) > 0:
             weights_CR_cb = self.get_weights(events_CR_cb, do_vars=True)
-            weights_CR_cb.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="up"),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst="down"),
-                    axis=-1,
-                ),
-            )
+            if self.isMC:
+                weights_CR_cb.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
+                        axis=-1,
+                    ),
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_cb, self.era, syst="up"
+                        ),
+                        axis=-1,
+                    ),
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_cb, self.era, syst="down"
+                        ),
+                        axis=-1,
+                    ),
+                )
             output[dataset]["histograms"]["CR_cb"].fill(
                 ak.num(muons_CR_cb, axis=-1),
                 weight=weights_CR_cb.weight(),

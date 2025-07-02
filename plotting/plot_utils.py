@@ -1,5 +1,6 @@
 import logging
 import math
+import multiprocessing as mp
 import os
 import pickle
 import re
@@ -20,19 +21,22 @@ from iminuit import Minuit
 from iminuit.cost import LeastSquares
 from jacobi import propagate  # type: ignore[import]
 from rich.pretty import pprint  # type: ignore[import]
-from rich.progress import track  # type: ignore[import]
+from rich.progress import Progress  # type: ignore[import]
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
-    "2016APV": 19497.914,
-    "2016": 16810.813,
-    "2017": 41471.589,
-    # NOTE: Only 2018 lumi has been properly calculated
-    "2018": 59795.400422,
-    "2022": 7980.4,
-    "2022EE": 26671.7,
-    "2023": 17794.0,
-    "2023BPix": 9451.0,
+    "2016APV": 19497.897120,
+    "2016": 16812.151722,
+    "2017": 41478.046012,
+    "2018": 59827.826535,
+    "Run2": 118118.024269,
+    # Leaving out Run2 APV for now
+    # "Run2": 137615.921389,
+    "2022": 7980.454145,
+    "2022EE": 26671.609707,
+    "2023": 18062.659111,
+    "2023BPix": 9693.130053,
+    "Run3": 62407.853016,
 }
 
 
@@ -40,8 +44,8 @@ def lumi_Label(year: str) -> float:
     """
     Return the luminosity in /fb for a given year.
     """
-    if year == "2016":
-        return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
+    # if year == "2016":
+    #     return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
     return round(lumis[year] / 1000, 1)
 
 
@@ -82,7 +86,7 @@ def find_lumi(
             lumi = lumis["2018"]
         if "SUEP" in infile_name:
             lumi = lumis["2018"]
-        if "DoubleMuon" in infile_name:
+        if "Muon" in infile_name:
             lumi = 1
     if year and not auto_lumi:
         lumi = lumis[year]
@@ -171,6 +175,31 @@ def load_samples(
     return plots
 
 
+def create_TrkEffUp(plots: dict):
+    for sample in plots:
+        for plot in ["SR_low_temp_loose_TrkEffDown", "SR_low_temp_tight_TrkEffDown"]:
+            if plot in plots[sample]:
+                plots[sample][plot.replace("TrkEffDown", "TrkEffUp")] = (
+                    plots[sample][plot].copy().reset()
+                )
+                vals_down = plots[sample][plot].values()
+                vals_nominal = plots[sample][plot.replace("_TrkEffDown", "")].values()
+                vals_up = 2 * vals_nominal - vals_down
+                vars_down = plots[sample][plot].variances()
+                rel_unc_down = np.divide(
+                    np.sqrt(vars_down),
+                    vals_down,
+                    out=np.zeros_like(vals_down),
+                    where=vals_down != 0,
+                )
+                vars_up = (vals_up * rel_unc_down) ** 2
+                for i, (val, var) in enumerate(zip(vals_up, vars_up)):
+                    plots[sample][plot.replace("TrkEffDown", "TrkEffUp")][i] = (
+                        val,
+                        var,
+                    )
+
+
 def loader(
     tag: str,
     era: str,
@@ -220,7 +249,7 @@ def loader(
         for b in basenames
         if ("pythia8" in b) and ("SUEP" not in b) and ("ggHBSMpythia" not in b)
     ]
-    files_data = [str(plot_dir / b) for b in basenames if ("DoubleMuon" in b)]
+    files_data = [str(plot_dir / b) for b in basenames if ("Muon" in b)]
 
     if verbosity > 0:
         pprint(files_bkg)
@@ -255,6 +284,8 @@ def loader(
                 plots[new_name] = plots_data[sample]
             else:
                 plots[new_name].update(plots_data[sample])
+
+    create_TrkEffUp(plots)
 
     return plots
 
@@ -431,17 +462,17 @@ class Extrapolation:
         self, h: hist.Hist | hist.accumulators.WeightedSum
     ) -> hist.Hist | hist.accumulators.WeightedSum:
         """
-        Remove bins with zero content from histogram.
+        Remove bins with zero or negative content from histogram.
         """
         if isinstance(h, hist.Hist):
-            zero_bins = np.where(h.values() == 0)[0]
+            zero_bins = np.where(h.values() <= 0)[0]
             if len(zero_bins) == 0:
                 return h
             if (zero_bins[-1] - zero_bins[0]) != (len(zero_bins) - 1):
                 print("Warning: zero bins are not contiguous")
             return h[: int(zero_bins[0])]
         elif isinstance(h, hist.accumulators.WeightedSum):
-            if h.value == 0:
+            if h.value <= 0:
                 raise ValueError("Cannot fit a histogram with zero content")
             return h
         else:
@@ -1269,42 +1300,34 @@ def convert_to_root(
     return plots_out
 
 
-def export_histograms_to_root(
-    plots: dict, output_path: str, output_name: str = "output.root"
+com_energy = lambda year: "13TeV" if year.startswith("201") else "13p6TeV"
+
+
+def rename_uncorrelated_systematics(name, year):
+    """
+    Uncorrelated systematics are split by year.
+    """
+    uncorr_systematics = ["L1PreFire", "MuonSF", "TrkEff"]
+    for syst in uncorr_systematics:
+        if syst in name:
+            return name.replace(
+                f"{syst}_{com_energy(year)}", f"{syst}_{com_energy(year)}_{year}"
+            )
+    return name
+
+
+def export_year_shared_progress(
+    plots, output_path, output_name, year, all_regions, progress_queue
 ):
-    """
-    Export hist.Hist histograms to a ROOT file, organized in TDirectories by region.
-    Negative bin entries are set to zero.
+    new_output_name = output_name.replace(".root", f"_{year}.root")
+    os.makedirs(output_path, exist_ok=True)
 
-    Parameters:
-    -----------
-    plots : dict
-        Nested dictionary containing hist.Hist objects
-    output_path : str
-        Name of the output directory for the ROOT files
-    output_name : str
-        Name of the output ROOT file
-    """
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    suffix = f"_{com_energy(year)}_{year}"
 
-    # All regions that will be exported
-    all_regions = [
-        "CR_DY",
-        "CR_QCD",
-        "SR_low_temp",
-        "SR_high_temp",
-    ]
-
-    systematics = set()
-    for sample_name, regions in plots.items():
-        for region in regions:
-            systematics.add(region.replace)
-
-    with uproot.recreate(os.path.join(output_path, output_name)) as f:
-        for sample_name, region_vars in track(
-            plots.items(), description="Exporting..."
-        ):
+    with uproot.recreate(os.path.join(output_path, new_output_name)) as f:
+        for sample_name, region_vars in plots.items():
+            if not sample_name.endswith(suffix):
+                continue
             for region_var, histogram in region_vars.items():
                 region_name = ""
                 for region in all_regions:
@@ -1314,7 +1337,64 @@ def export_histograms_to_root(
                 if region_name == "":
                     continue
                 syst_name = region_var.replace(region_name, "")
-                sample_name = sample_name.replace("_13TeV_2018", "")
-                f[f"{region_name}/{sample_name}{syst_name}_13TeV_2018"] = (
+                syst_name = syst_name.replace("Up", f"_{com_energy(year)}Up")
+                syst_name = syst_name.replace("Down", f"_{com_energy(year)}Down")
+                syst_name = rename_uncorrelated_systematics(syst_name, year)
+                cleaned_sample_name = sample_name.replace(suffix, "")
+                f[f"{region_name}{suffix}/{cleaned_sample_name}{syst_name}{suffix}"] = (
                     uproot.from_pyroot(histogram)
                 )
+                progress_queue.put(1)
+
+
+def export_histograms_to_root(
+    plots: dict,
+    output_path: str,
+    output_name: str = "output.root",
+    years: list[str] = ["2018"],
+):
+    """
+    Parallel export of hist.Hist histograms to ROOT files.
+    Uses a shared progress bar to show total export progress across all years.
+    """
+    all_regions = ["CR_DY", "CR_QCD", "SR_low_temp", "SR_high_temp"]
+    total_histograms = 0
+
+    # Compute the total number of histograms to export
+    for year in years:
+        suffix = f"_{com_energy(year)}_{year}"
+        for sample_name, region_vars in plots.items():
+            if sample_name.endswith(suffix):
+                total_histograms += len(region_vars)
+
+    progress_queue = mp.Queue()
+    processes = []
+
+    for year in years:
+        p = mp.Process(
+            target=export_year_shared_progress,
+            args=(
+                plots,
+                output_path,
+                output_name,
+                year,
+                all_regions,
+                progress_queue,
+            ),
+        )
+        processes.append(p)
+        p.start()
+
+    with Progress() as progress:
+        task = progress.add_task("Exporting histograms", total=total_histograms)
+        completed = 0
+        while completed < total_histograms:
+            try:
+                progress_queue.get(timeout=1)
+                completed += 1
+                progress.update(task, advance=1)
+            except:
+                continue
+
+    for p in processes:
+        p.join()

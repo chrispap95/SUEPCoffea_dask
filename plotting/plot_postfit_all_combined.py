@@ -11,8 +11,10 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import matplotlib.transforms as transforms  # type: ignore[import]
 import mplhep as hep
 import numpy as np
+import plot_utils
 import uproot
 from matplotlib.lines import Line2D  # type: ignore[import]
+from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
@@ -44,11 +46,31 @@ plt.style.use(pub_style)
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--tag",
+        type=str,
+        default="full_analysis_Jun2025",
+        help="Tag to identify the analysis",
+    )
+    parser.add_argument(
         "--input",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jan2025/CMSSW_11_3_4/src/postfit_plots.root",
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jun2025/CMSSW_14_1_8/src/postfit_plots_Run2.root",
         help="Path to the postfit plots root file. Default is "
-        "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jan2025/CMSSW_11_3_4/src/postfit_plots.root",
+        "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jun2025/CMSSW_14_1_8/src/postfit_plots_Run2.root",
+    )
+    parser.add_argument(
+        "--year",
+        type=str,
+        nargs="*",
+        default=["2018"],
+        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+    )
+    parser.add_argument(
+        "--lumi",
+        type=float,
+        help="Custom integrated luminosity to be used (in pb^-1). For example, use 559.322 for "
+        "the single data file in filelists/data/data_Run2018A_0p6fb_1file_unskimmed.json."
+        "If not provided, the luminosity will be determined automatically for the year.",
     )
     parser.add_argument(
         "--signal-region",
@@ -66,6 +88,13 @@ def parse_args():
         action="store_true",
         help="Plot the ratio of the data to the total background. "
         "Has an effect only when --data is passed as well. Default is False.",
+    )
+    parser.add_argument(
+        "--rescale-signal",
+        type=float,
+        required=True,
+        help="Rescale the signal processes by this factor. To compensate for the "
+        "signal scaling before export to combine. ",
     )
     parser.add_argument(
         "--unblind",
@@ -97,16 +126,68 @@ processes = [
     "data_obs",
 ]
 
+com_energy = lambda year: (
+    "13TeV" if year.startswith("201") or year == "Run2" else "13p6TeV"
+)
 
-def load_postfits(input_file, regions, processes):
+
+def merge_runs(plots, run, args):
+    run_era = f"{com_energy(run)}_{run}"
+    names = [
+        "Higgs",
+        "TTV",
+        "ST",
+        "WJets",
+        "VV+VVV",
+        "TT",
+        "DY",
+        "QCD",
+        "TotalBkg",
+    ]
+    regions = ["CR_QCD", "CR_DY", "SR_low_temp", "SR_high_temp", "SUEP"]
+    # Add signal processes
+    signal_processes = list({p for p in plots.keys() if p.startswith("GluGluToSUEP")})
+    # Remove 2016APV for now
+    # years = ["2016APV", "2016", "2017", "2018"]
+    years = ["2016", "2017", "2018"]
+    if run == "Run3":
+        names.remove("TTV")
+        names.remove("ST")
+        years = ["2022", "2022EE", "2023", "2023BPix"]
+    if args.data:
+        names.append("data_obs")
+    names.extend(signal_processes)
+    run_plots = {}
+    for name in names:
+        run_plots[name] = {}
+        for region in regions:
+            for year in years:
+                era = f"{com_energy(year)}_{year}"
+                if f"{region}_{era}" not in plots[name]:
+                    continue
+                if f"{region}_{run_era}" not in run_plots[name]:
+                    run_plots[name][f"{region}_{run_era}"] = plots[name][
+                        f"{region}_{era}"
+                    ].copy()
+                else:
+                    run_plots[name][f"{region}_{run_era}"] += plots[name][
+                        f"{region}_{era}"
+                    ]
+    return run_plots
+
+
+def load_postfits(input_file, regions, processes, year, args):
+    era = f"{com_energy(year)}_{year}"
     plots = {}
     with uproot.open(input_file) as f:
         for process in processes:
             plots[process] = {}
             for region in regions:
-                if f"{region}_postfit/{process}" not in f:
+                if f"{region}_{era}_postfit/{process}" not in f:
                     continue
-                plots[process][region] = f[f"{region}_postfit/{process}"].to_hist()  # type: ignore[attr-defined]
+                plots[process][f"{region}_{era}"] = f[f"{region}_{era}_postfit/{process}"].to_hist()  # type: ignore[attr-defined]
+                if "GluGluToSUEP" in process and args.rescale_signal != 1:
+                    plots[process][f"{region}_{era}"] *= args.rescale_signal
     return plots
 
 
@@ -163,7 +244,7 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
     )
 
 
-def plot_SUEP_combined(args, plots):
+def plot_SUEP_combined(args, plots, year):
     mc_processes = [
         "Higgs",
         "TTV",
@@ -179,16 +260,18 @@ def plot_SUEP_combined(args, plots):
     signal_processes = ["GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic"]
     signal_labels = [r"$m_\phi=8\,$GeV, $T=32\,$GeV"]
 
+    era = f"{com_energy(year)}_{year}"
+
     hists_mc = []
-    hist_bkg_total = plots["TotalBkg"]["SUEP"]
+    hist_bkg_total = plots["TotalBkg"][f"SUEP_{era}"]
 
     for process in mc_processes:
-        h_mc = plots[process]["SUEP"]
+        h_mc = plots[process][f"SUEP_{era}"]
         hists_mc.append(h_mc)
 
     hists_signal = []
     for process in signal_processes:
-        h_signal = plots[process]["SUEP"]
+        h_signal = plots[process][f"SUEP_{era}"]
         hists_signal.append(h_signal)
 
     fig, ax1 = plt.subplots(figsize=(13.5, 11))
@@ -232,9 +315,9 @@ def plot_SUEP_combined(args, plots):
         zorder=2,
     )
 
-    if args.data and "SUEP" in plots[data_name[0]]:
+    if args.data and f"SUEP_{era}" in plots[data_name[0]]:
         hep.histplot(
-            plots[data_name[0]]["SUEP"],
+            plots[data_name[0]][f"SUEP_{era}"],
             label=[data_name[1]],
             histtype="errorbar",
             mec="black",
@@ -256,9 +339,21 @@ def plot_SUEP_combined(args, plots):
     )
 
     if args.ratio and args.data:
-        plot_ratio(plots[data_name[0]]["SUEP"], hist_bkg_total, ax2, x_hatch, args)
+        plot_ratio(
+            plots[data_name[0]][f"SUEP_{era}"], hist_bkg_total, ax2, x_hatch, args
+        )
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
+    lumi_label = plot_utils.lumis[year] if args.lumi is None else args.lumi
+    lumi_label = lumi_label / 1000  # Convert pb^-1 to fb^-1
+    lumi_label = round(lumi_label, 2) if lumi_label < 1 else round(lumi_label, 1)
+    hep.cms.label(
+        llabel="Preliminary",
+        data=True,
+        year=year,
+        lumi=lumi_label,
+        com=13.6 if year.startswith("202") or year == "Run3" else 13,
+        ax=ax1,
+    )
 
     ln_x_positions = [0, 4, 8, 10]
     ln_y_upper = [2.2, 2.2, 2.1, 2.2]
@@ -341,7 +436,10 @@ def plot_SUEP_combined(args, plots):
     plt.legend(ncol=3, loc="upper center")
     plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/postfit_all_regions_combined.pdf", bbox_inches="tight")
+    plt.savefig(
+        f"{args.dest}/postfit_all_regions_combined_{year}_{args.tag}.pdf",
+        bbox_inches="tight",
+    )
     plt.close()
 
 
@@ -351,33 +449,73 @@ if __name__ == "__main__":
     # Create destination directory
     os.makedirs(args.dest, exist_ok=True)
 
-    print("Loading postfit plots...", end=" ", flush=True)
-    plots = load_postfits(args.input, regions, processes)
-    print("done!", flush=True)
+    # Load plots and merge them
+    years_to_load = args.year
+    if "Run2" in args.year:
+        # Commenting out 2016APV for now
+        # years_to_load = ["2016APV", "2016", "2017", "2018"]
+        years_to_load = ["2016", "2017", "2018"]
+    if "Run3" in args.year:
+        years_to_load = ["2022", "2022EE", "2023", "2023BPix"]
+    if "Run2" in args.year and "Run3" in args.year:
+        years_to_load = [
+            # Commenting out 2016APV for now
+            # "2016APV",
+            "2016",
+            "2017",
+            "2018",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+        ]
+    plots = {}
+    for year in track(years_to_load, description="Loading plots"):
+        plots_year = load_postfits(args.input, regions, processes, year, args)
+        for sample in plots_year:
+            if sample not in plots:
+                plots[sample] = {}
+            plots[sample] |= plots_year[sample]
 
-    for sample in plots:
-        h_comb = hist.Hist.new.Variable(
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 10],
-            name="SUEP",
-        ).Weight()
-        if "data_obs" in sample and not args.unblind:
+    for sample in track(plots, description="Processing samples"):
+        for year in years_to_load:
+            era = f"{com_energy(year)}_{year}"
             h_comb = hist.Hist.new.Variable(
-                [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 10],
                 name="SUEP",
             ).Weight()
+            if "data_obs" in sample and not args.unblind:
+                h_comb = hist.Hist.new.Variable(
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                    name="SUEP",
+                ).Weight()
 
-        h_comb[0] = plots[sample]["CR_QCD"][1j]
-        h_comb[1] = plots[sample]["CR_QCD"][2j]
-        h_comb[2] = plots[sample]["CR_QCD"][3j]
-        h_comb[3] = plots[sample]["CR_QCD"][4j]
-        h_comb[4] = plots[sample]["CR_DY"][2j]
-        h_comb[5] = plots[sample]["CR_DY"][3j]
-        h_comb[6] = plots[sample]["CR_DY"][4j]
-        h_comb[7] = plots[sample]["CR_DY"][5j]
-        if args.unblind or "data_obs" not in sample:
-            if args.signal_region in plots[sample]:
-                h_comb[8] = plots[sample][args.signal_region][7j]
-        plots[sample]["SUEP"] = h_comb.copy()
+            h_comb[0] = plots[sample][f"CR_QCD_{era}"][1j]
+            h_comb[1] = plots[sample][f"CR_QCD_{era}"][2j]
+            h_comb[2] = plots[sample][f"CR_QCD_{era}"][3j]
+            h_comb[3] = plots[sample][f"CR_QCD_{era}"][4j]
+            h_comb[4] = plots[sample][f"CR_DY_{era}"][2j]
+            h_comb[5] = plots[sample][f"CR_DY_{era}"][3j]
+            h_comb[6] = plots[sample][f"CR_DY_{era}"][4j]
+            h_comb[7] = plots[sample][f"CR_DY_{era}"][5j]
+            if args.unblind or "data_obs" not in sample:
+                if f"{args.signal_region}_{era}" in plots[sample]:
+                    h_comb[8] = plots[sample][f"{args.signal_region}_{era}"][7j]
+            plots[sample][f"SUEP_{era}"] = h_comb.copy()
+
+    if "Run2" in args.year:
+        run2_plots = merge_runs(plots, "Run2", args)
+        for sample in run2_plots:
+            if sample not in plots:
+                plots[sample] = {}
+            plots[sample] |= run2_plots[sample]
+    if "Run3" in args.year:
+        run3_plots = merge_runs(plots, "Run3", args)
+        for sample in run3_plots:
+            if sample not in plots:
+                plots[sample] = {}
+            plots[sample] |= run3_plots[sample]
 
     # Plot regions
-    plot_SUEP_combined(args, plots)
+    for year in track(args.year, description="Plotting regions"):
+        plot_SUEP_combined(args, plots, year)

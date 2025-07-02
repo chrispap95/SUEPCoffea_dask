@@ -102,27 +102,28 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_tight = self.get_weights(
                 events_SR_high_temp_tight, do_vars=True
             )
-            weights_SR_high_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_high_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst="up"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight, self.era, syst="up"
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst="down"
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight, self.era, syst="down"
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_high_temp_tight = ak.num(muons_SR_high_temp_tight, axis=-1)
             output[dataset]["histograms"]["SR_high_temp_tight"].fill(
                 ak.where(nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight),
@@ -146,27 +147,28 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_loose = self.get_weights(
                 events_SR_high_temp_loose, do_vars=True
             )
-            weights_SR_high_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_high_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst="up"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose, self.era, syst="up"
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst="down"
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose, self.era, syst="down"
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_high_temp_loose = ak.num(muons_SR_high_temp_loose, axis=-1)
             output[dataset]["histograms"]["SR_high_temp_loose"].fill(
                 ak.where(nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose),

@@ -266,15 +266,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if len(events_loose_cut) > 0:
                 weights_loose_cut = self.get_weights(events_loose_cut)
-                weights_loose_cut.add(
-                    "MuonSF",
-                    weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(
-                            muons_loose_cut, self.era, syst=""
+                if self.isMC:
+                    weights_loose_cut.add(
+                        "MuonSF",
+                        weight=ak.prod(
+                            muon_sf_utils.muon_efficiencies(
+                                muons_loose_cut, self.era, syst=""
+                            ),
+                            axis=-1,
                         ),
-                        axis=-1,
-                    ),
-                )
+                    )
                 nMuon_loose_cut = ak.num(muons_loose_cut, axis=-1)
                 output[dataset]["histograms"][
                     "SR_low_temp_loose_ip3d_cut_vs_nMuon"
@@ -285,15 +286,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 )
             if len(events_tight_cut) > 0:
                 weights_tight_cut = self.get_weights(events_tight_cut)
-                weights_tight_cut.add(
-                    "MuonSF",
-                    weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(
-                            muons_tight_cut, self.era, syst=""
+                if self.isMC:
+                    weights_tight_cut.add(
+                        "MuonSF",
+                        weight=ak.prod(
+                            muon_sf_utils.muon_efficiencies(
+                                muons_tight_cut, self.era, syst=""
+                            ),
+                            axis=-1,
                         ),
-                        axis=-1,
-                    ),
-                )
+                    )
                 nMuon_tight_cut = ak.num(muons_tight_cut, axis=-1)
                 output[dataset]["histograms"][
                     "SR_low_temp_tight_ip3d_cut_vs_nMuon"
@@ -310,15 +312,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
             if len(events_loose_cut) > 0:
                 weights_loose_cut = self.get_weights(events_loose_cut)
-                weights_loose_cut.add(
-                    "MuonSF",
-                    weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(
-                            muons_loose_cut, self.era, syst=""
+                if self.isMC:
+                    weights_loose_cut.add(
+                        "MuonSF",
+                        weight=ak.prod(
+                            muon_sf_utils.muon_efficiencies(
+                                muons_loose_cut, self.era, syst=""
+                            ),
+                            axis=-1,
                         ),
-                        axis=-1,
-                    ),
-                )
+                    )
                 nMuon_loose_cut = ak.num(muons_loose_cut, axis=-1)
                 output[dataset]["histograms"][
                     "SR_low_temp_loose_sph1_cut_vs_nMuon"
@@ -329,15 +332,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 )
             if len(events_tight_cut) > 0:
                 weights_tight_cut = self.get_weights(events_tight_cut)
-                weights_tight_cut.add(
-                    "MuonSF",
-                    weight=ak.prod(
-                        muon_sf_utils.muon_efficiencies(
-                            muons_tight_cut, self.era, syst=""
+                if self.isMC:
+                    weights_tight_cut.add(
+                        "MuonSF",
+                        weight=ak.prod(
+                            muon_sf_utils.muon_efficiencies(
+                                muons_tight_cut, self.era, syst=""
+                            ),
+                            axis=-1,
                         ),
-                        axis=-1,
-                    ),
-                )
+                    )
                 nMuon_tight_cut = ak.num(muons_tight_cut, axis=-1)
                 output[dataset]["histograms"][
                     "SR_low_temp_tight_sph1_cut_vs_nMuon"

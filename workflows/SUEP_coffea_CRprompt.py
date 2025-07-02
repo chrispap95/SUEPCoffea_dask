@@ -98,25 +98,28 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
         if len(events_CR_prompt) > 0:
             weights_CR_prompt = self.get_weights(events_CR_prompt, do_vars=True)
-            weights_CR_prompt.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, self.era, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_CR_prompt, self.era, syst="up"
+            if self.isMC:
+                weights_CR_prompt.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_prompt, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_CR_prompt, self.era, syst="down"
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_prompt, self.era, syst="up"
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_prompt, self.era, syst="down"
+                        ),
+                        axis=-1,
+                    ),
+                )
             output[dataset]["histograms"]["CR_prompt"].fill(
                 ak.num(muons_CR_prompt, axis=-1),
                 weight=weights_CR_prompt.weight(),

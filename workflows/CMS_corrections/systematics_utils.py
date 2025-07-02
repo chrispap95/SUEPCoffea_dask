@@ -1,3 +1,5 @@
+import os
+
 import awkward as ak
 import correctionlib
 import numpy as np
@@ -7,7 +9,60 @@ import uproot
 import parton
 
 
-def pileup_weight(events, era, syst=""):
+def pileup_weight(events, era, syst="nominal"):
+    """
+    Function to get the pileup weights for a given era and systematic variation
+    The pileup weights are calculated as the ratio of the data distribution to the MC distribution
+    The data distribution is normalized to 1
+
+    Reference: https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData
+
+    Parameters:
+    era: str
+        The year of the data taking
+    nTrueInt: array
+        The number of true interactions
+    sys: str
+        The systematic variation to be applied to the pileup weights
+
+    Returns:
+    weights: array
+        The pileup weights
+    """
+    if era == "2016APV":
+        corr_file = "2016preVFP_UL/puWeights.json"
+        corr_name = "Collisions16_UltraLegacy_goldenJSON"
+    elif era == "2016":
+        corr_file = "2016postVFP_UL/puWeights.json"
+        corr_name = "Collisions16_UltraLegacy_goldenJSON"
+    elif era == "2017":
+        corr_file = "2017_UL/puWeights.json"
+        corr_name = "Collisions17_UltraLegacy_goldenJSON"
+    elif era == "2018":
+        corr_file = "2018_UL/puWeights.json"
+        corr_name = "Collisions18_UltraLegacy_goldenJSON"
+    elif era == "2022":
+        corr_file = "2022_Summer22/puWeights.json"
+        corr_name = "Collisions2022_355100_357900_eraBCD_GoldenJson"
+    elif era == "2022EE":
+        corr_file = "2022_Summer22EE/puWeights.json"
+        corr_name = "Collisions2022_359022_362760_eraEFG_GoldenJson"
+    elif era == "2023":
+        corr_file = "2023_Summer23/puWeights.json"
+        corr_name = "Collisions2023_366403_369802_eraBC_GoldenJson"
+    elif era == "2023BPix":
+        corr_file = "2023_Summer23BPix/puWeights.json"
+        corr_name = "Collisions2023_369803_370790_eraD_GoldenJson"
+    else:
+        raise ValueError(
+            "no pileup weights because no year was selected for function pileup_weight"
+        )
+
+    ceval = correctionlib.CorrectionSet.from_file(os.path.join("data/LUM", corr_file))
+    return ceval[corr_name].evaluate(events.Pileup.nTrueInt, syst)
+
+
+def pileup_weight_old(events, era, syst=""):
     """
     Function to get the pileup weights for a given era and systematic variation
     The pileup weights are calculated as the ratio of the data distribution to the MC distribution

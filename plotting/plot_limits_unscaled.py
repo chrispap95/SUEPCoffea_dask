@@ -91,23 +91,23 @@ def get_quantiles(tree, scale):
     qt_0p84 = qt_0p84[sort_by_mass]
     qt_0p975 = qt_0p975[sort_by_mass]
 
-    # Convert signal strength to CL
-    cross_sections = {
-        125: 45.2,
-        200: 16.9,
-        300: 6.59,
-        400: 3.19,
-        500: 1.71,
-        600: 1.0,
-        800: 0.402,
-        1000: 0.185,
-    }
+    # # Convert signal strength to CL
+    # cross_sections = {
+    #     125: 45.2,
+    #     200: 16.9,
+    #     300: 6.59,
+    #     400: 3.19,
+    #     500: 1.71,
+    #     600: 1.0,
+    #     800: 0.402,
+    #     1000: 0.185,
+    # }
     for i, mS in enumerate(masses):
-        qt_0p025[i] *= cross_sections[mS] / scale
-        qt_0p16[i] *= cross_sections[mS] / scale
-        qt_0p5[i] *= cross_sections[mS] / scale
-        qt_0p84[i] *= cross_sections[mS] / scale
-        qt_0p975[i] *= cross_sections[mS] / scale
+        qt_0p025[i] /= scale
+        qt_0p16[i] /= scale
+        qt_0p5[i] /= scale
+        qt_0p84[i] /= scale
+        qt_0p975[i] /= scale
 
     # Smoothen CLs
     cl_0p025_smooth = log_interp1d(masses, qt_0p025)
@@ -206,9 +206,10 @@ if __name__ == "__main__":
         fig, ax = plt.subplots(figsize=(11, 10.5))
 
         # Theory
-        plt.plot(
-            mass_vals,
-            xs_spl(mass_vals),
+        plt.hlines(
+            1,
+            100,
+            1050,
             color="k",
             ls="-.",
             label="Theory",
@@ -238,12 +239,26 @@ if __name__ == "__main__":
             zorder=0,
         )
 
-        plt.legend(loc=1)
+        handles, labels = plt.gca().get_legend_handles_labels()
+        legend1 = plt.gca().legend(
+            handles[:1],
+            labels[:1],
+            loc="upper left",
+            frameon=False,
+        )
+        legend2 = plt.gca().legend(
+            handles[1:],
+            labels[1:],
+            loc="upper right",
+            frameon=False,
+        )
+        plt.gca().add_artist(legend1)
+
         plt.xlim(100, 1050)
         plt.ylim(1e-6, 1e3)
         plt.yscale("log")
         ax.set_xlabel(r"$m_{S}$ (GeV)")
-        ax.set_ylabel(r"$\sigma(\sqrt{s}=13\,TeV)$ (pb)")
+        ax.set_ylabel(r"signal strength $r$")
         hep.cms.label(
             llabel="Preliminary",
             data=True,
@@ -252,7 +267,7 @@ if __name__ == "__main__":
         )
         plt.text(
             320,
-            100,
+            10,
             "GluGluToSUEP\n"
             + r"$m_{\phi}="
             + f"{float(m_phi):g}"
@@ -264,7 +279,7 @@ if __name__ == "__main__":
         )
         plt.tight_layout()
         plt.savefig(
-            f"limit_plots/limits_mPhi{m_phi.replace('.', 'p')}_T{T.replace('.', 'p')}.pdf",
+            f"limit_plots/limits_unscaled_mPhi{m_phi.replace('.', 'p')}_T{T.replace('.', 'p')}.pdf",
             bbox_inches="tight",
         )
         plt.close()

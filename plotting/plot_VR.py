@@ -48,6 +48,12 @@ def parse_args():
         help="Tag to identify the analysis",
     )
     parser.add_argument(
+        "--year",
+        type=str,
+        default="2018",
+        help="Year of the data. Default is 2018.",
+    )
+    parser.add_argument(
         "--lumi",
         type=float,
         help="Custom integrated luminosity to be used (in pb^-1). For example, use 559.322 for "
@@ -88,21 +94,21 @@ region_labels = {
 }
 
 
-def calculate_QCD_k_factor(plots, region="VR_loose"):
+def calculate_QCD_k_factor(args, plots, region="VR_loose"):
     mc_processes = [
-        "Higgs_2018",
-        "ST_NLO_2018",
-        "WJets_2018",
-        "VV+VVV_2018",
-        "TT_powheg_2018",
-        "DY_2018",
+        "Higgs",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
     ]
-    non_QCD_bkg = plots["DY_2018"][region].copy().reset()
+    non_QCD_bkg = plots["DY_" + args.year][region].copy().reset()
     for process in mc_processes:
-        non_QCD_bkg += plots[process][region]
+        non_QCD_bkg += plots[f"{process}_{args.year}"][region]
     k_factor = (
-        plots["DoubleMuon_2018"][region].sum().value - non_QCD_bkg.sum().value
-    ) / plots["QCD_Pt_MuEnrichedPt5_2018"][region].sum().value
+        plots["DoubleMuon_" + args.year][region].sum().value - non_QCD_bkg.sum().value
+    ) / plots["QCD_Pt_MuEnrichedPt5_" + args.year][region].sum().value
     return k_factor
 
 
@@ -164,24 +170,24 @@ def plot_VR(args, plots, region):
     if extrapolation:
         extrapolation_tag = "+extr."
     mc_processes = [
-        ("Higgs_2018", "Higgs"),
-        ("TTV_2018", "TTV"),
-        ("ST_NLO_2018", "ST"),
-        ("WJets_2018", "WJets"),
-        ("VV+VVV_2018", "VV+VVV"),
-        ("TT_powheg_2018", "TT"),
-        ("DY_2018", "DY"),
-        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD{extrapolation_tag}"),
+        ("Higgs", "Higgs"),
+        ("TTV", "TTV"),
+        ("ST_NLO", "ST"),
+        ("WJets", "WJets"),
+        ("VV+VVV", "VV+VVV"),
+        ("TT_powheg", "TT"),
+        ("DY", "DY"),
+        ("QCD_Pt_MuEnrichedPt5", f"QCD{extrapolation_tag}"),
     ]
-    data_name = ("DoubleMuon_2018", "Data")
+    data_name = ("DoubleMuon", "Data")
 
     # The following are signal samples with contamination in VR
     signal_processes = [
-        "GluGluToSUEP_mS500.000_mPhi2.000_T8.000_modehadronic_13TeV_2018",
-        "GluGluToSUEP_mS1000.000_mPhi2.000_T4.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS1000.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS500.000_mPhi8.000_T2.000_modeleptonic_13TeV_2018",
+        "GluGluToSUEP_mS500.000_mPhi2.000_T8.000_modehadronic_13TeV",
+        "GluGluToSUEP_mS1000.000_mPhi2.000_T4.000_modeleptonic_13TeV",
+        "GluGluToSUEP_mS1000.000_mPhi4.000_T4.000_modeleptonic_13TeV",
+        "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV",
+        "GluGluToSUEP_mS500.000_mPhi8.000_T2.000_modeleptonic_13TeV",
     ]
     signal_labels = [
         r"$m_S=500\,$GeV,$m_\phi=2\,$GeV," + "\n" + r"$T=8\,$GeV, lep. decays",
@@ -192,10 +198,10 @@ def plot_VR(args, plots, region):
     ]
 
     hists_mc = []
-    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][region].copy().reset()
+    hist_bkg_total = plots[f"QCD_Pt_MuEnrichedPt5_{args.year}"][region].copy().reset()
 
     for process, label in mc_processes:
-        h_mc = plots[process][
+        h_mc = plots[f"{process}_{args.year}"][
             (f"{region}_extrapolation" if "extr" in label else region)
         ]
         hists_mc.append(h_mc)
@@ -203,7 +209,7 @@ def plot_VR(args, plots, region):
 
     hists_signal = []
     for process in signal_processes:
-        h_signal = plots[process][region]
+        h_signal = plots[f"{process}_{args.year}"][region]
         hists_signal.append(h_signal)
 
     fig, ax1 = plt.subplots(figsize=(12, 12))
@@ -247,9 +253,9 @@ def plot_VR(args, plots, region):
         zorder=2,
     )
 
-    if args.data and region in plots[data_name[0]]:
+    if args.data and region in plots[f"{data_name[0]}_{args.year}"]:
         hep.histplot(
-            plots[data_name[0]][region],
+            plots[f"{data_name[0]}_{args.year}"][region],
             label=[data_name[1]],
             histtype="errorbar",
             mec="black",
@@ -270,9 +276,17 @@ def plot_VR(args, plots, region):
     )
 
     if args.ratio and args.data:
-        plot_ratio(plots[data_name[0]][region], hist_bkg_total, ax2, x_hatch)
+        plot_ratio(
+            plots[f"{data_name[0]}_{args.year}"][region], hist_bkg_total, ax2, x_hatch
+        )
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
+    hep.cms.label(
+        llabel="Preliminary",
+        data=True,
+        year=args.year,
+        lumi=round(plot_utils.lumis[args.year] / 1000, 1),
+        ax=ax1,
+    )
 
     if extrapolation:
         region = f"{region}_extrapolation"
@@ -299,8 +313,8 @@ def plot_VR(args, plots, region):
     plt.yscale("log")
     plt.legend(ncol=3)
     plt.ylabel("events")
-    plt.tight_layout()
-    plt.savefig(f"{args.dest}/{region}.pdf", bbox_inches="tight")
+    # plt.tight_layout()
+    plt.savefig(f"{args.dest}/{region}_{args.year}_{args.tag}.pdf", bbox_inches="tight")
     plt.close()
 
 
@@ -313,17 +327,20 @@ if "__main__" == __name__:
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
     plots = plot_utils.loader(
-        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=args.data
+        tag=f"{args.tag}_{args.year}_VR",
+        era=args.year,
+        custom_lumi=args.lumi,
+        load_data=args.data,
     )
     print("Done!", flush=True)
 
     # Apply k-factor to QCD
     if args.data and args.normalize:
         print("Calculate and apply k-factor to QCD...", end=" ", flush=True)
-        k_factor = calculate_QCD_k_factor(plots)
-        for plot in plots["QCD_Pt_MuEnrichedPt5_2018"]:
-            plots["QCD_Pt_MuEnrichedPt5_2018"][plot] = (
-                k_factor * plots["QCD_Pt_MuEnrichedPt5_2018"][plot]
+        k_factor = calculate_QCD_k_factor(args, plots)
+        for plot in plots["QCD_Pt_MuEnrichedPt5_" + args.year]:
+            plots["QCD_Pt_MuEnrichedPt5_" + args.year][plot] = (
+                k_factor * plots["QCD_Pt_MuEnrichedPt5_" + args.year][plot]
             )
         print(f"k_QCD = {k_factor:.2f}  Done!", flush=True)
 
@@ -336,7 +353,7 @@ if "__main__" == __name__:
     }
 
     qcd_extrapolation = plot_utils.Extrapolation(
-        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
+        plots["QCD_Pt_MuEnrichedPt5_" + args.year], uncertainty_scheme="full"
     )
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 

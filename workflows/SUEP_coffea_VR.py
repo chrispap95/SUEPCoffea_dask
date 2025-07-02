@@ -98,46 +98,55 @@ class SUEP_processor(SUEP_common.SUEP_base):
             self.apply_VR(events_)
         )
         if len(events_VR_tight) > 0:
-            weights_VR_tight = self.get_weights(events_VR_tight, do_vars=True)
-            weights_VR_loose = self.get_weights(events_VR_loose, do_vars=True)
-            weights_VR_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_tight, self.era, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_VR_tight, self.era, syst="up"
-                    ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_VR_tight, self.era, syst="down"
-                    ),
-                    axis=-1,
-                ),
+            weights_VR_tight = self.get_weights(
+                events_VR_tight, do_vars=True, apply_lumi_factors=True
             )
-            weights_VR_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_VR_loose, self.era, syst=""),
-                    axis=-1,
-                ),
-                weightUp=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_VR_loose, self.era, syst="up"
-                    ),
-                    axis=-1,
-                ),
-                weightDown=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_VR_loose, self.era, syst="down"
-                    ),
-                    axis=-1,
-                ),
+            weights_VR_loose = self.get_weights(
+                events_VR_loose, do_vars=True, apply_lumi_factors=True
             )
+            if self.isMC:
+                weights_VR_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_VR_tight, era=self.era, region="VR_tight", syst=""
+                        ),
+                        axis=-1,
+                    ),
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_VR_tight, era=self.era, region="VR_tight", syst="up"
+                        ),
+                        axis=-1,
+                    ),
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_VR_tight, era=self.era, region="VR_tight", syst="down"
+                        ),
+                        axis=-1,
+                    ),
+                )
+                weights_VR_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_VR_loose, era=self.era, region="VR_loose", syst=""
+                        ),
+                        axis=-1,
+                    ),
+                    weightUp=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_VR_loose, era=self.era, region="VR_loose", syst="up"
+                        ),
+                        axis=-1,
+                    ),
+                    weightDown=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_VR_loose, era=self.era, region="VR_loose", syst="down"
+                        ),
+                        axis=-1,
+                    ),
+                )
             nMuon_VR_tight = ak.num(muons_VR_tight, axis=-1)
             nMuon_VR_loose = ak.num(muons_VR_loose, axis=-1)
             output[dataset]["histograms"]["VR_tight"].fill(
@@ -169,11 +178,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
         return
 
     def analysis(self, events, output):
-        #######################################################################
-        # ---- Trigger event selection
-        # Cut based on ak4 jets to replicate the trigger
-        #######################################################################
-
         # get dataset name
         dataset = events.metadata["dataset"]
 

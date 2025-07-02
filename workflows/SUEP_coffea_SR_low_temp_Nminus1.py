@@ -547,15 +547,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_low_temp_minus_muon_pt_cut(events_)
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
-            weights_SR_low_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_muon_pt"].fill(
                 ak.flatten(muons_SR_low_temp_tight.pt),
                 ak.flatten(muons_SR_low_temp_tight.genPartFlav),
@@ -567,15 +568,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
-            weights_SR_low_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_muon_pt"].fill(
                 ak.flatten(muons_SR_low_temp_loose.pt),
                 ak.flatten(muons_SR_low_temp_loose.genPartFlav),
@@ -595,15 +597,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_low_temp_minus_muon_ip3d_cut(events_)
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
-            weights_SR_low_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_SR_low_temp_tight.ip3d),
                 ak.flatten(muons_SR_low_temp_tight.genPartFlav),
@@ -615,15 +618,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             )
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
-            weights_SR_low_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_muon_ip3d"].fill(
                 ak.flatten(muons_SR_low_temp_loose.ip3d),
                 ak.flatten(muons_SR_low_temp_loose.genPartFlav),
@@ -645,29 +649,31 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_low_temp_minus_Z_mass_cut(events_)
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
-            weights_SR_low_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_dimuon_mass"].fill(
                 Z_cands_tight_cut.mass, weight=weights_SR_low_temp_tight.weight()
             )
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
-            weights_SR_low_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_dimuon_mass"].fill(
                 Z_cands_loose_cut.mass, weight=weights_SR_low_temp_loose.weight()
             )
@@ -683,29 +689,31 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_low_temp_minus_sph1_cut(events_)
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(events_SR_low_temp_tight)
-            weights_SR_low_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_tight_Nminus1_sph1"].fill(
                 sph1_tight_cut, weight=weights_SR_low_temp_tight.weight()
             )
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(events_SR_low_temp_loose)
-            weights_SR_low_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             output[dataset]["histograms"]["SR_low_temp_loose_Nminus1_sph1"].fill(
                 sph1_loose_cut, weight=weights_SR_low_temp_loose.weight()
             )

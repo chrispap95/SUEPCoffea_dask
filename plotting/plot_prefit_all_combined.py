@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import pathlib
+import re
 
 import cms_styles
 import hist
@@ -13,6 +14,7 @@ import mplhep as hep
 import numpy as np
 import plot_utils
 from matplotlib.lines import Line2D  # type: ignore[import]
+from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
@@ -46,8 +48,15 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Jun2025",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--year",
+        type=str,
+        nargs="*",
+        default=["2018"],
+        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -87,25 +96,78 @@ def parse_args():
     return parser.parse_args()
 
 
-def calculate_k_factor(plots, region="CR_cb", process="QCD_Pt_MuEnrichedPt5_2018"):
+def calculate_k_factor(plots, year, region="CR_cb", process="QCD_Pt_MuEnrichedPt5"):
     mc_processes = [
-        "Higgs_2018",
-        "ST_NLO_2018",
-        "WJets_2018",
-        "VV+VVV_2018",
-        "TT_powheg_2018",
-        "DY_2018",
-        "QCD_Pt_MuEnrichedPt5_2018",
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
     ]
-    tot_bkg = plots["DY_2018"][region].copy().reset()
+
+    tot_bkg = plots["DY_" + year][region].copy().reset()
     for mc_proc in mc_processes:
         if process == mc_proc:
             continue
-        tot_bkg += plots[mc_proc][region]
+        tot_bkg += plots[f"{mc_proc}_{year}"][region]
     k_factor = (
-        plots["DoubleMuon_2018"][region].sum().value - tot_bkg.sum().value
-    ) / plots[process][region].sum().value
+        plots["Data_" + year][region].sum().value - tot_bkg.sum().value
+    ) / plots[f"{process}_{year}"][region].sum().value
     return k_factor
+
+
+def merge_runs(plots, run, args):
+    names = [
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
+    ]
+    # Add signal processes
+    signal_processes = list(
+        {
+            "_".join(p.split("_")[:-1])
+            for p in plots.keys()
+            if re.search("GluGluToSUEP.*13TeV", p)
+        }
+    )
+    # Remove 2016APV for now
+    # years = ["2016APV", "2016", "2017", "2018"]
+    years = ["2016", "2017", "2018"]
+    if run == "Run3":
+        years = ["2022", "2022EE", "2023", "2023BPix"]
+        # Add signal processes
+        signal_processes = list(
+            {
+                "_".join(p.split("_")[:-1])
+                for p in plots.keys()
+                if re.search("GluGluToSUEP.*13p6TeV", p)
+            }
+        )
+    if args.data:
+        names.append("Data")
+    names.extend(signal_processes)
+    run_plots = {}
+    for name in names:
+        run_plots[f"{name}_{run}"] = {}
+        for year in years:
+            if f"{name}_{year}" not in plots:
+                continue
+            for plot in plots[f"{name}_{year}"]:
+                if plot not in run_plots[f"{name}_{run}"].keys():
+                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
+                        plot
+                    ].copy()
+                else:
+                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
+    return run_plots
 
 
 def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
@@ -161,26 +223,28 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
     )
 
 
-def plot_SUEP_combined(args, plots):
+def plot_SUEP_combined(args, plots, year):
     mc_processes = [
-        ("Higgs_2018", "Higgs"),
-        ("TTV_2018", "TTV"),
-        ("ST_NLO_2018", "ST"),
-        ("WJets_2018", "WJets"),
-        ("VV+VVV_2018", "VV+VVV"),
-        ("TT_powheg_2018", "TT"),
-        ("DY_2018", "DY"),
-        ("QCD_Pt_MuEnrichedPt5_2018", "QCD"),
+        ("Higgs", "Higgs", "C0"),
+        ("TTV", "TTV", "C1"),
+        ("ST_NLO", "ST", "C2"),
+        ("WJets", "WJets", "C3"),
+        ("VV+VVV", "VV+VVV", "C4"),
+        ("TT_powheg", "TT", "C5"),
+        ("DY", "DY", "C6"),
+        ("QCD_Pt_MuEnrichedPt5", "QCD", "C7"),
     ]
-    data_name = ("DoubleMuon_2018", "Data")
 
+    cm_energy = "13TeV"
+    if year.startswith("202") or year == "Run3":
+        cm_energy = "13p6TeV"
     signal_processes = [
-        "GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi4.000_T4.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018",
+        f"GluGluToSUEP_mS125.000_mPhi1.000_T0.250_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi4.000_T4.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_{cm_energy}",
     ]
     signal_labels = [
         r"$m_\phi=1\,$GeV, $T=0.25\,$GeV",
@@ -192,22 +256,22 @@ def plot_SUEP_combined(args, plots):
     ]
 
     hists_mc = []
-    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"]["SUEP"].copy().reset()
+    hist_bkg_total = plots[f"QCD_Pt_MuEnrichedPt5_{year}"]["SUEP"].copy().reset()
 
-    for process, label in mc_processes:
-        h_mc = plots[process]["SUEP"]
+    for process, label, _color in mc_processes:
+        h_mc = plots[f"{process}_{year}"]["SUEP"]
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
     hists_signal = []
     for process in signal_processes:
-        h_signal = plots[process]["SUEP"]
+        h_signal = plots[f"{process}_{year}"]["SUEP"]
         hists_signal.append(h_signal)
 
     fig, ax1 = plt.subplots(figsize=(13.5, 11))
 
     if args.ratio:
-        fig = plt.figure(figsize=(14, 12.5))
+        fig = plt.figure(figsize=(14, 13))
         plt.subplots_adjust(bottom=0.12, top=0.95, left=0.1, right=0.97)
         ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
         ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
@@ -218,6 +282,7 @@ def plot_SUEP_combined(args, plots):
         stack=True,
         label=[p[1] for p in mc_processes],
         histtype="fill",
+        color=[p[2] for p in mc_processes],
         ec="black",
         lw=2,
         ax=ax1,
@@ -245,10 +310,10 @@ def plot_SUEP_combined(args, plots):
         zorder=2,
     )
 
-    if args.data and "SUEP" in plots[data_name[0]]:
+    if args.data and "SUEP" in plots[f"Data_{year}"]:
         hep.histplot(
-            plots[data_name[0]]["SUEP"],
-            label=[data_name[1]],
+            plots[f"Data_{year}"]["SUEP"],
+            label=["Data"],
             histtype="errorbar",
             mec="black",
             mfc="black",
@@ -269,9 +334,19 @@ def plot_SUEP_combined(args, plots):
     )
 
     if args.ratio and args.data:
-        plot_ratio(plots[data_name[0]]["SUEP"], hist_bkg_total, ax2, x_hatch, args)
+        plot_ratio(plots[f"Data_{year}"]["SUEP"], hist_bkg_total, ax2, x_hatch, args)
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
+    lumi_label = plot_utils.lumis[year] if args.lumi is None else args.lumi
+    lumi_label = lumi_label / 1000  # Convert pb^-1 to fb^-1
+    lumi_label = round(lumi_label, 2) if lumi_label < 1 else round(lumi_label, 1)
+    hep.cms.label(
+        llabel="Preliminary",
+        data=True,
+        year=year,
+        lumi=lumi_label,
+        com=13.6 if year.startswith("202") or year == "Run3" else 13,
+        ax=ax1,
+    )
 
     ln_x_positions = [0, 4, 8, 10, 12]
     ln_y_upper = [3.83, 3.83, 3.63, 3.63, 3.83]
@@ -363,7 +438,10 @@ def plot_SUEP_combined(args, plots):
     plt.legend(ncol=3, loc="upper center")
     plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/prefit_all_regions_combined.pdf", bbox_inches="tight")
+    plt.savefig(
+        f"{args.dest}/prefit_all_regions_combined_{year}_{args.tag}.pdf",
+        bbox_inches="tight",
+    )
     plt.close()
 
 
@@ -374,75 +452,91 @@ if "__main__" == __name__:
     os.makedirs(args.dest, exist_ok=True)
 
     # Load plots and merge them
-    print("Loading plots...", end=" ", flush=True)
-    plots_CR = plot_utils.loader(
-        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=args.data
-    )
-    plots_SR = plot_utils.loader(
-        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=args.data
-    )
+    years_to_load = args.year
+    if "Run2" in args.year:
+        # Commenting out 2016APV for now
+        # years_to_load = ["2016APV", "2016", "2017", "2018"]
+        years_to_load = ["2016", "2017", "2018"]
+    if "Run3" in args.year:
+        years_to_load = ["2022", "2022EE", "2023", "2023BPix"]
+    if "Run2" in args.year and "Run3" in args.year:
+        years_to_load = [
+            # Commenting out 2016APV for now
+            # "2016APV",
+            "2016",
+            "2017",
+            "2018",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+        ]
     plots = {}
-    all_datasets = set(plots_CR.keys()) | set(plots_SR.keys())
-    for dataset in list(all_datasets):
-        if dataset not in plots_CR:
-            plots_CR[dataset] = {}
-        if dataset not in plots_SR:
-            plots_SR[dataset] = {}
-        plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
-    print("Done!", flush=True)
+    for year in track(years_to_load, description="Loading plots"):
+        plots_CR = plot_utils.loader(
+            tag=f"{args.tag}_{year}_CR",
+            era=year,
+            custom_lumi=args.lumi,
+            load_data=args.data,
+        )
+        plots_SR = plot_utils.loader(
+            tag=f"{args.tag}_{year}_SRs",
+            era=year,
+            custom_lumi=args.lumi,
+            load_data=args.data,
+        )
+        all_datasets = set(plots_CR.keys()) | set(plots_SR.keys())
+        for dataset in list(all_datasets):
+            if dataset not in plots_CR:
+                plots_CR[dataset] = {}
+            if dataset not in plots_SR:
+                plots_SR[dataset] = {}
+            plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
 
     # Apply k-factor to QCD
     if args.data and args.normalize:
-        print("Calculate and apply k-factors...", end=" ", flush=True)
-        k_factor_QCD = calculate_k_factor(
-            plots, region="CR_cb", process="QCD_Pt_MuEnrichedPt5_2018"
+        k_factor = {}
+        for year in track(years_to_load, description="Calculating k-factors"):
+            k_factor[year] = calculate_k_factor(plots, year, region="CR_cb")
+            for plot in plots["QCD_Pt_MuEnrichedPt5_" + year]:
+                plots["QCD_Pt_MuEnrichedPt5_" + year][plot] = (
+                    k_factor[year] * plots["QCD_Pt_MuEnrichedPt5_" + year][plot]
+                )
+        print("k_factors =", k_factor, flush=True)
+
+    for year in track(years_to_load, description="Fitting and extrapolating"):
+        # QCD extrapolation
+        # Slice the first bin out where needed for fit stability
+        slice_hists = {
+            "SR_low_temp_loose": slice(4j, None),
+            "SR_low_temp_tight": slice(3j, None),
+            "SR_high_temp_loose": slice(4j, None),
+            "SR_high_temp_tight": slice(3j, None),
+        }
+        qcd_extrapolation = plot_utils.Extrapolation(
+            plots["QCD_Pt_MuEnrichedPt5_" + year], uncertainty_scheme="full"
         )
-        for plot in plots["QCD_Pt_MuEnrichedPt5_2018"]:
-            plots["QCD_Pt_MuEnrichedPt5_2018"][plot] = (
-                k_factor_QCD * plots["QCD_Pt_MuEnrichedPt5_2018"][plot]
-            )
-        print(f"k_QCD = {k_factor_QCD:.2f}  Done!", flush=True)
-        k_factor_DY = calculate_k_factor(plots, region="CR_prompt", process="DY_2018")
-        for plot in plots["DY_2018"]:
-            plots["DY_2018"][plot] = k_factor_DY * plots["DY_2018"][plot]
-        print(f"k_DY = {k_factor_DY:.2f}  Done!", flush=True)
-
-    print("Fit and extrapolation...", end=" ", flush=True)
-    # QCD extrapolation
-    # Slice the first bin out where needed for fit stability
-    slice_hists = {
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
-    }
-
-    qcd_extrapolation = plot_utils.Extrapolation(
-        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
-    )
-    qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
-
-    # DY extrapolation
-    # Slice the first bin out where needed for fit stability
-    slice_hists = {
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(4j, None),
-    }
-    dy_extrapolation = plot_utils.Extrapolation(
-        plots["DY_2018"], uncertainty_scheme="full"
-    )
-    dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
-    print("Done!", flush=True)
+        qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        # DY extrapolation
+        # Slice the first bin out where needed for fit stability
+        slice_hists = {
+            "SR_low_temp_loose": slice(4j, None),
+            "SR_low_temp_tight": slice(3j, None),
+            "SR_high_temp_loose": slice(4j, None),
+            "SR_high_temp_tight": slice(4j, None),
+        }
+        dy_extrapolation = plot_utils.Extrapolation(
+            plots["DY_" + year], uncertainty_scheme="full"
+        )
+        dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     # Make combined plots
-    for sample in plots:
+    for sample in track(plots, description="Combining regions"):
         h_comb = hist.Hist.new.Variable(
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12],
             name="SUEP",
         ).Weight()
-        if "DoubleMuon" in sample and not args.unblind:
+        if "Data" in sample and not args.unblind:
             h_comb = hist.Hist.new.Variable(
                 [0, 1, 2, 3, 4, 5, 6, 7, 8],
                 name="SUEP",
@@ -467,5 +561,13 @@ if "__main__" == __name__:
                 h_comb[9] = plots[sample]["SR_high_temp_tight_extrapolation"][7j]
         plots[sample]["SUEP"] = h_comb.copy()
 
+    if "Run2" in args.year:
+        run2_plots = merge_runs(plots, "Run2", args)
+        plots = plots | run2_plots
+    if "Run3" in args.year:
+        run3_plots = merge_runs(plots, "Run3", args)
+        plots = plots | run3_plots
+
     # Plot regions
-    plot_SUEP_combined(args, plots)
+    for year in track(args.year, description="Plotting regions"):
+        plot_SUEP_combined(args, plots, year)

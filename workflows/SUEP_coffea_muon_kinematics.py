@@ -427,13 +427,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_CR_prompt, muons_CR_prompt = self.apply_CR_prompt(events_)
         if len(events_CR_prompt) > 0:
             weights_CR_prompt = self.get_weights(events_CR_prompt, do_vars=True)
-            weights_CR_prompt.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_prompt, self.era, syst=""),
-                    axis=-1,
-                ),
-            )
+            if self.isMC:
+                weights_CR_prompt.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_CR_prompt, self.era, syst=""
+                        ),
+                        axis=-1,
+                    ),
+                )
             nMuon_CR_prompt = ak.num(muons_CR_prompt, axis=-1)
             nMuon_CR_prompt = ak.where(nMuon_CR_prompt > 6, 6, nMuon_CR_prompt)
             output[dataset]["histograms"]["CR_prompt"].fill(
@@ -451,13 +454,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
         if len(events_CR_cb) > 0:
             weights_CR_cb = self.get_weights(events_CR_cb, do_vars=True)
-            weights_CR_cb.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
-                    axis=-1,
-                ),
-            )
+            if self.isMC:
+                weights_CR_cb.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(muons_CR_cb, self.era, syst=""),
+                        axis=-1,
+                    ),
+                )
             nMuon_CR_cb = ak.num(muons_CR_cb, axis=-1)
             nMuon_CR_cb = ak.where(nMuon_CR_cb > 5, 5, nMuon_CR_cb)
             output[dataset]["histograms"]["CR_cb"].fill(
@@ -483,15 +487,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_tight = self.get_weights(
                 events_SR_high_temp_tight, do_vars=True
             )
-            weights_SR_high_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_high_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_high_temp_tight = ak.num(muons_SR_high_temp_tight, axis=-1)
             nMuon_SR_high_temp_tight = ak.where(
                 nMuon_SR_high_temp_tight > 7, 7, nMuon_SR_high_temp_tight
@@ -516,15 +521,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_high_temp_loose = self.get_weights(
                 events_SR_high_temp_loose, do_vars=True
             )
-            weights_SR_high_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_high_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_high_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_high_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_high_temp_loose = ak.num(muons_SR_high_temp_loose, axis=-1)
             nMuon_SR_high_temp_loose = ak.where(
                 nMuon_SR_high_temp_loose > 7, 7, nMuon_SR_high_temp_loose
@@ -556,15 +562,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_low_temp_tight = self.get_weights(
                 events_SR_low_temp_tight, do_vars=True
             )
-            weights_SR_low_temp_tight.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_tight, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_tight.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_tight, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_low_temp_tight = ak.num(muons_SR_low_temp_tight, axis=-1)
             nMuon_SR_low_temp_tight = ak.where(
                 nMuon_SR_low_temp_tight > 7, 7, nMuon_SR_low_temp_tight
@@ -589,15 +596,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_SR_low_temp_loose = self.get_weights(
                 events_SR_low_temp_loose, do_vars=True
             )
-            weights_SR_low_temp_loose.add(
-                "MuonSF",
-                weight=ak.prod(
-                    muon_sf_utils.muon_efficiencies(
-                        muons_SR_low_temp_loose, self.era, syst=""
+            if self.isMC:
+                weights_SR_low_temp_loose.add(
+                    "MuonSF",
+                    weight=ak.prod(
+                        muon_sf_utils.muon_efficiencies(
+                            muons_SR_low_temp_loose, self.era, syst=""
+                        ),
+                        axis=-1,
                     ),
-                    axis=-1,
-                ),
-            )
+                )
             nMuon_SR_low_temp_loose = ak.num(muons_SR_low_temp_loose, axis=-1)
             nMuon_SR_low_temp_loose = ak.where(
                 nMuon_SR_low_temp_loose > 7, 7, nMuon_SR_low_temp_loose

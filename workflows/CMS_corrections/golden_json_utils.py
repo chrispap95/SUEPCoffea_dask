@@ -14,11 +14,11 @@ def apply_golden_JSON(events, era):
         LumiJSON = lumi_tools.LumiMask(
             "data/GoldenJSON/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
         )
-    elif era == "2022":
+    elif era == "2022" or era == "2022EE":
         LumiJSON = lumi_tools.LumiMask(
             "data/GoldenJSON/Cert_Collisions2022_355100_362760_Golden.json"
         )
-    elif era == "2023":
+    elif era == "2023" or era == "2023BPix":
         LumiJSON = lumi_tools.LumiMask(
             "data/GoldenJSON/Cert_Collisions2023_366442_370790_Golden.json"
         )
