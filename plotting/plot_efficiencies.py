@@ -130,14 +130,6 @@ def plot_efficiency(variable):
         efficiencies[0].GetPaintedGraph().GetHistogram().SetBins(4, 0, 4)
         efficiencies[0].GetPaintedGraph().GetXaxis().LabelsOption("h")
         efficiencies[0].GetPaintedGraph().GetXaxis().SetLabelSize(0.04)
-        n_bins = h_NUM.GetNbinsX()
-        lines = []
-        for i in range(1, n_bins):
-            x = h_NUM.GetXaxis().GetBinUpEdge(i)
-            line = ROOT.TLine(x, ROOT.gPad.GetUymin(), x, ROOT.gPad.GetUymin() * 1.01)
-            line.SetLineWidth(2)
-            line.Draw("SAME")
-            lines.append(line)  # Keep a reference
 
     # if variable == "muon_pt":
     #     ROOT.gPad.Update()
