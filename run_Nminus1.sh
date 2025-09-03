@@ -4,17 +4,25 @@
 # -s : signal
 # -b : background
 
+# Need pythia
+source source_pythia.sh
+
 # By default, run signal and background
 
 all=1
 signal=0
 background=0
-tag=Nminus1_Mar2025
+data=0
+era=2018
+tag=Nminus1_Jul2025
+blind=1 # 0 for unblinded, 1 for blinded
 
-while getopts 'sbt:' flag; do
+while getopts 'sbde:t:' flag; do
   case "${flag}" in
     s) all=0; signal=1 ;;
     b) all=0; background=1 ;;
+    d) all=0; data=1 ;;
+    e) era="${OPTARG}" ;;
     t) tag="${OPTARG}" ;;
     *) echo "Unexpected option ${flag}" ;;
   esac
@@ -23,42 +31,97 @@ done
 if [ $all -eq 1 ]; then
     signal=1
     background=1
+    data=1
+fi
+
+# Set files according to the year
+if [ "$era" = 2016 ]; then
+    signal_filelist="filelists/signal/2016/GluGluToSUEP_central_UL16_May2025.json"
+    background_filelist="filelists/mc_collections/2016/SUEPNano_UL16_Nov2024.json"
+    data_filelist="filelists/data/2016/DoubleMuon_UL16_Nov2024.json"
+elif [ "$era" = 2016APV ]; then
+    signal_filelist="filelists/signal/2016APV/GluGluToSUEP_central_UL16APV_May2025.json"
+    background_filelist="filelists/mc_collections/2016APV/SUEPNano_UL16APV_Nov2024.json"
+    data_filelist="filelists/data/2016APV/DoubleMuon_UL16APV_Nov2024.json"
+elif [ "$era" = 2017 ]; then
+    signal_filelist="filelists/signal/2017/GluGluToSUEP_central_UL17_May2025.json"
+    background_filelist="filelists/mc_collections/2017/SUEPNano_UL17_Nov2024.json"
+    data_filelist="filelists/data/2017/DoubleMuon_UL17_Nov2024.json"
+elif [ "$era" = 2018 ]; then
+    signal_filelist="filelists/signal/2018/GluGluToSUEP_central_UL18_May2025.json"
+    background_filelist="filelists/mc_collections/2018/SUEPNano_UL18_Nov2024.json"
+    data_filelist="filelists/data/2018/DoubleMuon_UL18_Nov2024.json"
+elif [ "$era" = 2022 ]; then
+    signal_filelist="filelists/signal/2022/GluGluToSUEP_central_2022_May2025.json"
+    background_filelist="filelists/mc_collections/2022/SUEPNano_2022_Jun2025.json"
+    data_filelist="filelists/data/2022/DoubleMuon_Muon_2022_Apr2025.json"
+elif [ "$era" = 2022EE ]; then
+    signal_filelist="filelists/signal/2022EE/GluGluToSUEP_central_2022EE_May2025.json"
+    background_filelist="filelists/mc_collections/2022EE/SUEPNano_2022EE_Jun2025.json"
+    data_filelist="filelists/data/2022EE/Muon_2022EE_Apr2025.json"
+elif [ "$era" = 2023 ]; then
+    signal_filelist="filelists/signal/2023/GluGluToSUEP_central_2023_May2025.json"
+    background_filelist="filelists/mc_collections/2023/SUEPNano_2023_Jun2025.json"
+    data_filelist="filelists/data/2023/Muon0_Muon1_2023_Apr2025.json"
+elif [ "$era" = 2023BPix ]; then
+    signal_filelist="filelists/signal/2023BPix/GluGluToSUEP_central_2023BPix_May2025.json"
+    background_filelist="filelists/mc_collections/2023BPix/SUEPNano_2023BPix_Jun2025.json"
+    data_filelist="filelists/data/2023BPix/Muon0_Muon1_2023BPix_Apr2025.json"
+else
+    echo "Invalid era specified. Available options are:"
+    echo -e "\n\t2016, 2016APV, 2017, 2018, 2022, 2022EE, 2023, or 2023BPix.\n"
+    exit 1
 fi
 
 if [ $signal -eq 1 ]; then
-    echo -n ""
-    echo "Processing signal SR_low_temp..."
-    python runner.py \
-        --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_SR_low_temp" \
-        --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 --skimmed \
-        --isMC --executor futures -j 38 --chunk 4000
-    echo "Processing signal SR_high_temp..."
-    python runner.py \
-        --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
-        --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 --skimmed \
-        --isMC --executor futures -j 48 --chunk 80000
-    # echo "Processing signal CRs..."
+    # echo "Processing signal SR_low_temp..."
     # python runner.py \
-    #     --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_CRs" \
-    #     --json filelists/signal/GluGluToSUEP_central_UL18_Nov2024.json --era 2018 --skimmed \
-    #     --isMC --executor futures -j 48 --chunk 80000
+    #     --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
+    #     --json $signal_filelist --era "$era" --skimmed \
+    #     --isMC --executor futures -j 32 --chunk 4000
+    # echo "Processing signal SR_high_temp..."
+    # python runner.py \
+    #     --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
+    #     --json $signal_filelist --era "$era" --skimmed \
+    #     --isMC --executor futures -j 32 --chunk 80000
+    echo "Processing signal CRs..."
+    python runner.py \
+        --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_${era}_CRs" \
+        --json $signal_filelist --era "$era" --skimmed \
+        --isMC --executor futures -j 32 --chunk 80000
 fi
 
 if [ $background -eq 1 ]; then
-    echo -n ""
-    echo "Processing BKG SR_low_temp..."
-    python runner.py \
-        --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_SR_low_temp" \
-        --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 --skimmed \
-        --isMC --executor futures -j 44 --chunk 7000
-    echo "Processing BKG SR_high_temp..."
-    python runner.py \
-        --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_SR_high_temp" \
-        --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 --skimmed \
-        --isMC --executor futures -j 48 --chunk 80000
-    # echo "Processing BKG CRs..."
+    # echo "Processing BKG SR_low_temp..."
     # python runner.py \
-    #     --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_CRs" \
-    #     --json filelists/mc_collections/SUEPNano_UL18_Nov2024.json --era 2018 --skimmed \
-    #     --isMC --executor futures -j 48 --chunk 80000
+    #     --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
+    #     --json $background_filelist --era "$era" --skimmed \
+    #     --isMC --executor futures -j 32 --chunk 7000
+    # echo "Processing BKG SR_high_temp..."
+    # python runner.py \
+    #     --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
+    #     --json $background_filelist --era "$era" --skimmed \
+    #     --isMC --executor futures -j 32 --chunk 80000
+    echo "Processing BKG CRs..."
+    python runner.py \
+        --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_${era}_CRs" \
+        --json $background_filelist --era "$era" --skimmed \
+        --isMC --executor futures -j 32 --chunk 80000
+fi
+
+if [ $data -eq 1 ]; then
+    if [ $blind -eq 0 ]; then
+        echo "Processing BKG SR_low_temp..."
+        python runner.py \
+            --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
+            --json $data_filelist --era "$era" --executor futures -j 32 --chunk 7000
+        echo "Processing BKG SR_high_temp..."
+        python runner.py \
+            --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
+            --json $data_filelist --era "$era" --executor futures -j 32 --chunk 80000
+    fi
+    echo "Processing BKG CRs..."
+    python runner.py \
+        --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_${era}_CRs" \
+        --json $data_filelist --era "$era" --executor futures -j 32 --chunk 80000
 fi

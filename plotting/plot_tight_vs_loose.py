@@ -1,6 +1,7 @@
 import argparse
 import os
 import pathlib
+import re
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -8,6 +9,7 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import plot_utils
+from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
@@ -22,6 +24,13 @@ def parse_args():
         type=str,
         default="full_analysis_Apr2025",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--year",
+        type=str,
+        nargs="*",
+        default=["2018"],
+        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--dest",
@@ -46,6 +55,49 @@ sample_names = {
     "QCD_Pt_MuEnrichedPt5_2018": "QCD",
     "DY_2018": "DY",
 }
+
+
+def merge_runs(plots, run, args):
+    names = [
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
+    ]
+    # Add signal processes
+    signal_processes = list(
+        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
+    )
+    # Remove 2016APV for now
+    # years = ["2016APV", "2016", "2017", "2018"]
+    years = ["2016", "2017", "2018"]
+    if run == "Run3":
+        years = ["2022", "2022EE", "2023", "2023BPix"]
+        # Add signal processes
+        signal_processes = list(
+            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
+        )
+    if args.data:
+        names.append("Data")
+    names.extend(signal_processes)
+    run_plots = {}
+    for name in names:
+        run_plots[f"{name}_{run}"] = {}
+        for year in years:
+            if f"{name}_{year}" not in plots.keys():
+                continue
+            for plot in plots[f"{name}_{year}"]:
+                if plot not in run_plots[f"{name}_{run}"].keys():
+                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
+                        plot
+                    ].copy()
+                else:
+                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
+    return run_plots
 
 
 def make_plot(plots, sample, region):
@@ -145,39 +197,68 @@ if "__main__" == __name__:
     os.makedirs(args.dest, exist_ok=True)
 
     # Load plots
-    print("Loading plots...", end=" ", flush=True)
-    plots = plot_utils.loader(tag=f"{args.tag}_SRs")
-    print("Done!", flush=True)
+    years_to_load = args.year
+    if "Run2" in args.year:
+        # Commenting out 2016APV for now
+        # years_to_load = ["2016APV", "2016", "2017", "2018"]
+        years_to_load = ["2016", "2017", "2018"]
+    if "Run3" in args.year:
+        years_to_load = ["2022", "2022EE", "2023", "2023BPix"]
+    if "Run2" in args.year and "Run3" in args.year:
+        years_to_load = [
+            # Commenting out 2016APV for now
+            # "2016APV",
+            "2016",
+            "2017",
+            "2018",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+        ]
+    plots = {}
+    for year in track(years_to_load, description="Loading plots"):
+        plots = plots | plot_utils.loader(
+            tag=f"{args.tag}_{year}_SRs",
+            era=year,
+            load_data=False,
+        )
 
-    print("Fit and extrapolation...", end=" ", flush=True)
-    # QCD extrapolation
-    # Slice the first bin out where needed for fit stability
-    slice_hists = {
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
-    }
+    for year in track(years_to_load, description="Fitting and extrapolations"):
+        # QCD extrapolation
+        # Slice the first bin out where needed for fit stability
+        slice_hists = {
+            "SR_low_temp_loose": slice(4j, None),
+            "SR_low_temp_tight": slice(3j, None),
+            "SR_high_temp_loose": slice(4j, None),
+            "SR_high_temp_tight": slice(3j, None),
+        }
+        qcd_extrapolation = plot_utils.Extrapolation(
+            plots[f"QCD_Pt_MuEnrichedPt5_{year}"], uncertainty_scheme="full"
+        )
+        qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
-    qcd_extrapolation = plot_utils.Extrapolation(
-        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
-    )
-    qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        # DY extrapolation
+        # Slice the first bin out where needed for fit stability
+        slice_hists = {
+            "SR_low_temp_loose": slice(4j, None),
+            "SR_low_temp_tight": slice(3j, None),
+            "SR_high_temp_loose": slice(4j, None),
+            "SR_high_temp_tight": slice(4j, None),
+        }
+        dy_extrapolation = plot_utils.Extrapolation(
+            plots[f"DY_{year}"], uncertainty_scheme="full"
+        )
+        dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
-    # DY extrapolation
-    # Slice the first bin out where needed for fit stability
-    slice_hists = {
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(4j, None),
-    }
-    dy_extrapolation = plot_utils.Extrapolation(
-        plots["DY_2018"], uncertainty_scheme="full"
-    )
-    dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
-    print("Done!", flush=True)
+    if "Run2" in args.year:
+        run2_plots = merge_runs(plots, "Run2", args)
+        plots = plots | run2_plots
+    if "Run3" in args.year:
+        run3_plots = merge_runs(plots, "Run3", args)
+        plots = plots | run3_plots
 
-    for sample in ["QCD_Pt_MuEnrichedPt5_2018", "DY_2018"]:
-        for region in ["SR_low_temp", "SR_high_temp"]:
-            make_plot(plots, sample, region)
+    for year in track(args.year, description="Plotting regions"):
+        for sample in [f"QCD_Pt_MuEnrichedPt5_{year}", f"DY_{year}"]:
+            for region in ["SR_low_temp", "SR_high_temp"]:
+                make_plot(plots, sample, region)

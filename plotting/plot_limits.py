@@ -45,6 +45,10 @@ scan_points = [
     ("8.000", "32.000"),
 ]
 
+# Leave this empty for Run 2 + Run 3
+# Otherwise, set to either "_Run2_13TeV" or "_Run3_13p6TeV"
+suffix = "_Run2_13TeV"
+
 
 def log_interp1d(xx, yy, kind="linear"):
     logx = np.log(xx)
@@ -131,12 +135,12 @@ def get_quantiles(tree, scale):
 
 def plot_limit(input_path, scan_point, mass_vals, masses):
     if not os.path.exists(
-        f"{input_path}/higgsCombine_scale0.0001_{scan_point}.AsymptoticLimits.root"
+        f"{input_path}/higgsCombine_scale0.0001_{scan_point}{suffix}.AsymptoticLimits.root"
     ):
         print(f"File not found. Skipping {scan_point}")
         return
     f = uproot.open(
-        f"{input_path}/higgsCombine_scale0.0001_{scan_point}.AsymptoticLimits.root"
+        f"{input_path}/higgsCombine_scale0.0001_{scan_point}{suffix}.AsymptoticLimits.root"
     )
 
     limits_tree = f["limit"]
@@ -244,10 +248,16 @@ if __name__ == "__main__":
         plt.yscale("log")
         ax.set_xlabel(r"$m_{S}$ (GeV)")
         ax.set_ylabel(r"$\sigma(\sqrt{s}=13\,TeV)$ (pb)")
+        if suffix == "_Run2_13TeV":
+            lumi_label = r"$118\,fb^{-1}$ ($13\,TeV$)"
+        elif suffix == "_Run3_13p6TeV":
+            lumi_label = r"$62.4\,fb^{-1}$ ($13.6\,TeV$)"
+        else:
+            lumi_label = r"$118\,fb^{-1}$ ($13\,TeV$) + $62.4\,fb^{-1}$ ($13.6\,TeV$)"
         hep.cms.label(
             llabel="Preliminary",
             data=True,
-            rlabel=r"$118\,fb^{-1}$ ($13\,TeV$) + $62.4\,fb^{-1}$ ($13.6\,TeV$)",
+            rlabel=lumi_label,
             ax=ax,
         )
         plt.text(

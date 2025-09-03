@@ -1,3 +1,5 @@
+import select
+
 import awkward as ak
 import numpy as np
 from coffea import processor
@@ -202,6 +204,106 @@ class SUEP_base(processor.ProcessorABC):
             raise ValueError(f"Invalid era: {self.era}")
         events = events[trigger]
         return events
+
+    def apply_trigger_plateau(self, events):
+        """
+        To make sure we are in the trigger plateau, we require that
+        there are at least 3 RECO muons with pt greater than the trigger
+        threshold of the lowest HLT path + ~10%.
+
+        This means that:
+          - for 5_3_3 triggers, we require muons with at least 5.5, 3.3, 3.3 GeV
+          - for 10_5_5 triggers, we require muons with at least 11, 5.5, 5.5 GeV
+          - for 12_10_5 triggers, we require muons with at least 13, 11, 5.5 GeV
+        """
+
+        muons = events.Muon
+        muon_cleaning = (
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
+        )
+        muons = muons[muon_cleaning]
+
+        selection_533 = (ak.sum(muons.pt >= 5.5, axis=-1) >= 1) & (
+            ak.sum(muons.pt >= 3.3, axis=-1) >= 3
+        )
+        selection_1055 = (ak.sum(muons.pt >= 11, axis=-1) >= 1) & (
+            ak.sum(muons.pt >= 5.5, axis=-1) >= 3
+        )
+        selection_12105 = (
+            (ak.sum(muons.pt >= 13, axis=-1) >= 1)
+            & (ak.sum(muons.pt >= 11, axis=-1) >= 2)
+            & (ak.sum(muons.pt >= 5.5, axis=-1) >= 3)
+        )
+
+        # Now, blend the selections based on the trigger paths
+        trigger_plateau = np.ones(len(events), dtype=bool)
+        if self.era in ["2016APV", "2016"]:
+            if "TripleMu_5_3_3" in events.HLT.fields:
+                trigger_plateau = np.where(
+                    events.HLT.TripleMu_5_3_3,
+                    trigger_plateau & selection_533,
+                    trigger_plateau,
+                )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_12_10_5,
+                trigger_plateau & selection_12105,
+                trigger_plateau,
+            )
+        elif self.era == "2017":
+            if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
+                trigger_plateau = np.where(
+                    events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ,
+                    trigger_plateau & selection_533,
+                    trigger_plateau,
+                )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_10_5_5_DZ,
+                trigger_plateau & selection_1055,
+                trigger_plateau,
+            )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_12_10_5,
+                trigger_plateau & selection_12105,
+                trigger_plateau,
+            )
+        elif self.era == "2018":
+            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
+                trigger_plateau = np.where(
+                    events.HLT.TripleMu_5_3_3_Mass3p8_DZ,
+                    trigger_plateau & selection_533,
+                    trigger_plateau,
+                )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_10_5_5_DZ,
+                trigger_plateau & selection_1055,
+                trigger_plateau,
+            )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_12_10_5,
+                trigger_plateau & selection_12105,
+                trigger_plateau,
+            )
+        elif self.era in ["2022", "2022EE", "2023", "2023BPix"]:
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_5_3_3_Mass3p8_DZ,
+                trigger_plateau & selection_533,
+                trigger_plateau,
+            )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_10_5_5_DZ,
+                trigger_plateau & selection_1055,
+                trigger_plateau,
+            )
+            trigger_plateau = np.where(
+                events.HLT.TripleMu_12_10_5,
+                trigger_plateau & selection_12105,
+                trigger_plateau,
+            )
+
+        return trigger_plateau
 
     def get_lumi_factors(self, events):
         lumi_factors = np.ones(len(events))

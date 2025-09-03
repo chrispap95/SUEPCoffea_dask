@@ -1,6 +1,7 @@
 import argparse
 import os
 import pathlib
+import re
 
 import cms_styles
 import matplotlib as mpl  # type: ignore[import]
@@ -39,8 +40,38 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="Nminus1_Mar2025",
+        default="Nminus1_Jul2025",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--year",
+        type=str,
+        nargs="*",
+        default=["2018"],
+        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+    )
+    parser.add_argument(
+        "--lumi",
+        type=float,
+        help="Custom integrated luminosity to be used (in pb^-1). For example, use 559.322 for "
+        "the single data file in filelists/data/data_Run2018A_0p6fb_1file_unskimmed.json."
+        "If not provided, the luminosity will be determined automatically for the year.",
+    )
+    parser.add_argument(
+        "--data",
+        action="store_true",
+        help="Plot data points in the regions. Default is False.",
+    )
+    parser.add_argument(
+        "--ratio",
+        action="store_true",
+        help="Plot the ratio of the data to the total background. "
+        "Has an effect only when --data is passed as well. Default is False.",
+    )
+    parser.add_argument(
+        "--normalize",
+        action="store_true",
+        help="Normalize the QCD to the data. Default is False.",
     )
     parser.add_argument(
         "--dest",
@@ -49,21 +80,31 @@ def parse_args():
         help="Destination directory to save the plots. Default is "
         f"{pathlib.Path(__file__).parent / 'Nminus1_plots'}",
     )
+    parser.add_argument(
+        "--CRs",
+        action="store_true",
+        help="Process only CRs. Default is False.",
+    )
+    parser.add_argument(
+        "--SRs",
+        action="store_true",
+        help="Process only SRs. Default is False.",
+    )
     return parser.parse_args()
 
 
 cuts = {
-    # The tuples contains: (cut value, arrow location, arrow height)
-    "CR_prompt_Nminus1_dimuon_mass": [(80, ">"), (100, "<")],
-    "CR_prompt_Nminus1_cand_muon_pt": [(25, ">")],
-    "CR_prompt_Nminus1_cand_muon_iso": [(0.1, "<")],
-    "CR_prompt_Nminus1_cand_muon_ip3d": [(0.01, "<")],
-    "CR_prompt_Nminus1_cand_muon_dxy": [(0.008, "<")],
-    "CR_prompt_Nminus1_cand_muon_dz": [(0.01, "<")],
-    "CR_prompt_Nminus1_muon_iso": [(0.1, ">")],
-    "CR_prompt_Nminus1_muon_ip3d": [(0.015, ">")],
-    "CR_prompt_Nminus1_muon_dxy": [(0.01, ">")],
-    "CR_prompt_Nminus1_muon_dz": [(0.01, ">")],
+    # The tuples contains: (cut value, arrow location)
+    "CR_prompt_Nminus1_dimuon_mass": [(86.2, ">"), (96.2, "<")],
+    "CR_prompt_Nminus1_prompt_muon_pt": [(25, ">")],
+    "CR_prompt_Nminus1_prompt_muon_iso": [(0.1, "<")],
+    "CR_prompt_Nminus1_prompt_muon_ip3d": [(0.01, "<")],
+    "CR_prompt_Nminus1_prompt_muon_dxy": [(0.008, "<")],
+    "CR_prompt_Nminus1_prompt_muon_dz": [(0.01, "<")],
+    "CR_prompt_Nminus1_qcd_muon_iso": [(0.1, ">")],
+    "CR_prompt_Nminus1_qcd_muon_ip3d": [(0.015, ">")],
+    "CR_prompt_Nminus1_qcd_muon_dxy": [(0.01, ">")],
+    "CR_prompt_Nminus1_qcd_muon_dz": [(0.01, ">")],
     "CR_cb_Nminus1_muon_dxy": [(0.01, ">"), (0.2, "<")],
     "SR_low_temp_loose_Nminus1_muon_pt": [(45, "<")],
     "SR_low_temp_tight_Nminus1_muon_pt": [(35, "<")],
@@ -83,18 +124,32 @@ cuts = {
     "SR_high_temp_tight_Nminus1_dimuon_mass": [(70, "<")],
 }
 
+blinding_cuts = {
+    "CR_prompt_Nminus1_dimuon_mass": slice(80j, None),
+    "CR_prompt_Nminus1_prompt_muon_pt": slice(None),
+    "CR_prompt_Nminus1_prompt_muon_iso": slice(None),
+    "CR_prompt_Nminus1_prompt_muon_ip3d": slice(None),
+    "CR_prompt_Nminus1_prompt_muon_dxy": slice(None),
+    "CR_prompt_Nminus1_prompt_muon_dz": slice(None),
+    "CR_prompt_Nminus1_qcd_muon_iso": slice(None),
+    "CR_prompt_Nminus1_qcd_muon_ip3d": slice(None),
+    "CR_prompt_Nminus1_qcd_muon_dxy": slice(None),
+    "CR_prompt_Nminus1_qcd_muon_dz": slice(None),
+    "CR_cb_Nminus1_muon_dxy": slice(None),
+}
+
 ylims = {
     "CR_prompt_Nminus1_dimuon_mass": (1e0, 1e8),
-    "CR_prompt_Nminus1_cand_muon_pt": (1e0, 1e8),
-    "CR_prompt_Nminus1_cand_muon_iso": (1e0, 1e8),
-    "CR_prompt_Nminus1_cand_muon_ip3d": (1e0, 1e8),
-    "CR_prompt_Nminus1_cand_muon_dxy": (1e0, 1e8),
-    "CR_prompt_Nminus1_cand_muon_dz": (1e0, 1e8),
-    "CR_prompt_Nminus1_muon_iso": (1e0, 1e8),
-    "CR_prompt_Nminus1_muon_ip3d": (1e0, 1e8),
-    "CR_prompt_Nminus1_muon_dxy": (1e0, 1e8),
-    "CR_prompt_Nminus1_muon_dz": (1e0, 1e8),
-    "CR_cb_Nminus1_muon_dxy": (1e2, 1e10),
+    "CR_prompt_Nminus1_prompt_muon_pt": (1e0, 1e8),
+    "CR_prompt_Nminus1_prompt_muon_iso": (1e0, 1e8),
+    "CR_prompt_Nminus1_prompt_muon_ip3d": (1e0, 1e8),
+    "CR_prompt_Nminus1_prompt_muon_dxy": (1e0, 1e8),
+    "CR_prompt_Nminus1_prompt_muon_dz": (1e0, 1e8),
+    "CR_prompt_Nminus1_qcd_muon_iso": (1e0, 1e8),
+    "CR_prompt_Nminus1_qcd_muon_ip3d": (1e0, 1e8),
+    "CR_prompt_Nminus1_qcd_muon_dxy": (1e0, 1e8),
+    "CR_prompt_Nminus1_qcd_muon_dz": (1e0, 1e8),
+    "CR_cb_Nminus1_muon_dxy": (1e2, 1e12),
     "SR_low_temp_tight_Nminus1_muon_pt": (1, 1e8),
     "SR_low_temp_loose_Nminus1_muon_pt": (1e2, 1e10),
     "SR_low_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
@@ -130,19 +185,22 @@ region_labels = {
 def get_xlabel(plot):
     xlabels = {
         "Nminus1_muon_pt": r"muon $p_{T}$ (GeV)",
-        "Nminus1_muon_ip3d": r"muon $IP_{3D}$ (cm)",
         "Nminus1_muon_iso": "muon isolation",
-        "Nminus1_muon_neutral_iso": "muon neutral isolation",
-        "Nminus1_sph1": r"$S_{1}$",
-        "Nminus1_dimuon_mass": r"$m_{\mu\mu}$ (GeV)",
-        "Nminus1_cand_muon_pt": r"prompt muon $p_{T}$ (GeV)",
-        "Nminus1_cand_muon_iso": "prompt muon isolation",
-        "Nminus1_cand_muon_ip3d": r"prompt muon $IP_{3D}$ (cm)",
-        "Nminus1_cand_muon_dxy": r"prompt muon $|d_{xy}|$ (cm)",
-        "Nminus1_cand_muon_dz": r"prompt muon $|d_{z}|$ (cm)",
         "Nminus1_muon_ip3d": r"muon $IP_{3D}$ (cm)",
         "Nminus1_muon_dxy": r"muon $|d_{xy}|$ (cm)",
         "Nminus1_muon_dz": r"muon $|d_{z}|$ (cm)",
+        "Nminus1_muon_neutral_iso": "muon neutral isolation",
+        "Nminus1_sph1": r"$S_{1}$",
+        "Nminus1_dimuon_mass": r"$m_{\mu\mu}$ (GeV)",
+        "Nminus1_prompt_muon_pt": r"prompt muon $p_{T}$ (GeV)",
+        "Nminus1_prompt_muon_iso": "prompt muon isolation",
+        "Nminus1_prompt_muon_ip3d": r"prompt muon $IP_{3D}$ (cm)",
+        "Nminus1_prompt_muon_dxy": r"prompt muon $|d_{xy}|$ (cm)",
+        "Nminus1_prompt_muon_dz": r"prompt muon $|d_{z}|$ (cm)",
+        "Nminus1_qcd_muon_iso": "qcd muon isolation",
+        "Nminus1_qcd_muon_ip3d": r"qcd muon $IP_{3D}$ (cm)",
+        "Nminus1_qcd_muon_dxy": r"qcd muon $|d_{xy}|$ (cm)",
+        "Nminus1_qcd_muon_dz": r"qcd muon $|d_{z}|$ (cm)",
     }
     for key in xlabels:
         if key in plot:
@@ -159,23 +217,143 @@ logx_plots = [
 ]
 
 
-def make_plot(plots, plot):
+def calculate_k_factor(plots, year, region="CR_cb", process="QCD_Pt_MuEnrichedPt5"):
     mc_processes = [
-        ("Higgs_2018", "Higgs"),
-        ("TTV_2018", "TTV"),
-        ("ST_NLO_2018", "ST"),
-        ("WJets_2018", "WJets"),
-        ("VV+VVV_2018", "VV+VVV"),
-        ("TT_powheg_2018", "TT"),
-        ("DY_2018", f"DY"),
-        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD"),
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
     ]
 
+    tot_bkg = plots["DY_" + year][region].copy().reset()
+    for mc_proc in mc_processes:
+        if process == mc_proc:
+            continue
+        tot_bkg += plots[f"{mc_proc}_{year}"][region]
+    k_factor = (
+        plots["Data_" + year][region].sum().value - tot_bkg.sum().value
+    ) / plots[f"{process}_{year}"][region].sum().value
+    return k_factor
+
+
+def merge_runs(plots, run, args):
+    names = [
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
+    ]
+    # Add signal processes
+    signal_processes = list(
+        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
+    )
+    # Remove 2016APV for now
+    # years = ["2016APV", "2016", "2017", "2018"]
+    years = ["2016", "2017", "2018"]
+    if run == "Run3":
+        years = ["2022", "2022EE", "2023", "2023BPix"]
+        # Add signal processes
+        signal_processes = list(
+            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
+        )
+    if args.data:
+        names.append("Data")
+    names.extend(signal_processes)
+    run_plots = {}
+    for name in names:
+        run_plots[f"{name}_{run}"] = {}
+        for year in years:
+            if f"{name}_{year}" not in plots.keys():
+                continue
+            for plot in plots[f"{name}_{year}"]:
+                if plot not in run_plots[f"{name}_{run}"].keys():
+                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
+                        plot
+                    ].copy()
+                else:
+                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
+    return run_plots
+
+
+def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
+    ratio = np.divide(
+        hist_data.values(),
+        hist_bkg_total.values(),
+        out=np.ones_like(hist_data.values()),
+        where=hist_bkg_total.values() != 0,
+    )
+    ratio_err = np.where(
+        hist_bkg_total.values() > 0,
+        np.sqrt(
+            (hist_bkg_total.values() ** -2) * (hist_data.variances())
+            + (hist_data.values() ** 2 * hist_bkg_total.values() ** -4)
+            * (hist_bkg_total.variances())
+        ),
+        0,
+    )
+    ax.errorbar(
+        hist_data.axes.centers[0],
+        ratio,
+        yerr=ratio_err,
+        color="black",
+        fmt="o",
+        linestyle="none",
+        markersize=7,
+        lw=2,
+    )
+
+    # Draw a filled hatch area with the relative uncertainty of the MC in the ratio plot.
+    mc_rel_unc = np.divide(
+        np.sqrt(hist_bkg_total.variances()),
+        hist_bkg_total.values(),
+        out=np.zeros_like(hist_bkg_total.values()),
+        where=hist_bkg_total.values() != 0,
+    )
+    y_hatch2 = np.vstack(
+        (np.ones_like(hist_bkg_total.values()), np.ones_like(hist_bkg_total.values()))
+    ).reshape((-1,), order="F")
+    y_hatch2_unc = np.vstack((mc_rel_unc, mc_rel_unc)).reshape((-1,), order="F")
+    ax.fill_between(
+        x=x_hatch,
+        y1=y_hatch2 - y_hatch2_unc,
+        y2=y_hatch2 + y_hatch2_unc,
+        step="pre",
+        facecolor="none",
+        edgecolor=(0, 0, 0, 0.5),
+        linewidth=0,
+        hatch="///",
+    )
+    ax.axhline(1, ls="--", color="gray")
+
+
+def make_plot(plots, plot, year, args):
+    mc_processes = [
+        ("Higgs", "Higgs"),
+        ("TTV", r"$t\bar{t}+V$"),
+        ("ST_NLO", r"single $t$"),
+        ("WJets", r"$W+jets$"),
+        ("VV+VVV", r"$VV+VVV$"),
+        ("TT_powheg", r"$t\bar{t}$"),
+        ("DY", "Drell-Yan"),
+        ("QCD_Pt_MuEnrichedPt5", "QCD"),
+    ]
+
+    cm_energy = "13TeV"
+    if year.startswith("202") or year == "Run3":
+        cm_energy = "13p6TeV"
     signal_processes = [
-        "GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi4.000_T16.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_13TeV_2018",
-        "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV_2018",
+        f"GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi4.000_T16.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_{cm_energy}",
+        f"GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_{cm_energy}",
     ]
     signal_labels = [
         r"$m_S=125\,$GeV,$m_\phi=8\,$GeV," + "\n" + r"$T=8\,$GeV, lep. decays",
@@ -185,12 +363,12 @@ def make_plot(plots, plot):
     ]
     if "low_temp" in plot:
         # signal_processes = [
-        #     "GluGluToSUEP_mS200.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
-        #     "GluGluToSUEP_mS1000.000_mPhi1.000_T0.250_modeleptonic_13TeV_2018",
-        #     "GluGluToSUEP_mS300.000_mPhi1.400_T0.350_modehadronic_13TeV_2018",
-        #     "GluGluToSUEP_mS400.000_mPhi1.400_T0.350_modehadronic_13TeV_2018",
-        #     "GluGluToSUEP_mS500.000_mPhi1.400_T0.350_modehadronic_13TeV_2018",
-        #     "GluGluToSUEP_mS1000.000_mPhi1.400_T0.350_modehadronic_13TeV_2018",
+        #     f"GluGluToSUEP_mS200.000_mPhi1.000_T0.250_modeleptonic_{cm_energy}",
+        #     f"GluGluToSUEP_mS1000.000_mPhi1.000_T0.250_modeleptonic_{cm_energy}",
+        #     f"GluGluToSUEP_mS300.000_mPhi1.400_T0.350_modehadronic_{cm_energy}",
+        #     f"GluGluToSUEP_mS400.000_mPhi1.400_T0.350_modehadronic_{cm_energy}",
+        #     f"GluGluToSUEP_mS500.000_mPhi1.400_T0.350_modehadronic_{cm_energy}",
+        #     f"GluGluToSUEP_mS1000.000_mPhi1.400_T0.350_modehadronic_{cm_energy}",
         # ]
         # signal_labels = [
         #     r"$m_S=200\,$GeV,$m_\phi=1\,$GeV," + "\n" + r"$T=0.25\,$GeV, lep. decays",
@@ -204,10 +382,10 @@ def make_plot(plots, plot):
         # ]
 
         signal_processes = [
-            "GluGluToSUEP_mS125.000_mPhi1.400_T1.400_modehadronic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi4.000_T1.000_modehadronic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_13TeV_2018",
-            "GluGluToSUEP_mS125.000_mPhi8.000_T4.000_modehadronic_13TeV_2018",
+            f"GluGluToSUEP_mS125.000_mPhi1.400_T1.400_modehadronic_{cm_energy}",
+            f"GluGluToSUEP_mS125.000_mPhi4.000_T1.000_modehadronic_{cm_energy}",
+            f"GluGluToSUEP_mS125.000_mPhi2.000_T2.000_modeleptonic_{cm_energy}",
+            f"GluGluToSUEP_mS125.000_mPhi8.000_T4.000_modehadronic_{cm_energy}",
         ]
         signal_labels = [
             r"$m_S=125\,$GeV,$m_\phi=1.4\,$GeV," + "\n" + r"$T=1.4\,$GeV, had. decays",
@@ -222,19 +400,25 @@ def make_plot(plots, plot):
         if "sph1" in plot or "dimuon" in plot
         else (slice(None, None, 2j), slice(None, None, sum))
     )
-    hist_bkg_total = plots["QCD_Pt_MuEnrichedPt5_2018"][plot][slc].copy().reset()
+    hist_bkg_total = plots[f"QCD_Pt_MuEnrichedPt5_{year}"][plot][slc].copy().reset()
 
     for process, label in mc_processes:
-        h_mc = plots[process][plot][slc]
+        h_mc = plots[f"{process}_{year}"][plot][slc]
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
     hists_signal = []
     for process in signal_processes:
-        h_signal = plots[process][plot][slc]
+        h_signal = plots[f"{process}_{year}"][plot][slc]
         hists_signal.append(h_signal)
 
     fig, ax1 = plt.subplots(figsize=(12.5, 12))
+
+    if args.ratio:
+        fig = plt.figure(figsize=(12, 12.5))
+        plt.subplots_adjust(bottom=0.08, top=0.92, left=0.1, right=0.95)
+        ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
+        ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
 
     hep.histplot(
         hists_mc,
@@ -269,6 +453,22 @@ def make_plot(plots, plot):
         zorder=2,
     )
 
+    if args.data and plot in plots[f"Data_{year}"]:
+        blinding_cut = slice(None)
+        if plot in blinding_cuts:
+            blinding_cut = blinding_cuts[plot]
+        hep.histplot(
+            plots[f"Data_{year}"][plot][slc][blinding_cut],
+            label=["Data"],
+            histtype="errorbar",
+            mec="black",
+            mfc="black",
+            ecolor="black",
+            markersize=15,
+            lw=3,
+            ax=ax1,
+        )
+
     hep.histplot(
         hists_signal,
         yerr=[np.sqrt(h.variances()) for h in hists_signal],
@@ -297,10 +497,11 @@ def make_plot(plots, plot):
     if islogx:
         arrow_length_abs = 10 ** (arrow_length_rel * np.log10(xrange_max / xrange_min))
     yrange_min, yrange_max = ylims[plot]
-    y_position_rel = 0.6
+    y_position_rel = 0.5
     y_position_abs = yrange_min * 10 ** (
         y_position_rel * np.log10(yrange_max / yrange_min)
     )
+    plt.sca(ax1)
     for cut in cut_list:
         if cut[1] == "<":
             arrow_position = (
@@ -310,7 +511,13 @@ def make_plot(plots, plot):
             arrow_position = (
                 cut[0] * arrow_length_abs if islogx else cut[0] + arrow_length_abs
             )
-        plt.vlines(x=cut[0], color="black", ymin=1e-3, ymax=2 * y_position_abs, lw=7)
+        plt.vlines(
+            x=cut[0],
+            color="black",
+            ymin=1e-3,
+            ymax=2 * y_position_abs,
+            lw=7,
+        )
         plt.annotate(
             "",
             xy=(arrow_position, y_position_abs),
@@ -326,7 +533,7 @@ def make_plot(plots, plot):
 
     plt.text(
         0.3,
-        0.68,
+        y_position_rel + 0.07,
         region_labels[plot.split("_Nminus1")[0]],
         ha="center",
         weight="bold",
@@ -334,11 +541,39 @@ def make_plot(plots, plot):
         transform=ax1.transAxes,
     )
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
+    if args.ratio and args.data:
+        plot_ratio(
+            plots[f"Data_{year}"][plot][slc],
+            hist_bkg_total,
+            ax2,
+            x_hatch,
+        )
 
+    lumi_label = plot_utils.lumis[year] if args.lumi is None else args.lumi
+    lumi_label = lumi_label / 1000  # Convert pb^-1 to fb^-1
+    lumi_label = round(lumi_label, 2) if lumi_label < 1 else round(lumi_label, 1)
+    hep.cms.label(
+        llabel="Preliminary",
+        data=True,
+        year=year,
+        lumi=lumi_label,
+        com=13.6 if year.startswith("202") or year == "Run3" else 13,
+        ax=ax1,
+    )
+
+    if args.ratio and args.data:
+        plt.sca(ax2)
+        plt.xlabel(r"$n_{muon}$")
+        plt.ylim(0.7, 1.3)
+        plt.ylabel("Data/MC")
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        ax1.set_xlabel("", visible=False)
     plt.xlabel(get_xlabel(plot))
     if islogx:
-        plt.xscale("log")
+        ax1.set_xscale("log")
+        ax2.set_xscale("log")
+    if args.ratio and args.data:
+        plt.sca(ax1)
     plt.yscale("log")
     plt.ylim(ylims[plot])
     plt.legend(ncol=3, loc="upper center", columnspacing=1)
@@ -346,41 +581,85 @@ def make_plot(plots, plot):
     if "sph1" in plot or "dimuon" in plot:
         plt.ylabel("events")
     plt.tight_layout()
-    plt.savefig(f"{args.dest}/{plot}.pdf", bbox_inches="tight")
+    plt.savefig(f"{args.dest}_{args.tag}/{plot}_{year}.pdf", bbox_inches="tight")
     plt.close()
 
 
 if "__main__" == __name__:
     args = parse_args()
 
-    # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    if args.CRs and args.SRs:
+        raise ValueError("Please choose either CRs or SRs, not both.")
 
-    # Load plots
-    print("Loading plots...", end=" ", flush=True)
-    plots_CRs = plot_utils.loader(tag=f"{args.tag}_CRs")
-    plots_SR_high_temp = plot_utils.loader(tag=f"{args.tag}_SR_high_temp")
-    plots_SR_low_temp = plot_utils.loader(tag=f"{args.tag}_SR_low_temp")
-    plots = {}
-    all_datasets = (
-        set(plots_CRs.keys())
-        | set(plots_SR_high_temp.keys())
-        | set(plots_SR_low_temp.keys())
-    )
-    for dataset in list(all_datasets):
-        if dataset not in plots_CRs:
-            plots_CRs[dataset] = {}
-        if dataset not in plots_SR_high_temp:
-            plots_SR_high_temp[dataset] = {}
-        if dataset not in plots_SR_low_temp:
-            plots_SR_low_temp[dataset] = {}
-        plots[dataset] = (
-            plots_CRs[dataset]
-            | plots_SR_high_temp[dataset]
-            | plots_SR_low_temp[dataset]
-        )
-    print("Done!", flush=True)
+    # Create destination directory
+    os.makedirs(f"{args.dest}_{args.tag}", exist_ok=True)
 
     # Load plots and merge them
-    for plot in track(plots["QCD_Pt_MuEnrichedPt5_2018"].keys()):
-        make_plot(plots, plot)
+    years_to_load = args.year
+    if "Run2" in args.year:
+        # Commenting out 2016APV for now
+        # years_to_load = ["2016APV", "2016", "2017", "2018"]
+        years_to_load = ["2016", "2017", "2018"]
+    if "Run3" in args.year:
+        years_to_load = ["2022", "2022EE", "2023", "2023BPix"]
+    if "Run2" in args.year and "Run3" in args.year:
+        years_to_load = [
+            # Commenting out 2016APV for now
+            # "2016APV",
+            "2016",
+            "2017",
+            "2018",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+        ]
+    plots = {}
+    for year in track(years_to_load, description="Loading plots"):
+        if args.CRs:
+            plots = plots | plot_utils.loader(
+                tag=f"{args.tag}_{year}_CRs",
+                era=year,
+                custom_lumi=args.lumi,
+                load_data=args.data,
+            )
+        if args.SRs:
+            plots = plots | plot_utils.loader(
+                tag=f"{args.tag}_{year}_SR_low_temp",
+                era=year,
+                custom_lumi=args.lumi,
+                load_data=args.data,
+            )
+            plots = plots | plot_utils.loader(
+                tag=f"{args.tag}_{year}_SR_high_temp",
+                era=year,
+                custom_lumi=args.lumi,
+                load_data=args.data,
+            )
+
+    # Apply k-factor to QCD and DY
+    if args.data and args.normalize:
+        k_factor_qcd = {}
+        k_factor_dy = {}
+        for year in track(years_to_load, description="Calculating k-factors"):
+            k_factor_qcd[year] = calculate_k_factor(
+                plots, year, region="CR_cb_Nminus1_muon_dxy"
+            )
+            for plot in plots[f"QCD_Pt_MuEnrichedPt5_{year}"]:
+                plots[f"QCD_Pt_MuEnrichedPt5_{year}"][plot] = (
+                    k_factor_qcd[year] * plots[f"QCD_Pt_MuEnrichedPt5_{year}"][plot]
+                )
+            k_factor_dy[year] = calculate_k_factor(
+                plots, year, region="CR_prompt_Nminus1_prompt_muon_dxy", process="DY"
+            )
+            for plot in plots[f"DY_{year}"]:
+                plots[f"DY_{year}"][plot] = (
+                    k_factor_dy[year] * plots[f"DY_{year}"][plot]
+                )
+        print("QCD k_factors =", k_factor_qcd, flush=True)
+        print("DY k_factors =", k_factor_dy, flush=True)
+
+    # Load plots and merge them
+    for year in track(args.year, description="Plotting regions"):
+        for plot in plots[f"QCD_Pt_MuEnrichedPt5_{year}"].keys():
+            make_plot(plots, plot, year, args)

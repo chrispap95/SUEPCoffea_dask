@@ -39,11 +39,6 @@ def parse_args():
         help="Use Poisson errors for the table",
     )
     parser.add_argument(
-        "--data",
-        action="store_true",
-        help="Load data.",
-    )
-    parser.add_argument(
         "--latex",
         action="store_true",
         help="Print the table in LaTeX format",
@@ -58,7 +53,7 @@ def get_poisson_errors(N, alpha=0.6827, scale=1):
     return np.nan_to_num(lower) * scale, np.nan_to_num(upper) * scale
 
 
-def merge_runs(plots, run, args):
+def merge_runs(plots, run):
     names = [
         "Higgs",
         "TTV",
@@ -76,8 +71,6 @@ def merge_runs(plots, run, args):
         names.remove("TTV")
         names.remove("ST_NLO")
         years = ["2022", "2022EE", "2023", "2023BPix"]
-    if args.data:
-        names.append("Data")
     run_plots = {}
     for name in names:
         run_plots[f"{name}_{run}"] = {}
@@ -132,13 +125,13 @@ if "__main__" == __name__:
             tag=f"{args.tag}_{year}_CR",
             era=year,
             custom_lumi=args.lumi,
-            load_data=args.data,
+            load_data=False,
         )
         plots_SR = plot_utils.loader(
             tag=f"{args.tag}_{year}_SRs",
             era=year,
             custom_lumi=args.lumi,
-            load_data=args.data,
+            load_data=False,
         )
         all_datasets = set(plots_CR.keys()) | set(plots_SR.keys())
         for dataset in list(all_datasets):
@@ -177,10 +170,10 @@ if "__main__" == __name__:
         dy_extrapolation.create_syst_variation(sample="DY")
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2", args)
+        run2_plots = merge_runs(plots, "Run2")
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3", args)
+        run3_plots = merge_runs(plots, "Run3")
         plots = plots | run3_plots
 
     mc_processes = [

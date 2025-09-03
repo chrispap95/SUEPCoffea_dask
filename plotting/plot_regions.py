@@ -112,7 +112,7 @@ region_labels = {
 }
 
 y_ranges = {
-    "CR_cb": (10, 1e12),
+    "CR_cb": (100, 1e12),
     "CR_prompt": (1, 1e9),
     "SR_high_temp_loose_extrapolation": (1e-2, 1e13),
     "SR_high_temp_loose": (1e-2, 1e13),
@@ -249,14 +249,14 @@ def plot_region(args, plots, year, region):
     if extrapolation:
         extrapolation_tag = "+extr."
     mc_processes = [
-        ("Higgs", "Higgs", "C0"),
-        ("TTV", "TTV", "C1"),
-        ("ST_NLO", "ST", "C2"),
-        ("WJets", "WJets", "C3"),
-        ("VV+VVV", "VV+VVV", "C4"),
-        ("TT_powheg", "TT", "C5"),
-        ("DY", f"DY{extrapolation_tag}", "C6"),
-        ("QCD_Pt_MuEnrichedPt5", f"QCD{extrapolation_tag}", "C7"),
+        ("Higgs", "Higgs"),
+        ("TTV", r"$t\bar{t}+V$"),
+        ("ST_NLO", r"single $t$"),
+        ("WJets", r"$W+jets$"),
+        ("VV+VVV", r"$VV+VVV$"),
+        ("TT_powheg", r"$t\bar{t}$"),
+        ("DY", f"DY{extrapolation_tag}"),
+        ("QCD_Pt_MuEnrichedPt5", f"QCD{extrapolation_tag}"),
     ]
 
     cm_energy = "13TeV"
@@ -291,7 +291,7 @@ def plot_region(args, plots, year, region):
     hists_mc = []
     hist_bkg_total = plots[f"QCD_Pt_MuEnrichedPt5_{year}"][region].copy().reset()
 
-    for process, label, _color in mc_processes:
+    for process, label in mc_processes:
         h_mc = plots[f"{process}_{year}"][
             (f"{region}_extrapolation" if "extr" in label else region)
         ]
@@ -317,7 +317,6 @@ def plot_region(args, plots, year, region):
         stack=True,
         label=[p[1] for p in mc_processes],
         histtype="fill",
-        color=[p[2] for p in mc_processes],
         ec="black",
         lw=2,
         ax=ax1,
@@ -401,12 +400,13 @@ def plot_region(args, plots, year, region):
         region = f"{region}_extrapolation"
     region_label_coords = (0.51, 0.58)
     if "CR" in region:
-        region_label_coords = (0.4, 0.62)
+        region_label_coords = (0.4, 0.59)
     plt.text(
         *region_label_coords,
         region_labels[region],
         ha="center",
         weight="bold",
+        size=30,
         transform=ax1.transAxes,
     )
 
@@ -424,7 +424,7 @@ def plot_region(args, plots, year, region):
     if args.ratio and args.data:
         plt.sca(ax2)
         plt.xlabel(r"$n_{muon}$")
-        plt.ylim(0.9, 1.1)
+        plt.ylim(0.5, 1.5)
         plt.ylabel("Data/MC")
         plt.setp(ax1.get_xticklabels(), visible=False)
         ax1.set_xlabel("", visible=False)
@@ -458,7 +458,10 @@ def plot_region(args, plots, year, region):
     ax1.add_artist(legend1)
 
     plt.ylabel("events")
-    plt.savefig(f"{args.dest}/{region}_{year}_{args.tag}.pdf", bbox_inches="tight")
+    plt.savefig(
+        os.path.join(args.dest, args.tag, f"{region}_{year}.pdf"),
+        bbox_inches="tight",
+    )
     plt.close()
 
 
@@ -469,7 +472,7 @@ if "__main__" == __name__:
         raise ValueError("Please choose either CRs or SRs, not both.")
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year
@@ -508,7 +511,7 @@ if "__main__" == __name__:
                 load_data=args.data,
             )
 
-    # Apply k-factor to QCD
+    # Apply k-factor to QCD and DY
     if args.data and args.normalize:
         k_factor_qcd = {}
         k_factor_dy = {}

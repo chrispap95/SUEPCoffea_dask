@@ -246,14 +246,14 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
 
 def plot_SUEP_combined(args, plots, year):
     mc_processes = [
-        "Higgs",
-        "TTV",
-        "ST",
-        "WJets",
-        "VV+VVV",
-        "TT",
-        "DY",
-        "QCD",
+        ("Higgs", "Higgs"),
+        ("TTV", r"$t\bar{t}+V$"),
+        ("ST", r"single $t$"),
+        ("WJets", r"$W+jets$"),
+        ("VV+VVV", r"$VV+VVV$"),
+        ("TT", r"$t\bar{t}$"),
+        ("DY", "Drell-Yan"),
+        ("QCD", "QCD"),
     ]
     data_name = ("data_obs", "Data")
 
@@ -265,7 +265,7 @@ def plot_SUEP_combined(args, plots, year):
     hists_mc = []
     hist_bkg_total = plots["TotalBkg"][f"SUEP_{era}"]
 
-    for process in mc_processes:
+    for process, _label in mc_processes:
         h_mc = plots[process][f"SUEP_{era}"]
         hists_mc.append(h_mc)
 
@@ -286,7 +286,7 @@ def plot_SUEP_combined(args, plots, year):
         hists_mc,
         yerr=[np.sqrt(h.variances()) for h in hists_mc],
         stack=True,
-        label=mc_processes,
+        label=[label for _, label in mc_processes],
         histtype="fill",
         ec="black",
         lw=2,
@@ -437,7 +437,7 @@ def plot_SUEP_combined(args, plots, year):
     plt.ylabel("events")
     plt.tight_layout()
     plt.savefig(
-        f"{args.dest}/postfit_all_regions_combined_{year}_{args.tag}.pdf",
+        os.path.join(args.dest, args.tag, f"postfit_all_regions_combined_{year}.pdf"),
         bbox_inches="tight",
     )
     plt.close()
@@ -447,7 +447,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year

@@ -4,7 +4,7 @@ import numpy as np
 from coffea.lookup_tools import rochester_lookup, txt_converters
 
 
-def muon_efficiencies(muons, era, region, syst):
+def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
     """
     This will return the total muon scale factors. The muon scale factors are the product of
     muon RECO efficiency, muon ID efficiency, and muon ISO efficiency. Following the MUO POG
@@ -97,9 +97,9 @@ def muon_efficiencies(muons, era, region, syst):
     match region:
         case "CR_prompt_prompt":
             config += [
-                "NUM_miniIsoLT01_DEN_MediumID",
-                "NUM_absdxyLT001_DEN_miniIsoLT01 and MediumID",
-                "NUM_absdzLT001_DEN_absdxyLT001 and miniIsoLT01 and MediumID",
+                # "NUM_miniIsoLT01_DEN_MediumID",
+                # "NUM_absdxyLT001_DEN_miniIsoLT01 and MediumID",
+                # "NUM_absdzLT001_DEN_absdxyLT001 and miniIsoLT01 and MediumID",
             ]
         case "CR_prompt_qcd":
             config += []
@@ -110,22 +110,26 @@ def muon_efficiencies(muons, era, region, syst):
         case "VR_tight":
             config += []
         case "SR_low_temp_loose":
-            config += ["absdxyLT01", "absdzLT01"]
+            config += [
+                # "absdxyLT01", "absdzLT01"
+            ]
         case "SR_low_temp_tight":
-            config += ["absdxyLT0007", "absdzLT0007"]
+            config += [
+                # "absdxyLT0007", "absdzLT0007"
+            ]
         case "SR_high_temp_loose":
             config += [
-                "NUM_miniIsoLT5_DEN_MediumID",
-                "neutralIsoLT3",
-                "absdxyLT01",
-                "absdzLT01",
+                # "NUM_miniIsoLT5_DEN_MediumID",
+                # "neutralIsoLT3",
+                # "absdxyLT01",
+                # "absdzLT01",
             ]
         case "SR_high_temp_tight":
             config += [
-                "NUM_miniIsoLT065_DEN_MediumID",
-                "neutralIsoLT05",
-                "absdxyLT0007",
-                "absdzLT0007",
+                # "NUM_miniIsoLT065_DEN_MediumID",
+                # "neutralIsoLT05",
+                # "absdxyLT0007",
+                # "absdzLT0007",
             ]
 
     json_file_JPsi = f"data/muon_corrections/{era}/muon_JPsi.json"
@@ -169,7 +173,10 @@ def muon_efficiencies(muons, era, region, syst):
             corr = corrs_JPsi[corr_name]
         elif peak == "Z":
             corr = corrs_Z[corr_name]
-        muon_SF = muon_SF * corr.evaluate(abs(muons_flat.eta), muons_flat.pt, var)
+        muon_pt_vals = muons_flat.pt
+        if override_low_pt_bound:
+            muon_pt_vals = np.where(muon_pt_vals < 10, 10, muon_pt_vals)
+        muon_SF = muon_SF * corr.evaluate(abs(muons_flat.eta), muon_pt_vals, var)
 
     return ak.unflatten(muon_SF, n_muons)
 

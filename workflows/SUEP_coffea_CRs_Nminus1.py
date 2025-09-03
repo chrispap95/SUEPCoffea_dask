@@ -2,6 +2,7 @@ import awkward as ak
 import hist
 import vector  # type: ignore[import]
 from coffea import processor
+from numpy import int32
 
 # Importing CMS corrections
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
@@ -41,6 +42,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             & (abs(muons.dxy) < 0.2)
             & (abs(muons.dz) < 0.2)
         )
+        muons = muons[clean_muons]
 
         # Apply tight miniIso id corresponding to miniIso < 0.1
         prompt_muons = muons[
@@ -57,7 +59,6 @@ class SUEP_processor(SUEP_common.SUEP_base):
         prompt_muons = prompt_muons[enough_prompt_muons & os_muons_mask]
 
         # Get the Z candidates and make sure they are close to the peak
-        muons = muons[clean_muons]
         events, prompt_muons, Z_cands, candidates_indices, muons = (
             self.find_Z_candidates(events, prompt_muons, muons, apply_dR_cut=False)
         )
@@ -732,6 +733,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            prompt_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                prompt_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -739,6 +743,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         era=self.era,
                         region="CR_prompt_prompt",
                         syst="",
+                        override_low_pt_bound=True,
                     ),
                     axis=-1,
                 )
@@ -752,9 +757,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                prompt_muons_CR_prompt_genPartFlav = prompt_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_prompt_muon_pt"].fill(
                 ak.flatten(prompt_muons_CR_prompt.pt),
-                ak.flatten(prompt_muons_CR_prompt.genPartFlav),
+                ak.flatten(prompt_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         prompt_muons_CR_prompt.pt,
@@ -773,6 +779,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            prompt_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                prompt_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -793,9 +802,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                prompt_muons_CR_prompt_genPartFlav = prompt_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_prompt_muon_iso"].fill(
                 ak.flatten(prompt_muons_CR_prompt.miniPFRelIso_all),
-                ak.flatten(prompt_muons_CR_prompt.genPartFlav),
+                ak.flatten(prompt_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         prompt_muons_CR_prompt.miniPFRelIso_all,
@@ -814,6 +824,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            prompt_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                prompt_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -834,9 +847,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                prompt_muons_CR_prompt_genPartFlav = prompt_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_prompt_muon_dxy"].fill(
                 ak.flatten(abs(prompt_muons_CR_prompt.dxy)),
-                ak.flatten(prompt_muons_CR_prompt.genPartFlav),
+                ak.flatten(prompt_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         prompt_muons_CR_prompt.dxy,
@@ -855,6 +869,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            prompt_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                prompt_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -875,9 +892,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                prompt_muons_CR_prompt_genPartFlav = prompt_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_prompt_muon_dz"].fill(
                 ak.flatten(abs(prompt_muons_CR_prompt.dz)),
-                ak.flatten(prompt_muons_CR_prompt.genPartFlav),
+                ak.flatten(prompt_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         prompt_muons_CR_prompt.dz,
@@ -896,6 +914,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            prompt_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                prompt_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -916,9 +937,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                prompt_muons_CR_prompt_genPartFlav = prompt_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_prompt_muon_ip3d"].fill(
                 ak.flatten(abs(prompt_muons_CR_prompt.ip3d)),
-                ak.flatten(prompt_muons_CR_prompt.genPartFlav),
+                ak.flatten(prompt_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         prompt_muons_CR_prompt.ip3d,
@@ -937,6 +959,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            qcd_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                qcd_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -957,12 +982,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                qcd_muons_CR_prompt_genPartFlav = qcd_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_qcd_muon_dxy"].fill(
-                ak.flatten(abs(muons_CR_prompt.dxy)),
-                ak.flatten(muons_CR_prompt.genPartFlav),
+                ak.flatten(abs(qcd_muons_CR_prompt.dxy)),
+                ak.flatten(qcd_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
-                        muons_CR_prompt.dxy,
+                        qcd_muons_CR_prompt.dxy,
                         weights_CR_prompt.weight(),
                     )[1]
                 ),
@@ -978,6 +1004,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            qcd_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                qcd_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -998,12 +1027,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                qcd_muons_CR_prompt_genPartFlav = qcd_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_qcd_muon_dz"].fill(
-                ak.flatten(abs(muons_CR_prompt.dz)),
-                ak.flatten(muons_CR_prompt.genPartFlav),
+                ak.flatten(abs(qcd_muons_CR_prompt.dz)),
+                ak.flatten(qcd_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
-                        muons_CR_prompt.dz,
+                        qcd_muons_CR_prompt.dz,
                         weights_CR_prompt.weight(),
                     )[1]
                 ),
@@ -1019,6 +1049,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            qcd_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                qcd_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -1039,12 +1072,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                qcd_muons_CR_prompt_genPartFlav = qcd_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_qcd_muon_ip3d"].fill(
-                ak.flatten(muons_CR_prompt.ip3d),
-                ak.flatten(muons_CR_prompt.genPartFlav),
+                ak.flatten(qcd_muons_CR_prompt.ip3d),
+                ak.flatten(qcd_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
-                        muons_CR_prompt.ip3d,
+                        qcd_muons_CR_prompt.ip3d,
                         weights_CR_prompt.weight(),
                     )[1]
                 ),
@@ -1060,6 +1094,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=False, apply_lumi_factors=True
             )
+            qcd_muons_CR_prompt_genPartFlav = ak.zeros_like(
+                qcd_muons_CR_prompt.pt, dtype=int32
+            )
             if self.isMC:
                 prompt_muon_SFs = ak.prod(
                     muon_sf_utils.muon_efficiencies(
@@ -1080,12 +1117,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     axis=-1,
                 )
                 weights_CR_prompt.add("MuonSF", weight=prompt_muon_SFs * qcd_muon_SFs)
+                qcd_muons_CR_prompt_genPartFlav = qcd_muons_CR_prompt.genPartFlav
             output[dataset]["histograms"]["CR_prompt_Nminus1_qcd_muon_iso"].fill(
-                ak.flatten(muons_CR_prompt.miniPFRelIso_all),
-                ak.flatten(muons_CR_prompt.genPartFlav),
+                ak.flatten(qcd_muons_CR_prompt.miniPFRelIso_all),
+                ak.flatten(qcd_muons_CR_prompt_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
-                        muons_CR_prompt.miniPFRelIso_all,
+                        qcd_muons_CR_prompt.miniPFRelIso_all,
                         weights_CR_prompt.weight(),
                     )[1]
                 ),
@@ -1096,6 +1134,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights_CR_cb = self.get_weights(
                 events_CR_cb, do_vars=False, apply_lumi_factors=True
             )
+            muons_CR_cb_genPartFlav = ak.zeros_like(muons_CR_cb.pt, dtype=int32)
             if self.isMC:
                 weights_CR_cb.add(
                     "MuonSF",
@@ -1106,9 +1145,10 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         axis=-1,
                     ),
                 )
+                muons_CR_cb_genPartFlav = muons_CR_cb.genPartFlav
             output[dataset]["histograms"]["CR_cb_Nminus1_muon_dxy"].fill(
                 ak.flatten(abs(muons_CR_cb.dxy)),
-                ak.flatten(muons_CR_cb.genPartFlav),
+                ak.flatten(muons_CR_cb_genPartFlav),
                 weight=ak.flatten(
                     ak.broadcast_arrays(
                         muons_CR_cb.dxy,

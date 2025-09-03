@@ -225,14 +225,14 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
 
 def plot_SUEP_combined(args, plots, year):
     mc_processes = [
-        ("Higgs", "Higgs", "C0"),
-        ("TTV", "TTV", "C1"),
-        ("ST_NLO", "ST", "C2"),
-        ("WJets", "WJets", "C3"),
-        ("VV+VVV", "VV+VVV", "C4"),
-        ("TT_powheg", "TT", "C5"),
-        ("DY", "DY", "C6"),
-        ("QCD_Pt_MuEnrichedPt5", "QCD", "C7"),
+        ("Higgs", "Higgs"),
+        ("TTV", r"$t\bar{t}+V$"),
+        ("ST_NLO", r"single $t$"),
+        ("WJets", r"$W+jets$"),
+        ("VV+VVV", r"$VV+VVV$"),
+        ("TT_powheg", r"$t\bar{t}$"),
+        ("DY", "Drell-Yan"),
+        ("QCD_Pt_MuEnrichedPt5", "QCD"),
     ]
 
     cm_energy = "13TeV"
@@ -258,7 +258,7 @@ def plot_SUEP_combined(args, plots, year):
     hists_mc = []
     hist_bkg_total = plots[f"QCD_Pt_MuEnrichedPt5_{year}"]["SUEP"].copy().reset()
 
-    for process, label, _color in mc_processes:
+    for process, label in mc_processes:
         h_mc = plots[f"{process}_{year}"]["SUEP"]
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
@@ -282,7 +282,6 @@ def plot_SUEP_combined(args, plots, year):
         stack=True,
         label=[p[1] for p in mc_processes],
         histtype="fill",
-        color=[p[2] for p in mc_processes],
         ec="black",
         lw=2,
         ax=ax1,
@@ -439,7 +438,7 @@ def plot_SUEP_combined(args, plots, year):
     plt.ylabel("events")
     plt.tight_layout()
     plt.savefig(
-        f"{args.dest}/prefit_all_regions_combined_{year}_{args.tag}.pdf",
+        os.path.join(args.dest, args.tag, f"prefit_all_regions_combined_{year}.pdf"),
         bbox_inches="tight",
     )
     plt.close()
@@ -449,7 +448,7 @@ if "__main__" == __name__:
     args = parse_args()
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year

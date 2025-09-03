@@ -290,7 +290,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.trigger_selection(events)
-        # events = self.trigger_plateau(events)
+        trigger_plateau = self.apply_trigger_plateau(events)
+        events = events[trigger_plateau]
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:

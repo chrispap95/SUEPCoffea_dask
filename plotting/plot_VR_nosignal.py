@@ -253,20 +253,20 @@ def plot_VR(args, plots, year, region):
     if extrapolation:
         extrapolation_tag = "+extr."
     mc_processes = [
-        ("Higgs", "Higgs", "C0"),
-        ("TTV", "TTV", "C1"),
-        ("ST_NLO", "ST", "C2"),
-        ("WJets", "WJets", "C3"),
-        ("VV+VVV", "VV+VVV", "C4"),
-        ("TT_powheg", "TT", "C5"),
-        ("DY", "DY", "C6"),
-        ("QCD_Pt_MuEnrichedPt5", f"QCD{extrapolation_tag}", "C7"),
+        ("Higgs", "Higgs"),
+        ("TTV", r"$t\bar{t}+V$"),
+        ("ST_NLO", r"single $t$"),
+        ("WJets", r"$W+jets$"),
+        ("VV+VVV", r"$VV+VVV$"),
+        ("TT_powheg", r"$t\bar{t}$"),
+        ("DY", "Drell-Yan"),
+        ("QCD_Pt_MuEnrichedPt5", f"QCD{extrapolation_tag}"),
     ]
 
     hists_mc = []
     hist_bkg_total = plots[f"QCD_Pt_MuEnrichedPt5_{year}"][region].copy().reset()
 
-    for process, label, _color in mc_processes:
+    for process, label in mc_processes:
         h_mc = plots[f"{process}_{year}"][
             (f"{region}_extrapolation" if "extr" in label else region)
         ]
@@ -288,7 +288,6 @@ def plot_VR(args, plots, year, region):
         stack=True,
         label=[p[1] for p in mc_processes],
         histtype="fill",
-        color=[p[2] for p in mc_processes],
         ec="black",
         lw=2,
         ax=ax1,

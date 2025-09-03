@@ -14,7 +14,7 @@ signal=0
 background=0
 data=0
 era=2018
-tag=full_analysis_Jun2025
+tag=full_analysis_Jul2025
 blind=1 # 0 for unblinded, 1 for blinded
 
 while getopts 'sbde:t:' flag; do
@@ -33,7 +33,6 @@ if [ $all -eq 1 ]; then
     background=1
     data=1
 fi
-
 
 # Set files according to the year
 if [ "$era" = 2016 ]; then
@@ -54,19 +53,19 @@ elif [ "$era" = 2018 ]; then
     data_filelist="filelists/data/2018/DoubleMuon_UL18_Nov2024.json"
 elif [ "$era" = 2022 ]; then
     signal_filelist="filelists/signal/2022/GluGluToSUEP_central_2022_May2025.json"
-    background_filelist="filelists/mc_collections/2022/SUEPNano_2022_Jun2025.json"
+    background_filelist="filelists/mc_collections/2022/SUEPNano_2022_full.json"
     data_filelist="filelists/data/2022/DoubleMuon_Muon_2022_Apr2025.json"
 elif [ "$era" = 2022EE ]; then
     signal_filelist="filelists/signal/2022EE/GluGluToSUEP_central_2022EE_May2025.json"
-    background_filelist="filelists/mc_collections/2022EE/SUEPNano_2022EE_Jun2025.json"
+    background_filelist="filelists/mc_collections/2022EE/SUEPNano_2022EE_full.json"
     data_filelist="filelists/data/2022EE/Muon_2022EE_Apr2025.json"
 elif [ "$era" = 2023 ]; then
     signal_filelist="filelists/signal/2023/GluGluToSUEP_central_2023_May2025.json"
-    background_filelist="filelists/mc_collections/2023/SUEPNano_2023_Jun2025.json"
+    background_filelist="filelists/mc_collections/2023/SUEPNano_2023_full.json"
     data_filelist="filelists/data/2023/Muon0_Muon1_2023_Apr2025.json"
 elif [ "$era" = 2023BPix ]; then
     signal_filelist="filelists/signal/2023BPix/GluGluToSUEP_central_2023BPix_May2025.json"
-    background_filelist="filelists/mc_collections/2023BPix/SUEPNano_2023BPix_Jun2025.json"
+    background_filelist="filelists/mc_collections/2023BPix/SUEPNano_2023BPix_full.json"
     data_filelist="filelists/data/2023BPix/Muon0_Muon1_2023BPix_Apr2025.json"
 else
     echo "Invalid era specified. Available options are:"

@@ -171,12 +171,12 @@ def plot_VR(args, plots, region):
         extrapolation_tag = "+extr."
     mc_processes = [
         ("Higgs", "Higgs"),
-        ("TTV", "TTV"),
-        ("ST_NLO", "ST"),
-        ("WJets", "WJets"),
-        ("VV+VVV", "VV+VVV"),
-        ("TT_powheg", "TT"),
-        ("DY", "DY"),
+        ("TTV", r"$t\bar{t}+V$"),
+        ("ST_NLO", r"single $t$"),
+        ("WJets", r"$W+jets$"),
+        ("VV+VVV", r"$VV+VVV$"),
+        ("TT_powheg", r"$t\bar{t}$"),
+        ("DY", "Drell-Yan"),
         ("QCD_Pt_MuEnrichedPt5", f"QCD{extrapolation_tag}"),
     ]
     data_name = ("DoubleMuon", "Data")
