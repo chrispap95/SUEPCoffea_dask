@@ -439,6 +439,70 @@ class SUEP_base(processor.ProcessorABC):
 
         return weights
 
+    def find_dimuon_pairs(self, muons):
+        """
+        Find recursively all possible pairs of OS muons, starting from the closest in dR.
+        Implements a greedy matching algorithm to find the pairs.
+        """
+        muons1 = muons[muons.charge == 1]
+        muons2 = muons[muons.charge == -1]
+        muons1_idx = ak.local_index(muons)[muons.charge == 1]
+        muons2_idx = ak.local_index(muons)[muons.charge == -1]
+
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2], nested=False))
+        muon_pairs_idx = ak.unzip(ak.cartesian([muons1_idx, muons2_idx], nested=False))
+        muon_pairs_0, muon_pairs_1 = muon_pairs  # type: ignore[index]
+        muon_pairs_0_idx, muon_pairs_1_idx = muon_pairs_idx  # type: ignore[index]
+
+        found_0, found_1, idx_0, idx_1 = [], [], [], []
+
+        while ak.any(ak.num(muon_pairs_0) > 0):
+            delta_r = muon_pairs_0.delta_r(muon_pairs_1)
+            argmin_delta_r = ak.argmin(delta_r, axis=-1, keepdims=True)
+
+            temp_0 = muon_pairs_0[argmin_delta_r]
+            temp_1 = muon_pairs_1[argmin_delta_r]
+            temp_0_idx = muon_pairs_0_idx[argmin_delta_r]
+            temp_1_idx = muon_pairs_1_idx[argmin_delta_r]
+
+            found_0.append(temp_0)
+            found_1.append(temp_1)
+            idx_0.append(temp_0_idx)
+            idx_1.append(temp_1_idx)
+
+            matched_0 = ak.firsts(temp_0_idx)
+            matched_1 = ak.firsts(temp_1_idx)
+
+            remove_mask = (muon_pairs_0_idx != matched_0) & (
+                muon_pairs_1_idx != matched_1
+            )
+            muon_pairs_0 = muon_pairs_0[remove_mask]
+            muon_pairs_1 = muon_pairs_1[remove_mask]
+            muon_pairs_0_idx = muon_pairs_0_idx[remove_mask]
+            muon_pairs_1_idx = muon_pairs_1_idx[remove_mask]
+
+            if ak.all(ak.num(muon_pairs_0) == 0):
+                break
+
+        # Combine results
+        if found_0:
+            found_pairs_0 = ak.concatenate(found_0, axis=-1)
+            found_pairs_1 = ak.concatenate(found_1, axis=-1)
+        else:
+            # Handle case with no OS pairs anywhere
+            # Type preservation
+            found_pairs_0 = muons[[]]
+            found_pairs_1 = muons[[]]
+
+        # Ensure the same number of events as input (important!)
+        found_pairs_0 = ak.fill_none(found_pairs_0, [], axis=0)
+        found_pairs_1 = ak.fill_none(found_pairs_1, [], axis=0)
+
+        found_pairs_0 = found_pairs_0[~ak.is_none(found_pairs_0, axis=-1)]
+        found_pairs_1 = found_pairs_1[~ak.is_none(found_pairs_1, axis=-1)]
+
+        return found_pairs_0, found_pairs_1
+
     # def find_Z_candidates(self, events, muons):
     #     """
     #     Find the Z candidates by forming all possible pairs of OS muons
@@ -599,3 +663,21 @@ class SUEP_base(processor.ProcessorABC):
         cleaned_lost_tracks = ak.packed(cleaned_lost_tracks)
 
         return ak.concatenate([cleaned_pfcands, cleaned_lost_tracks], axis=1)
+
+    def dimuon_mass_range_mask(self, muons, low_range=2.7, high_range=14.0):
+        # Remove events with at least on dimuon in the mass range
+        muons1 = muons[muons.charge == 1]
+        muons2 = muons[muons.charge == -1]
+        enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+        muons1 = ak.mask(muons1, enough_muons)
+        muons2 = ak.mask(muons2, enough_muons)
+        muons = ak.mask(muons, enough_muons)
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        muon_pairs_0 = muon_pairs[0]
+        muon_pairs_1 = muon_pairs[1]  # type: ignore[index]
+        dimuon_masses = (muon_pairs_0 + muon_pairs_1).mass
+        mass_mask = (
+            ak.sum((dimuon_masses > low_range) & (dimuon_masses < high_range), axis=-1)
+            == 0
+        )
+        return ak.fill_none(mass_mask, False)
