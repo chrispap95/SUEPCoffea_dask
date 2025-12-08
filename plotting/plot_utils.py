@@ -423,6 +423,10 @@ class Extrapolation:
         """
         syst_variations = set()
         for region in self.plots:
+            # print(region)
+            if "LHEPdf" in region:
+                if ("LHEPdfUp" not in region) and ("LHEPdfDown" not in region):
+                    continue
             if "_tight" in region:
                 syst_variations.add(
                     region.split("_tight")[-1]
@@ -470,6 +474,9 @@ class Extrapolation:
                 return h
             if (zero_bins[-1] - zero_bins[0]) != (len(zero_bins) - 1):
                 print("Warning: zero bins are not contiguous")
+            if int(zero_bins[0]) == 0:
+                # h[0] = (1e-10, 1e-10)  # prevent log(0) issues
+                return h[:1]
             return h[: int(zero_bins[0])]
         elif isinstance(h, hist.accumulators.WeightedSum):
             if h.value <= 0:
@@ -1398,3 +1405,53 @@ def export_histograms_to_root(
 
     for p in processes:
         p.join()
+
+
+def make_lhepdf_systematic(plots: dict, cleanup: bool = False) -> dict:
+    for sample in plots.keys():
+        all_regions = [
+            key.replace("_LHEPdf1", "")
+            for key in plots[sample].keys()
+            if key.endswith("_LHEPdf1")
+        ]
+        for region in all_regions:
+            arr_central = plots[sample][region].values()
+            arr_sigma_replicas2 = np.zeros_like(arr_central)
+            for i in range(1, 101):
+                arr_i = plots[sample][f"{region}_LHEPdf{i}"].values()
+                arr_sigma_replicas2 = arr_sigma_replicas2 + (arr_i - arr_central) ** 2
+            arr_sigma_replicas2 = np.where(
+                np.isnan(arr_sigma_replicas2), 0, arr_sigma_replicas2
+            )
+            arr_sigma_as = (
+                abs(
+                    plots[sample][f"{region}_LHEPdf102"].values()
+                    - plots[sample][f"{region}_LHEPdf101"].values()
+                )
+                / 2
+            )
+            arr_sigma_as = np.where(np.isnan(arr_sigma_as), 0, arr_sigma_as)
+
+            arr_sigma_pdf = np.sqrt(arr_sigma_as**2 + arr_sigma_replicas2)
+
+            h_lhepdf_up = plots[sample][region].copy()
+            h_lhepdf_down = plots[sample][region].copy()
+            for i in range(len(arr_central)):
+                h_lhepdf_up[i] = (
+                    arr_central[i] + arr_sigma_pdf[i],
+                    h_lhepdf_up[i].variance,
+                )
+                h_lhepdf_down[i] = (
+                    arr_central[i] - arr_sigma_pdf[i],
+                    h_lhepdf_down[i].variance,
+                )
+
+            plots[sample][f"{region}_LHEPdfUp"] = h_lhepdf_up.copy()
+            plots[sample][f"{region}_LHEPdfDown"] = h_lhepdf_down.copy()
+
+        if cleanup:
+            for region in all_regions:
+                for i in range(1, 103):
+                    del plots[sample][f"{region}_LHEPdf{i}"]
+
+    return plots

@@ -75,39 +75,38 @@ fi
 
 
 if [ $signal -eq 1 ]; then
-    echo "Processing signal SRs for ${era}..."
-    time python runner.py \
-        --workflow SUEP_coffea_SRs -o "processor_output_files/${tag}_${era}_SRs" \
-        --json $signal_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor dask/lpc --chunk 5000 --memory 8GB
+    # echo "Processing signal SRs for ${era}..."
+    # python runner.py \
+    #     --workflow SUEP_coffea_SRs -o "processor_output_files/${tag}_${era}_SRs" \
+    #     --json $signal_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
+    #     --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
     echo "Processing signal CR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_${era}_CR" \
         --json $signal_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.35) }")" --chunk 30000
+        --executor dask/lpc --max-scaleout 100 --memory 8GB --chunk 10000
     echo "Processing signal VR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_${era}_VR" \
         --json $signal_filelist --era "$era" --skimmed --isMC \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.2) }")" --chunk 20000
+        --executor dask/lpc --max-scaleout 100 --memory 8GB --chunk 10000
 fi
 
 if [ $background -eq 1 ]; then
     echo "Processing BKG SRs for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_SRs -o "processor_output_files/${tag}_${era}_SRs" \
         --json $background_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.45) }")" --chunk 10000
+        --executor dask/lpc --max-scaleout 100 --memory 4GB --chunk 10000
     echo "Processing BKG CR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_${era}_CR" \
         --json $background_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.45) }")" --chunk 30000
-    echo "Processing BKG VR for ${era}..."
-    time python runner.py \
+        --executor dask/lpc --max-scaleout 100 --memory 4GB --chunk 10000
+    python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_${era}_VR" \
         --json $background_filelist --era "$era" --skimmed --isMC \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.45) }")" --chunk 30000
+        --executor dask/lpc --max-scaleout 100 --memory 4GB --chunk 10000
 fi
 
 if [ $data -eq 1 ]; then
@@ -118,13 +117,13 @@ if [ $data -eq 1 ]; then
             --era "$era" --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.84) }")" --chunk 4000
     fi
     echo "Processing data CR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_${era}_CR" \
         --json $data_filelist --era "$era" \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.4) }")" --chunk 30000
+        --executor dask/lpc --max-scaleout 48 --chunk 10000
     echo "Processing data VR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_${era}_VR" \
         --json $data_filelist --era "$era" \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.4) }")" --chunk 30000
+        --executor dask/lpc --max-scaleout 48 --chunk 10000
 fi

@@ -1,11 +1,9 @@
-import select
-
 import awkward as ak
 import numpy as np
 from coffea import processor
 from coffea.analysis_tools import Weights
 
-from workflows.CMS_corrections import muon_sf_utils, systematics_utils
+from workflows.CMS_corrections import muon_sf_utils, systematics_utils, trigger_sf_utils
 
 Z_MASS = 91.1876
 Z_WIDTH = 2.4952
@@ -205,16 +203,18 @@ class SUEP_base(processor.ProcessorABC):
         events = events[trigger]
         return events
 
-    def apply_trigger_plateau(self, events):
+    def apply_trigger_plateau(
+        self,
+        events,
+        pt12_threshold: float = 12,
+        pt10_threshold: float = 10,
+        pt5_threshold: float = 5,
+        pt3_threshold: float = 4,
+    ):
         """
         To make sure we are in the trigger plateau, we require that
         there are at least 3 RECO muons with pt greater than the trigger
-        threshold of the lowest HLT path + ~10%.
-
-        This means that:
-          - for 5_3_3 triggers, we require muons with at least 5.5, 3.3, 3.3 GeV
-          - for 10_5_5 triggers, we require muons with at least 11, 5.5, 5.5 GeV
-          - for 12_10_5 triggers, we require muons with at least 13, 11, 5.5 GeV
+        threshold of the lowest HLT path +0.5 GeV.
         """
 
         muons = events.Muon
@@ -226,16 +226,16 @@ class SUEP_base(processor.ProcessorABC):
         )
         muons = muons[muon_cleaning]
 
-        selection_533 = (ak.sum(muons.pt >= 5.5, axis=-1) >= 1) & (
-            ak.sum(muons.pt >= 3.3, axis=-1) >= 3
+        selection_533 = (ak.sum(muons.pt >= pt5_threshold, axis=-1) >= 1) & (
+            ak.sum(muons.pt >= pt3_threshold, axis=-1) >= 3
         )
-        selection_1055 = (ak.sum(muons.pt >= 11, axis=-1) >= 1) & (
-            ak.sum(muons.pt >= 5.5, axis=-1) >= 3
+        selection_1055 = (ak.sum(muons.pt >= pt10_threshold, axis=-1) >= 1) & (
+            ak.sum(muons.pt >= pt5_threshold, axis=-1) >= 3
         )
         selection_12105 = (
-            (ak.sum(muons.pt >= 13, axis=-1) >= 1)
-            & (ak.sum(muons.pt >= 11, axis=-1) >= 2)
-            & (ak.sum(muons.pt >= 5.5, axis=-1) >= 3)
+            (ak.sum(muons.pt >= pt12_threshold, axis=-1) >= 1)
+            & (ak.sum(muons.pt >= pt10_threshold, axis=-1) >= 2)
+            & (ak.sum(muons.pt >= pt5_threshold, axis=-1) >= 3)
         )
 
         # Now, blend the selections based on the trigger paths
@@ -397,6 +397,14 @@ class SUEP_base(processor.ProcessorABC):
                 weightDown=events.L1PreFiringWeight.Dn,
             )
 
+        # Trigger scale factors
+        trig_sf_nom, trig_sf_up, trig_sf_down = trigger_sf_utils.trigger_scale_factors(
+            events, self.era
+        )
+        weights.add(
+            "TrigSF", weight=trig_sf_nom, weightUp=trig_sf_up, weightDown=trig_sf_down
+        )
+
         # Some of these systematics are CPU intensive, so only compute them when needed
         if do_vars:
             # Parton shower weights
@@ -413,14 +421,16 @@ class SUEP_base(processor.ProcessorABC):
                 weightDown=systematics_utils.get_PS_weights(events, syst="FSR_down"),
             )
 
-            # Matrix element PDF and scale weights
-            pdf_vars_up, pdf_vars_down = systematics_utils.get_pdf_variations(events)
-            weights.add(
-                "LHEPdf",
-                weight=np.ones(len(events)),
-                weightUp=pdf_vars_up,
-                weightDown=pdf_vars_down,
-            )
+            # NOTE: This way to calculate PDF variations is deprecated and wrong
+            # # Matrix element PDF and scale weights
+            # pdf_vars_up, pdf_vars_down = systematics_utils.get_pdf_variations(events)
+            # weights.add(
+            #     "LHEPdf",
+            #     weight=np.ones(len(events)),
+            #     weightUp=pdf_vars_up,
+            #     weightDown=pdf_vars_down,
+            # )
+
             muRDown, muFDown, muFUp, muRUp = systematics_utils.get_scale_variations(
                 events
             )

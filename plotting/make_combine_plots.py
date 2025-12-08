@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -69,7 +69,7 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default=f"{def_out_path}/Jun2025/CMSSW_14_1_8/src/auxiliaries/input/",
+        default=f"{def_out_path}/Dec2025/CMSSW_14_1_0_pre4/src/auxiliaries/input/",
         help="Destination directory for the ROOT files.",
     )
     parser.add_argument(
@@ -115,6 +115,8 @@ if "__main__" in __name__:
             if dataset not in plots_SR:
                 plots_SR[dataset] = {}
             plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
+
+    plots = plot_utils.make_lhepdf_systematic(plots, cleanup=True)
 
     # Sanitize plots if requested
     if args.sanitize:

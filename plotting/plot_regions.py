@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -137,7 +137,7 @@ def calculate_k_factor(plots, year, region="CR_cb", process="QCD_Pt_MuEnrichedPt
         "QCD_Pt_MuEnrichedPt5",
     ]
 
-    tot_bkg = plots["DY_" + year][region].copy().reset()
+    tot_bkg = plots[f"{process}_{year}"][region].copy().reset()
     for mc_proc in mc_processes:
         if process == mc_proc:
             continue

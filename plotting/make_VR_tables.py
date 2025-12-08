@@ -3,6 +3,7 @@ import logging
 
 import plot_utils
 from colorama import Fore, Style  # type: ignore[import]
+from rich.progress import track  # type: ignore[import]
 from tabulate import tabulate  # type: ignore[import]
 
 # Suppress warnings from Extrapolation class
@@ -27,6 +28,12 @@ def parse_args():
         help="Tag to identify the analysis",
     )
     parser.add_argument(
+        "--year",
+        type=str,
+        default="2018",
+        help="Year of the data. Default is 2018. Pick only one year.",
+    )
+    parser.add_argument(
         "--lumi",
         type=float,
         help="Custom integrated luminosity to be used (in pb^-1). For example, use 559.322 for "
@@ -41,43 +48,39 @@ if "__main__" == __name__:
 
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
-    plots_CR = plot_utils.loader(
-        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=False
+    plots = plot_utils.loader(
+        tag=f"{args.tag}_{args.year}_VR",
+        era=args.year,
+        custom_lumi=args.lumi,
+        load_data=False,
     )
-    plots_VR = plot_utils.loader(
-        tag=f"{args.tag}_VR", custom_lumi=args.lumi, load_data=False
-    )
-    plots_SR = plot_utils.loader(
-        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=False
-    )
-    plots = {}
-    for dataset in plots_CR:
-        # Note: need to fix this to be mergeable even when data for SR is missing! (blinded...)
-        # This merges two dicts!
-        plots[dataset] = plots_CR[dataset] | plots_VR[dataset] | plots_SR[dataset]
     print("Done!", flush=True)
 
     print("Fit and extrapolation...", end=" ", flush=True)
     # QCD extrapolation
     # Slice the first bin out where needed for fit stability
     slice_hists = {
-        "VR_loose": slice(4j, None),
-        "VR_tight": slice(3j, None),
-        "SR_low_temp_loose": slice(4j, None),
-        "SR_low_temp_tight": slice(3j, None),
-        "SR_high_temp_loose": slice(4j, None),
-        "SR_high_temp_tight": slice(3j, None),
+        "SR_low_temp_loose": slice(4j, 7j),
+        "SR_low_temp_tight": slice(3j, 5j),
+        "SR_high_temp_loose": slice(4j, 7j),
+        "SR_high_temp_tight": slice(3j, 5j),
+        "VR_loose": slice(3j, 6j),
+        "VR_tight": slice(3j, 6j),
     }
 
     qcd_extrapolation = plot_utils.Extrapolation(
-        plots["QCD_Pt_MuEnrichedPt5_2018"], uncertainty_scheme="full"
+        plots[f"QCD_Pt_MuEnrichedPt5_{args.year}"], uncertainty_scheme="full"
     )
     qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     print("Done!", flush=True)
 
-    QCD_VR_loose_vals = plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_loose"].values()
-    QCD_VR_tight_vals = plots["QCD_Pt_MuEnrichedPt5_2018"]["VR_tight"].values()
+    QCD_VR_loose_vals = plots[f"QCD_Pt_MuEnrichedPt5_{args.year}"][
+        "VR_loose_extrapolation"
+    ].values()
+    QCD_VR_tight_vals = plots[f"QCD_Pt_MuEnrichedPt5_{args.year}"][
+        "VR_tight_extrapolation"
+    ].values()
 
     # Add signal
     signal_models = [model for model in plots if "SUEP" in model]
@@ -88,7 +91,7 @@ if "__main__" == __name__:
         model_name = (
             model.replace("GluGluTo", "")
             .replace(".000", "")
-            .replace("_13TeV_2018", "")
+            .replace(f"_13TeV_{args.year}", "")
             .replace("00_mode", "_mode")
             .replace("0_mode", "_mode")
             .replace("00_T", "_T")

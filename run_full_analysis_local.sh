@@ -76,38 +76,43 @@ fi
 
 if [ $signal -eq 1 ]; then
     echo "Processing signal SRs for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_SRs -o "processor_output_files/${tag}_${era}_SRs" \
         --json $signal_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor dask/lpc --chunk 5000 --memory 8GB
+        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.12) }")" \
+        --executor dask/lpc --memory 2GB --mild-scaleout \
+        --chunk 8000
     echo "Processing signal CR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_${era}_CR" \
         --json $signal_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.35) }")" --chunk 30000
+        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.35) }")" \
+        --chunk 30000
     echo "Processing signal VR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_${era}_VR" \
-        --json $signal_filelist --era "$era" --skimmed --isMC \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.2) }")" --chunk 20000
+        --json $signal_filelist --era "$era" --skimmed --isMC\
+        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.35) }")" --chunk 30000
 fi
 
 if [ $background -eq 1 ]; then
     echo "Processing BKG SRs for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_SRs -o "processor_output_files/${tag}_${era}_SRs" \
         --json $background_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.45) }")" --chunk 10000
+        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.25) }")" --chunk 20000
     echo "Processing BKG CR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_${era}_CR" \
         --json $background_filelist --era "$era" --skimmed --isMC --do_syst --do_lhepdfsyst \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.45) }")" --chunk 30000
+        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.3) }")" \
+        --chunk 30000
+        # --executor dask/lpc \
     echo "Processing BKG VR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_${era}_VR" \
-        --json $background_filelist --era "$era" --skimmed --isMC \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.45) }")" --chunk 30000
+        --json $background_filelist --era "$era" --skimmed --isMC\
+        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.25) }")" --chunk 20000
 fi
 
 if [ $data -eq 1 ]; then
@@ -118,13 +123,13 @@ if [ $data -eq 1 ]; then
             --era "$era" --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.84) }")" --chunk 4000
     fi
     echo "Processing data CR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_CRs -o "processor_output_files/${tag}_${era}_CR" \
-        --json $data_filelist --era "$era" \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.4) }")" --chunk 30000
+        --json $data_filelist --era "$era" --executor futures \
+        -j "$(awk "BEGIN { print int($(nproc) * 0.3) }")" --chunk 30000
     echo "Processing data VR for ${era}..."
-    time python runner.py \
+    python runner.py \
         --workflow SUEP_coffea_VR -o "processor_output_files/${tag}_${era}_VR" \
-        --json $data_filelist --era "$era" \
-        --executor futures -j "$(awk "BEGIN { print int($(nproc) * 0.4) }")" --chunk 30000
+        --json $data_filelist --era "$era" --executor futures \
+        -j "$(awk "BEGIN { print int($(nproc) * 0.35) }")" --chunk 30000
 fi

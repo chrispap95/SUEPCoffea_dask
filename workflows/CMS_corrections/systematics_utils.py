@@ -3,10 +3,9 @@ import os
 import awkward as ak
 import correctionlib
 import numpy as np
+import parton
 import pythia8  # type: ignore[import]
 import uproot
-
-import parton
 
 
 def pileup_weight(events, era, syst="nominal"):
@@ -153,28 +152,70 @@ def get_PS_weights(events, syst):
     return PSWeights
 
 
-def manual_pdf_variations(events):
+def manual_pdf_weights(events, do_replicas=True, do_alpha_s=True):
     """
     Get the matrix element PDF variations manually by evaluating all the PDF
     replicas for the given x, id, Q values for the two partons.
     """
     Q = events.Generator.scalePDF
-    id1 = np.where(abs(events.Generator.id1) == 21, 0, events.Generator.id1)
-    id2 = np.where(abs(events.Generator.id2) == 21, 0, events.Generator.id2)
+    id1 = events.Generator.id1
+    id2 = events.Generator.id2
     x1 = events.Generator.x1
     x2 = events.Generator.x2
+    itrn = [0]
+    if do_replicas:
+        itrn += list(range(1, 101))
+    if do_alpha_s:
+        itrn += [101, 102]
     pdfweights = []
-    for i in range(103):
-        pdf = parton.mkPDF("NNPDF31_nnlo_as_0118_mc_hessian_pdfas", i)
+    for i in itrn:
+        pdf = parton.mkPDF(
+            "NNPDF31_nnlo_as_0118_mc_hessian_pdfas", member=i, pdfdir="vendor/pdfsets"
+        )
         newpdf1 = pdf.xfxQ(id1, x1, Q, grid=False) / x1
         newpdf2 = pdf.xfxQ(id2, x2, Q, grid=False) / x2
         pdfweights.append(newpdf1 * newpdf2)
     pdfweights = np.array(pdfweights).T
-    return pdfweights / pdfweights[:, 0][:, np.newaxis]
+    return pdfweights[:, 1:] / pdfweights[:, 0][:, np.newaxis]
+
+
+def get_pdf_weights(events, is_mc, allow_manual=True):
+    """
+    Get the matrix element PDF weights. Only available if there is LHE info.
+    If the LHEPdfWeight is not available, the weights are calculated manually.
+    This behavior can be disabled by setting allow_manual to False.
+
+    Returns an array of shape (nEvents, 102) with the PDF weights normalized to 1.
+    100 replicas + 2 alpha_s variations.
+    """
+    if not is_mc:
+        return np.ones((len(events), 102))
+    if "LHEPdfWeight" in events.fields:
+        if all(ak.num(events.LHEPdfWeight) == 103):
+            pdf_weights = events.LHEPdfWeight[:, 1:]
+        elif all(ak.num(events.LHEPdfWeight) == 101):
+            # Needs the alpha_s variations
+            pdf_weights = events.LHEPdfWeight[:, 1:]
+            alpha_s_vars = np.ones((len(events), 2))
+            if allow_manual:
+                alpha_s_vars = manual_pdf_weights(
+                    events, do_replicas=False, do_alpha_s=True
+                )
+            pdf_weights = np.concatenate((pdf_weights, alpha_s_vars), axis=1)
+        else:
+            pdf_weights = np.ones((len(events), 102))
+            if allow_manual:
+                pdf_weights = manual_pdf_weights(events)
+    elif allow_manual:
+        pdf_weights = manual_pdf_weights(events)
+    else:
+        pdf_weights = np.ones((len(events), 102))
+    return pdf_weights
 
 
 def get_pdf_variations(events, allow_manual=True):
     """
+    NOTE: this function is deprecated
     Get the matrix element PDF variations. Only available if there is LHE info.
     If the LHEPdfWeight is not available, the variations are calculated manually.
     This behavior can be disabled by setting allow_manual to False.
@@ -185,7 +226,7 @@ def get_pdf_variations(events, allow_manual=True):
             std = np.std(events.LHEPdfWeight, axis=1)
             if not all(ak.mean(events.LHEPdfWeight, axis=-1) > 0):
                 if allow_manual:
-                    pdf_weights = manual_pdf_variations(events)
+                    pdf_weights = manual_pdf_weights(events)
                     mean_alt = np.mean(pdf_weights, axis=1)
                     std_alt = np.std(pdf_weights, axis=1)
                 else:
@@ -195,13 +236,13 @@ def get_pdf_variations(events, allow_manual=True):
                 )
                 std = np.where(ak.mean(events.LHEPdfWeight, axis=-1) > 0, std, std_alt)
         elif allow_manual:
-            pdf_weights = manual_pdf_variations(events)
+            pdf_weights = manual_pdf_weights(events)
             mean = np.mean(pdf_weights, axis=1)
             std = np.std(pdf_weights, axis=1)
         else:
             return np.ones(len(events)), np.ones(len(events))
     elif allow_manual:
-        pdf_weights = manual_pdf_variations(events)
+        pdf_weights = manual_pdf_weights(events)
         mean = np.mean(pdf_weights, axis=1)
         std = np.std(pdf_weights, axis=1)
     else:
@@ -240,11 +281,14 @@ def matrix_element_scale_variations(events, nEM=0, nQCD=0, kUp=2, kDn=0.5):
 
     # Calculate muF
     Q = events.Generator.scalePDF
-    id1 = np.where(abs(events.Generator.id1) == 21, 0, events.Generator.id1)
-    id2 = np.where(abs(events.Generator.id2) == 21, 0, events.Generator.id2)
+    id1 = events.Generator.id1
+    id2 = events.Generator.id2
     x1 = events.Generator.x1
     x2 = events.Generator.x2
-    nnpdf31 = parton.mkPDF("NNPDF31_nnlo_as_0118", 0)
+    nnpdf31 = parton.mkPDF(
+        "NNPDF31_nnlo_as_0118_mc_hessian_pdfas", member=0, pdfdir="vendor/pdfsets"
+    )
+
     pdf1 = nnpdf31.xfxQ(id1, x1, Q, grid=False) / x1
     pdf2 = nnpdf31.xfxQ(id2, x2, Q, grid=False) / x2
     pdf1up = nnpdf31.xfxQ(id1, x1, kUp * Q, grid=False) / x1

@@ -5,11 +5,14 @@ import numpy as np
 import vector  # type: ignore[import]
 from coffea import processor
 
-# Importing CMS corrections
-import workflows.CMS_corrections.golden_json_utils as golden_json_utils
-import workflows.CMS_corrections.muon_sf_utils as muon_sf_utils
-import workflows.CMS_corrections.systematics_utils as systematics_utils
 import workflows.SUEP_common as SUEP_common
+
+# Importing CMS corrections
+from workflows.CMS_corrections import (
+    golden_json_utils,
+    muon_sf_utils,
+    systematics_utils,
+)
 
 # Set vector behavior
 vector.register_awkward()
@@ -25,12 +28,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
         era: str | int,
         do_syst: bool = False,
         do_rochester: bool = False,
+        do_lhepdfsyst: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
         self.do_syst = do_syst
         self.gensumweight = 1.0
         self.do_rochester = do_rochester
+        self.do_lhepdfsyst = do_lhepdfsyst
 
     def sphericity_eigenvalues(self, particles, r):
         """
@@ -191,7 +196,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         )
 
         # Tight SR: selection for muons
-        tight_cut = (muons.pt < 35) & (muons.ip3d < 0.007)
+        tight_cut = (muons.pt < 35) & (muons.dxy < 0.007) & (muons.dz < 0.007)
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
@@ -246,7 +251,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
         tracks_cand_t_trk_kill = tracks_cand_t_trk_kill[sph1_t_trk_kill > 0.7]
 
         # Loose SR: selection for muons
-        loose_cut = (events.Muon.pt < 45) & (events.Muon.ip3d < 0.1)
+        loose_cut = (
+            (events.Muon.pt < 45) & (events.Muon.dxy < 0.1) & (events.Muon.dz < 0.1)
+        )
         muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
@@ -333,7 +340,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Tight SR selection
         tight_cut = (
-            (muons.ip3d < 0.007)
+            (muons.dxy < 0.007)
+            & (muons.dz < 0.007)
             & (muons.miniPFRelIso_all < 0.65)
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 0.5)
         )
@@ -351,7 +359,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Loose SR selection
         loose_cut = (
-            (muons.ip3d < 0.1)
+            (muons.dxy < 0.1)
+            & (muons.dz < 0.1)
             & (muons.miniPFRelIso_all < 5)
             & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < 3)
         )
@@ -377,14 +386,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         systematics = [
             "MuonSF",
-            "L1PreFire",
             "PUReweight",
             "ISR",
             "FSR",
             "LHEPdf",
             "LHEScaleMuF",
             "LHEScaleMuR",
+            "TrigSF",
         ]
+        if self.era.startswith("201"):
+            systematics.append("L1PreFire")
         if self.do_syst:
             for syst in systematics:
                 for var in ["Up", "Down"]:
@@ -398,6 +409,23 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         .copy()
                         .reset()
                     )
+            if self.do_lhepdfsyst:
+                for replica in range(1, 103):
+                    output[dataset]["histograms"][
+                        f"SR_high_temp_tight_LHEPdf{replica}"
+                    ] = (
+                        output[dataset]["histograms"]["SR_high_temp_tight"]
+                        .copy()
+                        .reset()
+                    )
+                    output[dataset]["histograms"][
+                        f"SR_high_temp_loose_LHEPdf{replica}"
+                    ] = (
+                        output[dataset]["histograms"]["SR_high_temp_loose"]
+                        .copy()
+                        .reset()
+                    )
+
         (
             events_SR_high_temp_tight,
             events_SR_high_temp_loose,
@@ -406,6 +434,25 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ) = self.apply_SR_high_temp(events_)
 
         if len(events_SR_high_temp_tight) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
+                muons_SR_high_temp_tight
+            )
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_SR_high_temp_tight = events_SR_high_temp_tight[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_SR_high_temp_tight = muons_SR_high_temp_tight[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+
+        if len(events_SR_high_temp_tight) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
+                muons_SR_high_temp_tight
+            )
             weights_SR_high_temp_tight = self.get_weights(
                 events_SR_high_temp_tight, do_vars=True, apply_lumi_factors=True
             )
@@ -453,6 +500,38 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ),
                         weight=weights_SR_high_temp_tight.weight(syst),
                     )
+                if self.do_lhepdfsyst:
+                    lhepdf_weights = systematics_utils.get_pdf_weights(
+                        events_SR_high_temp_tight, self.isMC
+                    )
+                    for replica in range(102):
+                        output[dataset]["histograms"][
+                            f"SR_high_temp_tight_LHEPdf{replica+1}"
+                        ].fill(
+                            ak.where(
+                                nMuon_SR_high_temp_tight > 7,
+                                7,
+                                nMuon_SR_high_temp_tight,
+                            ),
+                            weight=weights_SR_high_temp_tight.weight()
+                            * lhepdf_weights[:, replica],
+                        )
+
+        if len(events_SR_high_temp_loose) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
+                muons_SR_high_temp_loose
+            )
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_SR_high_temp_loose = events_SR_high_temp_loose[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_SR_high_temp_loose = muons_SR_high_temp_loose[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
 
         if len(events_SR_high_temp_loose) > 0:
             weights_SR_high_temp_loose = self.get_weights(
@@ -502,6 +581,22 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ),
                         weight=weights_SR_high_temp_loose.weight(syst),
                     )
+                if self.do_lhepdfsyst:
+                    lhepdf_weights = systematics_utils.get_pdf_weights(
+                        events_SR_high_temp_loose, self.isMC
+                    )
+                    for replica in range(102):
+                        output[dataset]["histograms"][
+                            f"SR_high_temp_loose_LHEPdf{replica+1}"
+                        ].fill(
+                            ak.where(
+                                nMuon_SR_high_temp_loose > 7,
+                                7,
+                                nMuon_SR_high_temp_loose,
+                            ),
+                            weight=weights_SR_high_temp_loose.weight()
+                            * lhepdf_weights[:, replica],
+                        )
 
         if self.do_syst:
             for syst in systematics:
@@ -513,6 +608,22 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     )
                     output[dataset]["histograms"][f"SR_low_temp_tight_{syst}{var}"] = (
                         output[dataset]["histograms"]["SR_low_temp_tight"]
+                        .copy()
+                        .reset()
+                    )
+            if self.do_lhepdfsyst:
+                for replica in range(1, 103):
+                    output[dataset]["histograms"][
+                        f"SR_low_temp_tight_LHEPdf{replica}"
+                    ] = (
+                        output[dataset]["histograms"]["SR_low_temp_tight"]
+                        .copy()
+                        .reset()
+                    )
+                    output[dataset]["histograms"][
+                        f"SR_low_temp_loose_LHEPdf{replica}"
+                    ] = (
+                        output[dataset]["histograms"]["SR_low_temp_loose"]
                         .copy()
                         .reset()
                     )
@@ -532,6 +643,20 @@ class SUEP_processor(SUEP_common.SUEP_base):
             muons_SR_low_temp_loose,
             muons_SR_low_temp_loose_trk_kill,
         ) = self.apply_SR_low_temp(events_)
+
+        if len(events_SR_low_temp_tight) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_SR_low_temp_tight)
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_SR_low_temp_tight = events_SR_low_temp_tight[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_SR_low_temp_tight = muons_SR_low_temp_tight[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
 
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(
@@ -581,9 +706,41 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ),
                         weight=weights_SR_low_temp_tight.weight(syst),
                     )
+                if self.do_lhepdfsyst:
+                    lhepdf_weights = systematics_utils.get_pdf_weights(
+                        events_SR_low_temp_tight, self.isMC
+                    )
+                    for replica in range(102):
+                        output[dataset]["histograms"][
+                            f"SR_low_temp_tight_LHEPdf{replica+1}"
+                        ].fill(
+                            ak.where(
+                                nMuon_SR_low_temp_tight > 7,
+                                7,
+                                nMuon_SR_low_temp_tight,
+                            ),
+                            weight=weights_SR_low_temp_tight.weight()
+                            * lhepdf_weights[:, replica],
+                        )
 
         # Systematic for track killing
         # Needs to be handled manually
+        if len(events_SR_low_temp_tight_trk_kill) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
+                muons_SR_low_temp_tight_trk_kill
+            )
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_SR_low_temp_tight_trk_kill = events_SR_low_temp_tight_trk_kill[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_SR_low_temp_tight_trk_kill = muons_SR_low_temp_tight_trk_kill[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+
         if len(events_SR_low_temp_tight_trk_kill) > 0 and self.do_syst:
             weights_SR_low_temp_tight_trk_kill = self.get_weights(
                 events_SR_low_temp_tight_trk_kill, apply_lumi_factors=True
@@ -612,6 +769,20 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 ),
                 weight=weights_SR_low_temp_tight_trk_kill.weight(),
             )
+
+        if len(events_SR_low_temp_loose) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_SR_low_temp_loose)
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_SR_low_temp_loose = events_SR_low_temp_loose[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_SR_low_temp_loose = muons_SR_low_temp_loose[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
 
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(
@@ -661,9 +832,41 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ),
                         weight=weights_SR_low_temp_loose.weight(syst),
                     )
+                if self.do_lhepdfsyst:
+                    lhepdf_weights = systematics_utils.get_pdf_weights(
+                        events_SR_low_temp_loose, self.isMC
+                    )
+                    for replica in range(102):
+                        output[dataset]["histograms"][
+                            f"SR_low_temp_loose_LHEPdf{replica+1}"
+                        ].fill(
+                            ak.where(
+                                nMuon_SR_low_temp_loose > 7,
+                                7,
+                                nMuon_SR_low_temp_loose,
+                            ),
+                            weight=weights_SR_low_temp_loose.weight()
+                            * lhepdf_weights[:, replica],
+                        )
 
         # Systematic for track killing
         # Needs to be handled manually
+        if len(events_SR_low_temp_loose_trk_kill) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
+                muons_SR_low_temp_loose_trk_kill
+            )
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_SR_low_temp_loose_trk_kill = events_SR_low_temp_loose_trk_kill[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_SR_low_temp_loose_trk_kill = muons_SR_low_temp_loose_trk_kill[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+
         if len(events_SR_low_temp_loose_trk_kill) > 0 and self.do_syst:
             weights_SR_low_temp_loose_trk_kill = self.get_weights(
                 events_SR_low_temp_loose_trk_kill, apply_lumi_factors=True
@@ -710,6 +913,8 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.trigger_selection(events)
+        trigger_plateau = self.apply_trigger_plateau(events)
+        events = events[trigger_plateau]
 
         # Apply HT selection for WJets stiching
         if "WJetsToLNu_HT" in dataset:

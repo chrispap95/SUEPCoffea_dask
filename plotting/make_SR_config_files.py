@@ -19,10 +19,11 @@ def parse_args():
         default=["2018"],
         help="Year of the data. Default is 2018. Can be a single year or multiple years.",
     )
+    def_out_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff"
     parser.add_argument(
         "--dest",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jun2025/CMSSW_14_1_8/src/auxiliaries/input/",
+        default=f"{def_out_path}/Dec2025/CMSSW_14_1_0_pre4/src/auxiliaries/input/",
         help="Destination folder for the config files.",
     )
     return parser.parse_args()

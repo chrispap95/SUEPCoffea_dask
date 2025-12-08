@@ -117,6 +117,7 @@ def setup_workflow(
             "era": args.era,
             "do_syst": args.do_syst,
             "do_rochester": args.do_rochester,
+            "do_lhepdfsyst": args.do_lhepdfsyst,
             "sample": sample_dict,
             "debug": args.debug,
         }
@@ -190,12 +191,12 @@ def get_main_parser() -> argparse.ArgumentParser:
         "(e.g. futures or condor) (default: %(default)s)",
     )
     parser.add_argument(
-        "-s",
-        "--scaleout",
+        "--min-scaleout",
+        dest="min_scaleout",
         type=int,
         default=1,
         help="Number of nodes to scale out to if using slurm/condor. Total number of "
-        "concurrent threads is ``workers x scaleout`` (default: %(default)s)",
+        "concurrent threads is ``workers x min_scaleout`` (default: %(default)s)",
     )
     parser.add_argument(
         "--max-scaleout",
@@ -235,7 +236,7 @@ def get_main_parser() -> argparse.ArgumentParser:
         help="Max number of chunks to run in total",
     )
     parser.add_argument(
-        "--mild_scaleout",
+        "--mild-scaleout",
         action="store_true",
         help="Parameters for mild scaleout. Use when the scheduler is empty.",
     )
@@ -255,6 +256,9 @@ def get_main_parser() -> argparse.ArgumentParser:
         help="Specify the year (default: %(default)s)",
     )
     parser.add_argument("--do_syst", action="store_true", help="Turn systematics on")
+    parser.add_argument(
+        "--do_lhepdfsyst", action="store_true", help="Turn LHE PDF systematic on"
+    )
     parser.add_argument(
         "--do_rochester", action="store_true", help="Turn Rochester corrections on"
     )
@@ -301,8 +305,15 @@ def daskExecutor(args: argparse.Namespace) -> processor.DaskExecutor:
     if "lpc" in args.executor:
         from lpcjobqueue import LPCCondorCluster  # type: ignore[import]
 
+        PYTHIA_LIBDIR = "pythia/pythia8313/lib"
+
         cluster = LPCCondorCluster(
-            transfer_input_files=["/srv/workflows/", "/srv/data/"],
+            transfer_input_files=[
+                "/srv/workflows/",
+                "/srv/data/",
+                "/srv/pythia/",
+                "/srv/vendor/",
+            ],
             shared_temp_directory="/tmp",
             memory=args.memory,
             worker_extra_args=[
@@ -310,30 +321,40 @@ def daskExecutor(args: argparse.Namespace) -> processor.DaskExecutor:
                 "--nanny-port 10070:10100",
                 "--no-dashboard",
             ],
-            job_script_prologue=[],
+            job_script_prologue=[
+                f"export LD_LIBRARY_PATH={PYTHIA_LIBDIR}:$LD_LIBRARY_PATH",
+                f"export PYTHONPATH={PYTHIA_LIBDIR}:$PYTHONPATH",
+                f"export PYTHONPATH=$PWD/vendor:$PYTHONPATH",
+            ],
             log_directory="/uscmst1b_scratch/lpc1/3DayLifetime/chpapage/",
             scheduler_options={"dashboard_address": ":44890"},
         )
         adapt_parameters = {"wait_count": 10}
         if args.mild_scaleout:
             adapt_parameters = dict(
-                interval="1m",
+                interval="30s",
                 target_duration="30s",
                 wait_count=10,
             )
         cluster.adapt(
-            minimum=args.scaleout,
+            minimum=args.min_scaleout,
             maximum=args.max_scaleout,
             **adapt_parameters,
         )
         client = Client(cluster)
 
-        client.register_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_plugin(SettingSitePath("/workflows/"))
-        shutil.make_archive("workflows", "zip", base_dir="workflows")
-        client.upload_file("workflows.zip")
-        shutil.make_archive("data", "zip", base_dir="data")
-        client.upload_file("data.zip")
+        # client.register_plugin(UploadDirectory(os.getcwd() + "/data"))
+        # client.register_plugin(SettingSitePath("/workflows/"))
+        # client.register_plugin(SettingSitePath("/pythia/"))
+        # client.register_plugin(SettingSitePath("/vendor/"))
+        # shutil.make_archive("workflows", "zip", base_dir="workflows")
+        # client.upload_file("workflows.zip")
+        # shutil.make_archive("data", "zip", base_dir="data")
+        # client.upload_file("data.zip")
+        # shutil.make_archive("pythia", "zip", base_dir="pythia")
+        # client.upload_file("pythia.zip")
+        # shutil.make_archive("vendor", "zip", base_dir="vendor")
+        # client.upload_file("vendor.zip")
 
         print("Waiting for at least one worker...")
         client.wait_for_workers(1)

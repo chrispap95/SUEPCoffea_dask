@@ -3,10 +3,14 @@ import hist
 import vector  # type: ignore[import]
 from coffea import processor
 
-# Importing CMS corrections
-import workflows.CMS_corrections.golden_json_utils as golden_json_utils
-import workflows.CMS_corrections.muon_sf_utils as muon_sf_utils
 import workflows.SUEP_common as SUEP_common
+
+# Importing CMS corrections
+from workflows.CMS_corrections import (
+    golden_json_utils,
+    muon_sf_utils,
+    systematics_utils,
+)
 
 # Set vector behavior
 vector.register_awkward()
@@ -19,12 +23,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
         era: str | int,
         do_syst: bool = False,
         do_rochester: bool = False,
+        do_lhepdfsyst: bool = False,
     ) -> None:
         self.isMC = isMC
         self.era = era if isinstance(era, str) else str(era)
         self.do_syst = do_syst
         self.gensumweight = 1.0
         self.do_rochester = do_rochester
+        self.do_lhepdfsyst = do_lhepdfsyst
 
     def apply_CR_prompt(self, events):
         """
@@ -133,14 +139,16 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         systematics = [
             "MuonSF",
-            "L1PreFire",
             "PUReweight",
             "ISR",
             "FSR",
             "LHEPdf",
             "LHEScaleMuF",
             "LHEScaleMuR",
+            "TrigSF",
         ]
+        if self.era.startswith("201"):
+            systematics.append("L1PreFire")
         if self.do_syst:
             for syst in systematics:
                 for var in ["Up", "Down"]:
@@ -150,6 +158,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     output[dataset]["histograms"][f"CR_cb_{syst}{var}"] = (
                         output[dataset]["histograms"]["CR_cb"].copy().reset()
                     )
+            if self.do_lhepdfsyst:
+                for replica in range(1, 103):
+                    output[dataset]["histograms"][f"CR_prompt_LHEPdf{replica}"] = (
+                        output[dataset]["histograms"]["CR_prompt"].copy().reset()
+                    )
+                    output[dataset]["histograms"][f"CR_cb_LHEPdf{replica}"] = (
+                        output[dataset]["histograms"]["CR_cb"].copy().reset()
+                    )
 
         (
             events_CR_prompt,
@@ -157,6 +173,27 @@ class SUEP_processor(SUEP_common.SUEP_base):
             prompt_muons_CR_prompt,
             qcd_muons_CR_prompt,
         ) = self.apply_CR_prompt(events_)
+
+        if len(events_CR_prompt) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_CR_prompt)
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_CR_prompt = events_CR_prompt[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_CR_prompt = muons_CR_prompt[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            prompt_muons_CR_prompt = prompt_muons_CR_prompt[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            qcd_muons_CR_prompt = qcd_muons_CR_prompt[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+
         if len(events_CR_prompt) > 0:
             weights_CR_prompt = self.get_weights(
                 events_CR_prompt, do_vars=True, apply_lumi_factors=True
@@ -233,8 +270,35 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ak.where(nMuon_CR_prompt > 5, 5, nMuon_CR_prompt),
                         weight=weights_CR_prompt.weight(syst),
                     )
+                if self.do_lhepdfsyst:
+                    lhepdf_weights = systematics_utils.get_pdf_weights(
+                        events_CR_prompt, self.isMC
+                    )
+                    for replica in range(102):
+                        output[dataset]["histograms"][
+                            f"CR_prompt_LHEPdf{replica+1}"
+                        ].fill(
+                            ak.where(nMuon_CR_prompt > 5, 5, nMuon_CR_prompt),
+                            weight=weights_CR_prompt.weight()
+                            * lhepdf_weights[:, replica],
+                        )
 
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
+
+        if len(events_CR_cb) > 0:
+            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_CR_cb)
+            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
+                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
+            )
+            events_CR_cb = events_CR_cb[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+            muons_CR_cb = muons_CR_cb[
+                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            ]
+
         if len(events_CR_cb) > 0:
             weights_CR_cb = self.get_weights(
                 events_CR_cb, do_vars=True, apply_lumi_factors=True
@@ -272,6 +336,15 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         ak.where(nMuon_CR_cb > 4, 4, nMuon_CR_cb),
                         weight=weights_CR_cb.weight(syst),
                     )
+                if self.do_lhepdfsyst:
+                    lhepdf_weights = systematics_utils.get_pdf_weights(
+                        events_CR_cb, self.isMC
+                    )
+                    for replica in range(102):
+                        output[dataset]["histograms"][f"CR_cb_LHEPdf{replica+1}"].fill(
+                            ak.where(nMuon_CR_cb > 4, 4, nMuon_CR_cb),
+                            weight=weights_CR_cb.weight() * lhepdf_weights[:, replica],
+                        )
 
         return
 

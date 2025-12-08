@@ -26,8 +26,15 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--year",
+        type=str,
+        nargs="*",
+        default=["2018"],
+        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -46,7 +53,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def merge_runs(plots, run, args):
+def merge_runs(plots, run):
     names = [
         "Higgs",
         "TTV",
@@ -70,8 +77,6 @@ def merge_runs(plots, run, args):
         signal_processes = list(
             {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
         )
-    if args.data:
-        names.append("Data")
     names.extend(signal_processes)
     run_plots = {}
     for name in names:
@@ -93,9 +98,12 @@ def plot_systematics(args, plots, sample, region):
     if region not in plots[sample]:
         return
 
+    year = sample.split("_")[-1]
+    com_energy = "13TeV" if (year == "Run2") or year.startswith("201") else "13p6TeV"
+
     sample_tag = (
-        sample.replace("_2018", "")
-        .replace("_13TeV", "")
+        sample.replace(f"_{year}", "")
+        .replace(f"_{com_energy}", "")
         .replace("mode", "")
         .replace(".000", "")
         .replace("0_", "_")
@@ -106,6 +114,9 @@ def plot_systematics(args, plots, sample, region):
 
     systematics = set()
     for key in plots[sample]:
+        if "LHEPdf" in key:
+            if "LHEPdfUp" not in key:
+                continue
         if region in key:
             systematics.add(
                 key.replace(region, "")
@@ -114,6 +125,8 @@ def plot_systematics(args, plots, sample, region):
                 .replace("Up", "")
                 .replace("Down", "")
             )
+
+    # print(region, sample, sorted(list(systematics)))
 
     for syst in sorted(systematics):
         if not syst:
@@ -187,7 +200,12 @@ def plot_systematics(args, plots, sample, region):
             label.set_visible(False)
         # plt.tight_layout()
         plt.savefig(
-            f"{args.dest}/{region}_{sample.replace('.', 'p')}_{syst}.pdf",
+            os.path.join(
+                args.dest,
+                args.tag,
+                year,
+                f"{region}_{sample.replace('.', 'p')}_{syst}_{year}.pdf",
+            ),
             bbox_inches="tight",
         )
         plt.close()
@@ -198,7 +216,7 @@ if "__main__" == __name__:
     args = parse_args()
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year
@@ -222,25 +240,22 @@ if "__main__" == __name__:
         ]
     plots = {}
     for year in track(years_to_load, description="Loading plots"):
-        # NOTE: need to check if this merging is correct! Probably not...
-        plots = plots | plot_utils.loader(
+        plots_CR = plot_utils.loader(
             tag=f"{args.tag}_{year}_CR",
             era=year,
             custom_lumi=args.lumi,
             load_data=False,
         )
-        plots = plots | plot_utils.loader(
-            tag=f"{args.tag}_{year}_VR",
-            era=year,
-            custom_lumi=args.lumi,
-            load_data=False,
-        )
-        plots = plots | plot_utils.loader(
+        plots_SRs = plot_utils.loader(
             tag=f"{args.tag}_{year}_SRs",
             era=year,
             custom_lumi=args.lumi,
             load_data=False,
         )
+        for sample in set(list(plots_CR.keys()) + list(plots_SRs.keys())):
+            plots[sample] = plots_CR[sample] | plots_SRs[sample]
+
+    plots = plot_utils.make_lhepdf_systematic(plots)
 
     for year in track(years_to_load, description="Fitting and extrapolations"):
         # QCD extrapolation
@@ -270,10 +285,10 @@ if "__main__" == __name__:
         dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2", args)
+        run2_plots = merge_runs(plots, "Run2")
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3", args)
+        run3_plots = merge_runs(plots, "Run3")
         plots = plots | run3_plots
 
     # Plot systematics
@@ -282,6 +297,7 @@ if "__main__" == __name__:
     # For now, plot only a few samples
     samples = []
     for year in track(args.year, description="Plotting regions"):
+        os.makedirs(os.path.join(args.dest, args.tag, year), exist_ok=True)
         com_energy = (
             "13TeV" if (year == "Run2") or year.startswith("201") else "13p6TeV"
         )
@@ -293,7 +309,7 @@ if "__main__" == __name__:
         )
         samples.append(f"QCD_Pt_MuEnrichedPt5_{year}")
         samples.append(f"DY_{year}")
-    samples.append("VV+VVV_2018")
+        samples.append(f"VV+VVV_{year}")
     regions = [
         "CR_prompt",
         "CR_cb",

@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -66,9 +66,9 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default=str(pathlib.Path(__file__).parent / "vr_plots"),
+        default=str(pathlib.Path(__file__).parent / "vr_plots_nosignal"),
         help="Destination directory to save the plots. Default is "
-        f"{pathlib.Path(__file__).parent / 'vr_plots'}.",
+        f"{pathlib.Path(__file__).parent / 'vr_plots_nosignal'}.",
     )
     return parser.parse_args()
 
@@ -380,7 +380,8 @@ def plot_VR(args, plots, year, region):
     plt.legend(ncol=2, loc="upper right", columnspacing=1)
     plt.ylabel("events")
     plt.savefig(
-        f"{args.dest}/{region}_{year}_{args.tag}_nosignal.pdf", bbox_inches="tight"
+        os.path.join(args.dest, args.tag, f"{region}_{year}.pdf"),
+        bbox_inches="tight",
     )
     plt.close()
 
@@ -389,7 +390,7 @@ if "__main__" == __name__:
     args = parse_args()
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     print("Loading plots...", flush=True)
@@ -437,8 +438,8 @@ if "__main__" == __name__:
     # QCD extrapolation
     # Slice the first bin out where needed for fit stability
     slice_hists = {
-        "VR_loose": slice(3j, None),
-        "VR_tight": slice(3j, None),
+        "VR_loose": slice(3j, 6j),
+        "VR_tight": slice(3j, 6j),
     }
     for year in track(years_to_load):
         qcd_extrapolation = plot_utils.Extrapolation(

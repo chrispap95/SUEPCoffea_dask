@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -64,7 +64,8 @@ def merge_runs(plots, run):
         "DY",
         "QCD_Pt_MuEnrichedPt5",
     ]
-    years = ["2016APV", "2016", "2017", "2018"]
+    # years = ["2016APV", "2016", "2017", "2018"]
+    years = ["2016", "2017", "2018"]
     if run == "Run3":
         names.remove("TTV")
         names.remove("ST_NLO")
@@ -89,17 +90,18 @@ if "__main__" == __name__:
     args = parse_args()
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year
     if "Run2" in args.year:
-        years_to_load = ["2016APV", "2016", "2017", "2018"]
+        # years_to_load = ["2016APV", "2016", "2017", "2018"]
+        years_to_load = ["2016", "2017", "2018"]
     if "Run3" in args.year:
         years_to_load = ["2022", "2022EE", "2023", "2023BPix"]
     if "Run2" in args.year and "Run3" in args.year:
         years_to_load = [
-            "2016APV",
+            # "2016APV",
             "2016",
             "2017",
             "2018",
@@ -111,34 +113,32 @@ if "__main__" == __name__:
     plots = {}
     for year in track(years_to_load, description="Loading plots"):
         plots = plots | plot_utils.loader(
-            tag=f"{args.tag}_{year}_CR",
-            era=year,
-            custom_lumi=args.lumi,
-            load_data=False,
-        )
-        plots = plots | plot_utils.loader(
             tag=f"{args.tag}_{year}_SRs",
             era=year,
             custom_lumi=args.lumi,
             load_data=False,
         )
         if args.VR:
-            plots = plots | plot_utils.loader(
+            plots_vr = plot_utils.loader(
                 tag=f"{args.tag}_{year}_VR",
                 era=year,
                 custom_lumi=args.lumi,
                 load_data=False,
             )
+            for key in plots:
+                plots[key] = plots[key] | plots_vr[key]
 
     qcd_extrapolations = {}
     dy_extrapolations = {}
     for year in track(years_to_load, description="Fitting and extrapolations"):
         # Slice the first bin out where needed for fit stability
         slice_hists = {
-            "SR_low_temp_loose": slice(4j, None),
-            "SR_low_temp_tight": slice(3j, None),
-            "SR_high_temp_loose": slice(4j, None),
-            "SR_high_temp_tight": slice(3j, None),
+            "SR_low_temp_loose": slice(4j, 7j),
+            "SR_low_temp_tight": slice(3j, 5j),
+            "SR_high_temp_loose": slice(4j, 7j),
+            "SR_high_temp_tight": slice(3j, 5j),
+            "VR_loose": slice(3j, 6j),
+            "VR_tight": slice(3j, 6j),
         }
         if year == "2016APV":
             slice_hists["SR_high_temp_loose"] = slice(3j, 6j)
@@ -183,26 +183,28 @@ if "__main__" == __name__:
         for region in regions:
             qcd_extrapolations[year].plot_fit(region, add_text="QCD")
             plt.savefig(
-                f"{args.dest}/plot_fit_QCD_{region}_{year}_{args.tag}.pdf",
+                os.path.join(args.dest, args.tag, f"plot_fit_QCD_{region}_{year}.pdf"),
                 bbox_inches="tight",
             )
             plt.close()
 
             dy_extrapolations[year].plot_fit(region, add_text="DY")
             plt.savefig(
-                f"{args.dest}/plot_fit_DY_{region}_{year}_{args.tag}.pdf",
+                os.path.join(args.dest, args.tag, f"plot_fit_DY_{region}_{year}.pdf"),
                 bbox_inches="tight",
             )
             plt.close()
 
         qcd_extrapolations[year].plot_overlay(regions=regions, add_text="QCD")
         plt.savefig(
-            f"{args.dest}/fit_overlay_QCD_{year}_{args.tag}.pdf", bbox_inches="tight"
+            os.path.join(args.dest, args.tag, f"fit_overlay_QCD_{year}.pdf"),
+            bbox_inches="tight",
         )
         plt.close()
 
         dy_extrapolations[year].plot_overlay(regions=regions, add_text="DY")
         plt.savefig(
-            f"{args.dest}/fit_overlay_DY_{year}_{args.tag}.pdf", bbox_inches="tight"
+            os.path.join(args.dest, args.tag, f"fit_overlay_DY_{year}.pdf"),
+            bbox_inches="tight",
         )
         plt.close()
