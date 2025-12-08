@@ -5,7 +5,6 @@ from coffea import processor
 
 # Importing CMS corrections
 import workflows.CMS_corrections.golden_json_utils as golden_json_utils
-import workflows.CMS_corrections.muon_sf_utils as muon_sf_utils
 import workflows.SUEP_common as SUEP_common
 
 # Set vector behavior
@@ -34,112 +33,60 @@ class SUEP_processor(SUEP_common.SUEP_base):
             return
 
         muons = events.Muon
+        clean_muons = (
+            (muons.mediumId)
+            & (muons.pt > 3)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dxy) < 0.01)
+            & (abs(muons.dz) < 0.01)
+        )
+        muons = muons[clean_muons]
+
         events, muons = events[ak.num(muons) >= 3], muons[ak.num(muons) >= 3]
         weights = self.get_weights(events).weight()
-        sum_w = ak.sum(weights)
-        sum_w2 = ak.sum(weights**2)
 
-        # Cuts:
-        #     - muon_pt > 3
-        #     - muon_eta < 2.4
-        #     - muon_isMediumId == True
-        #     - abs(muon_dxy) < 0.2
-        #     - abs(muon_dz) < 0.2
+        # All combinations of OS dimuons
+        muon_idx = ak.local_index(muons, axis=1)
+        muon_pairs = ak.unzip(ak.cartesian([muons, muons], nested=False))
+        muon_pairs_idx = ak.unzip(ak.cartesian([muon_idx, muon_idx], nested=False))
+        muon_pairs_0, muon_pairs_1 = muon_pairs  # type: ignore[index]
+        muon_pairs_idx_0, muon_pairs_idx_1 = muon_pairs_idx  # type: ignore[index]
+        delta_r = muon_pairs_0.delta_r(muon_pairs_1)
+        delta_r = delta_r[muon_pairs_idx_0 < muon_pairs_idx_1]  # avoid double counting
 
-        for pt_cut in output[dataset]["histograms"]["muon_pt_NUM"].axes[0].edges[:-1]:
-            muons_ = muons[muons.pt > pt_cut]
-            weights_ = weights[ak.num(muons_) >= 3]
-            output[dataset]["histograms"]["muon_pt_NUM"][1.01 * pt_cut * 1j] = (
-                ak.sum(weights_),
-                ak.sum(weights_**2),
-            )
-            output[dataset]["histograms"]["muon_pt_DEN"][1.01 * pt_cut * 1j] = (
-                sum_w,
-                sum_w2,
-            )
-
-        for abseta_cut in (
-            output[dataset]["histograms"]["muon_abseta_NUM"].axes[0].edges[:-1]
-        ):
-            muons_ = muons[abs(muons.eta) < abseta_cut]
-            weights_ = weights[ak.num(muons_) >= 3]
-            output[dataset]["histograms"]["muon_abseta_NUM"][1.01 * abseta_cut * 1j] = (
-                ak.sum(weights_),
-                ak.sum(weights_**2),
-            )
-            output[dataset]["histograms"]["muon_abseta_DEN"][1.01 * abseta_cut * 1j] = (
-                sum_w,
-                sum_w2,
-            )
-
-        muons_ = muons[muons.looseId]
-        weights_ = weights[ak.num(muons_) >= 3]
-        output[dataset]["histograms"]["muon_id_NUM"]["looseId"] = (
-            ak.sum(weights_),
-            ak.sum(weights_**2),
-        )
-        output[dataset]["histograms"]["muon_id_DEN"]["looseId"] = (
-            sum_w,
-            sum_w2,
-        )
-        muons_ = muons[muons.mediumId]
-        weights_ = weights[ak.num(muons_) >= 3]
-        output[dataset]["histograms"]["muon_id_NUM"]["mediumId"] = (
-            ak.sum(weights_),
-            ak.sum(weights_**2),
-        )
-        output[dataset]["histograms"]["muon_id_DEN"]["mediumId"] = (
-            sum_w,
-            sum_w2,
-        )
-        muons_ = muons[muons.mediumPromptId]
-        weights_ = weights[ak.num(muons_) >= 3]
-        output[dataset]["histograms"]["muon_id_NUM"]["mediumPromptId"] = (
-            ak.sum(weights_),
-            ak.sum(weights_**2),
-        )
-        output[dataset]["histograms"]["muon_id_DEN"]["mediumPromptId"] = (
-            sum_w,
-            sum_w2,
-        )
-        muons_ = muons[muons.tightId]
-        weights_ = weights[ak.num(muons_) >= 3]
-        output[dataset]["histograms"]["muon_id_NUM"]["tightId"] = (
-            ak.sum(weights_),
-            ak.sum(weights_**2),
-        )
-        output[dataset]["histograms"]["muon_id_DEN"]["tightId"] = (
-            sum_w,
-            sum_w2,
+        output[dataset]["histograms"]["dimuon_dR"].fill(
+            ak.flatten(delta_r),
+            weight=ak.flatten(ak.broadcast_arrays(weights, delta_r)[0]),
         )
 
-        for absdxy_cut in (
-            output[dataset]["histograms"]["muon_absdxy_NUM"].axes[0].edges[:-1]
-        ):
-            muons_ = muons[abs(muons.dxy) < absdxy_cut]
-            weights_ = weights[ak.num(muons_) >= 3]
-            output[dataset]["histograms"]["muon_absdxy_NUM"][1.01 * absdxy_cut * 1j] = (
-                ak.sum(weights_),
-                ak.sum(weights_**2),
-            )
-            output[dataset]["histograms"]["muon_absdxy_DEN"][1.01 * absdxy_cut * 1j] = (
-                sum_w,
-                sum_w2,
-            )
+        mass = (muon_pairs_0 + muon_pairs_1).mass
+        mass = mass[muon_pairs_idx_0 < muon_pairs_idx_1]  # avoid double counting
+        delta_r = delta_r[(mass > 0.4) & (mass < 0.8)]
 
-        for absdz_cut in (
-            output[dataset]["histograms"]["muon_absdz_NUM"].axes[0].edges[:-1]
-        ):
-            muons_ = muons[abs(muons.dz) < absdz_cut]
-            weights_ = weights[ak.num(muons_) >= 3]
-            output[dataset]["histograms"]["muon_absdz_NUM"][1.01 * absdz_cut * 1j] = (
-                ak.sum(weights_),
-                ak.sum(weights_**2),
-            )
-            output[dataset]["histograms"]["muon_absdz_DEN"][1.01 * absdz_cut * 1j] = (
-                sum_w,
-                sum_w2,
-            )
+        output[dataset]["histograms"]["dimuon_dR_mass_cut"].fill(
+            ak.flatten(delta_r),
+            weight=ak.flatten(ak.broadcast_arrays(weights, delta_r)[0]),
+        )
+
+        # All combinations of OS dimuons
+        muons1 = muons[muons.charge == 1]
+        muons2 = muons[muons.charge == -1]
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2], nested=False))
+        muon_pairs_0, muon_pairs_1 = muon_pairs  # type: ignore[index]
+        delta_r = muon_pairs_0.delta_r(muon_pairs_1)
+
+        output[dataset]["histograms"]["OS_dimuon_dR"].fill(
+            ak.flatten(delta_r),
+            weight=ak.flatten(ak.broadcast_arrays(weights, delta_r)[0]),
+        )
+
+        mass = (muon_pairs_0 + muon_pairs_1).mass
+        delta_r = delta_r[(mass > 0.4) & (mass < 0.8)]
+
+        output[dataset]["histograms"]["OS_dimuon_dR_mass_cut"].fill(
+            ak.flatten(delta_r),
+            weight=ak.flatten(ak.broadcast_arrays(weights, delta_r)[0]),
+        )
 
         return
 
@@ -190,76 +137,36 @@ class SUEP_processor(SUEP_common.SUEP_base):
             label="cutflow",
         ).Weight()
         histograms = {
-            "muon_pt_NUM": hist.Hist.new.Regular(
-                30,
-                3,
-                60,
-                name="muon_pt",
-                label="muon_pt",
-                transform=hist.axis.transform.log,
-            ).Weight(),
-            "muon_pt_DEN": hist.Hist.new.Regular(
-                30,
-                3,
-                60,
-                name="muon_pt",
-                label="muon_pt",
-                transform=hist.axis.transform.log,
-            ).Weight(),
-            "muon_abseta_NUM": hist.Hist.new.Regular(
+            "dimuon_dR": hist.Hist.new.Regular(
+                100,
+                0.001,
                 10,
-                2,
-                3,
-                name="muon_abseta",
-                label="muon_abseta",
+                name="dimuon dR",
+                label="dimuon dR",
+                transform=hist.axis.transform.log,
             ).Weight(),
-            "muon_abseta_DEN": hist.Hist.new.Regular(
+            "OS_dimuon_dR": hist.Hist.new.Regular(
+                100,
+                0.001,
                 10,
-                2,
-                3,
-                name="muon_abseta",
-                label="muon_abseta",
-            ).Weight(),
-            "muon_id_NUM": hist.Hist.new.StrCat(
-                ["looseId", "mediumId", "mediumPromptId", "tightId"],
-                name="muon_id",
-                label="muon_id",
-            ).Weight(),
-            "muon_id_DEN": hist.Hist.new.StrCat(
-                ["looseId", "mediumId", "mediumPromptId", "tightId"],
-                name="muon_id",
-                label="muon_id",
-            ).Weight(),
-            "muon_absdxy_NUM": hist.Hist.new.Regular(
-                30,
-                0.001,
-                1,
-                name="muon_absdxy",
-                label="muon_absdxy",
+                name="OS dimuon dR",
+                label="OS dimuon dR",
                 transform=hist.axis.transform.log,
             ).Weight(),
-            "muon_absdxy_DEN": hist.Hist.new.Regular(
-                30,
+            "dimuon_dR_mass_cut": hist.Hist.new.Regular(
+                100,
                 0.001,
-                1,
-                name="muon_absdxy",
-                label="muon_absdxy",
+                10,
+                name="dimuon dR",
+                label="dimuon dR",
                 transform=hist.axis.transform.log,
             ).Weight(),
-            "muon_absdz_NUM": hist.Hist.new.Regular(
-                30,
+            "OS_dimuon_dR_mass_cut": hist.Hist.new.Regular(
+                100,
                 0.001,
-                1,
-                name="muon_absdz",
-                label="muon_absdz",
-                transform=hist.axis.transform.log,
-            ).Weight(),
-            "muon_absdz_DEN": hist.Hist.new.Regular(
-                30,
-                0.001,
-                1,
-                name="muon_absdz",
-                label="muon_absdz",
+                10,
+                name="OS dimuon dR",
+                label="OS dimuon dR",
                 transform=hist.axis.transform.log,
             ).Weight(),
         }
