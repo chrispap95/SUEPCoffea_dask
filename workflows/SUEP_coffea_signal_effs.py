@@ -29,15 +29,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
     def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
 
-        events = self.muon_filter(events)
+        # events = self.muon_filter(events)
         if len(events) == 0:
             return
-
-        muons = events.Muon
-        events, muons = events[ak.num(muons) >= 3], muons[ak.num(muons) >= 3]
-        weights = self.get_weights(events).weight()
-        sum_w = ak.sum(weights)
-        sum_w2 = ak.sum(weights**2)
 
         # Cuts:
         #     - muon_pt > 3
@@ -45,6 +39,12 @@ class SUEP_processor(SUEP_common.SUEP_base):
         #     - muon_isMediumId == True
         #     - abs(muon_dxy) < 0.2
         #     - abs(muon_dz) < 0.2
+
+        muons = events.Muon
+        events, muons = events[ak.num(muons) >= 3], muons[ak.num(muons) >= 3]
+        weights = self.get_weights(events).weight()
+        sum_w = ak.sum(weights)
+        sum_w2 = ak.sum(weights**2)
 
         for pt_cut in output[dataset]["histograms"]["muon_pt_NUM"].axes[0].edges[:-1]:
             muons_ = muons[muons.pt > pt_cut]
@@ -54,6 +54,61 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 ak.sum(weights_**2),
             )
             output[dataset]["histograms"]["muon_pt_DEN"][1.01 * pt_cut * 1j] = (
+                sum_w,
+                sum_w2,
+            )
+
+        for pt_cut in (
+            output[dataset]["histograms"]["leading_muon_pt_NUM"].axes[0].edges[:-1]
+        ):
+            muons_cut1_ = muons[muons.pt > 3]
+            muons_cut2_ = muons[muons.pt > pt_cut]
+            weights_ = weights[(ak.num(muons_cut1_) >= 3) & (ak.num(muons_cut2_) >= 1)]
+            output[dataset]["histograms"]["leading_muon_pt_NUM"][1.01 * pt_cut * 1j] = (
+                ak.sum(weights_),
+                ak.sum(weights_**2),
+            )
+            output[dataset]["histograms"]["leading_muon_pt_DEN"][1.01 * pt_cut * 1j] = (
+                sum_w,
+                sum_w2,
+            )
+
+        for pt_cut in (
+            output[dataset]["histograms"]["subleading_muon_pt_NUM"].axes[0].edges[:-1]
+        ):
+            muons_cut1_ = muons[muons.pt > 3]
+            muons_cut2_ = muons[muons.pt > pt_cut]
+            weights_ = weights[(ak.num(muons_cut1_) >= 3) & (ak.num(muons_cut2_) >= 2)]
+            output[dataset]["histograms"]["subleading_muon_pt_NUM"][
+                1.01 * pt_cut * 1j
+            ] = (
+                ak.sum(weights_),
+                ak.sum(weights_**2),
+            )
+            output[dataset]["histograms"]["subleading_muon_pt_DEN"][
+                1.01 * pt_cut * 1j
+            ] = (
+                sum_w,
+                sum_w2,
+            )
+
+        for pt_cut in (
+            output[dataset]["histograms"]["subsubleading_muon_pt_NUM"]
+            .axes[0]
+            .edges[:-1]
+        ):
+            muons_cut1_ = muons[muons.pt > 3]
+            muons_cut2_ = muons[muons.pt > pt_cut]
+            weights_ = weights[(ak.num(muons_cut1_) >= 3) & (ak.num(muons_cut2_) >= 3)]
+            output[dataset]["histograms"]["subsubleading_muon_pt_NUM"][
+                1.01 * pt_cut * 1j
+            ] = (
+                ak.sum(weights_),
+                ak.sum(weights_**2),
+            )
+            output[dataset]["histograms"]["subsubleading_muon_pt_DEN"][
+                1.01 * pt_cut * 1j
+            ] = (
                 sum_w,
                 sum_w2,
             )
@@ -191,20 +246,60 @@ class SUEP_processor(SUEP_common.SUEP_base):
         ).Weight()
         histograms = {
             "muon_pt_NUM": hist.Hist.new.Regular(
-                30,
-                3,
-                60,
+                20,
+                0,
+                20,
                 name="muon_pt",
                 label="muon_pt",
-                transform=hist.axis.transform.log,
             ).Weight(),
             "muon_pt_DEN": hist.Hist.new.Regular(
-                30,
-                3,
-                60,
+                20,
+                0,
+                20,
                 name="muon_pt",
                 label="muon_pt",
-                transform=hist.axis.transform.log,
+            ).Weight(),
+            "leading_muon_pt_NUM": hist.Hist.new.Regular(
+                20,
+                0,
+                20,
+                name="leading_muon_pt",
+                label="leading_muon_pt",
+            ).Weight(),
+            "leading_muon_pt_DEN": hist.Hist.new.Regular(
+                20,
+                0,
+                20,
+                name="leading_muon_pt",
+                label="leading_muon_pt",
+            ).Weight(),
+            "subleading_muon_pt_NUM": hist.Hist.new.Regular(
+                20,
+                0,
+                20,
+                name="subleading_muon_pt",
+                label="subleading_muon_pt",
+            ).Weight(),
+            "subleading_muon_pt_DEN": hist.Hist.new.Regular(
+                20,
+                0,
+                20,
+                name="subleading_muon_pt",
+                label="subleading_muon_pt",
+            ).Weight(),
+            "subsubleading_muon_pt_NUM": hist.Hist.new.Regular(
+                20,
+                0,
+                20,
+                name="subsubleading_muon_pt",
+                label="subsubleading_muon_pt",
+            ).Weight(),
+            "subsubleading_muon_pt_DEN": hist.Hist.new.Regular(
+                20,
+                0,
+                20,
+                name="subsubleading_muon_pt",
+                label="subsubleading_muon_pt",
             ).Weight(),
             "muon_abseta_NUM": hist.Hist.new.Regular(
                 10,

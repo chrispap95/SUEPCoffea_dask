@@ -10,7 +10,7 @@ source source_pythia.sh
 # By default, run signal and background
 
 era=2018
-tag=signal_effs_Jul2025
+tag=signal_effs_Oct2025
 
 while getopts 'e:t:' flag; do
   case "${flag}" in

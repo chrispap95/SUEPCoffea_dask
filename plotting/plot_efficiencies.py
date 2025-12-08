@@ -1,6 +1,5 @@
 import os
 
-import arrow
 import cmsstyle as CMS  # type: ignore[import]
 import plot_utils
 import ROOT  # type: ignore[import]
@@ -10,9 +9,11 @@ from tqdm import tqdm  # type: ignore[import]
 CMS.SetExtraText("Simulation Preliminary")
 CMS.SetLumi("")
 
+tags = "signal_effs_Oct2025"
+year = "2018"
 plots = plot_utils.loader(
-    tag="signal_effs_Jul2025_2018",
-    era="2018",
+    tag=f"{tags}_{year}",
+    era=year,
     custom_lumi=None,
     load_data=False,
 )
@@ -33,13 +34,19 @@ signal_labels = [
 ]
 variable_labels = {
     "muon_pt": "cut (>) p^{#mu}_{T} [GeV]",
+    "leading_muon_pt": "cut (>) p^{leading #mu}_{T} [GeV]",
+    "subleading_muon_pt": "cut (>) p^{subleading #mu}_{T} [GeV]",
+    "subsubleading_muon_pt": "cut (>) p^{subsubleading #mu}_{T} [GeV]",
     "muon_abseta": "cut (<) |#eta^{#mu}|",
     "muon_id": "select muon ID",
     "muon_absdxy": "cut (<) |d^{#mu}_{xy}| [cm]",
     "muon_absdz": "cut (<) |d^{#mu}_{z}| [cm]",
 }
 legend_positions = {
-    "muon_pt": (0.45, 0.7, 0.8, 0.9),
+    "muon_pt": (0.53, 0.71, 0.8, 0.9),
+    "leading_muon_pt": (0.18, 0.18, 0.42, 0.42),
+    "subleading_muon_pt": (0.18, 0.18, 0.42, 0.42),
+    "subsubleading_muon_pt": (0.53, 0.71, 0.8, 0.9),
     "muon_abseta": (0.45, 0.2, 0.8, 0.4),
     "muon_id": (0.2, 0.25, 0.55, 0.45),
     "muon_absdxy": (0.45, 0.2, 0.8, 0.4),
@@ -59,7 +66,10 @@ cut_positions = {
     "muon_absdz": 0.2,
 }
 text_x_positions = {
-    "muon_pt": 0.7,
+    "muon_pt": 0.75,
+    "leading_muon_pt": 0.23,
+    "subleading_muon_pt": 0.23,
+    "subsubleading_muon_pt": 0.75,
     "muon_abseta": 0.6,
     "muon_id": 0.3,
     "muon_absdxy": 0.5,
@@ -76,7 +86,7 @@ def plot_efficiency(variable):
         1,
         0,
         1,
-        "muon_pt cut",
+        f"{variable} cut",
         "Efficiency",
         square=CMS.kSquare,
         extraSpace=0.01,  # type: ignore[no-untyped-call]
@@ -131,9 +141,11 @@ def plot_efficiency(variable):
         efficiencies[0].GetPaintedGraph().GetXaxis().LabelsOption("h")
         efficiencies[0].GetPaintedGraph().GetXaxis().SetLabelSize(0.04)
 
-    # if variable == "muon_pt":
-    #     ROOT.gPad.Update()
-    #     efficiencies[0].GetPaintedGraph().GetXaxis().SetLimits(1, 100)
+    if "muon_pt" in variable:
+        ROOT.gPad.Update()
+        efficiencies[0].GetPaintedGraph().GetXaxis().SetLimits(0, 20)
+        efficiencies[0].GetPaintedGraph().SetMaximum(1.05)
+        efficiencies[0].GetPaintedGraph().SetMinimum(0)
 
     if variable in cut_positions:
         line = ROOT.TLine(
@@ -177,17 +189,26 @@ def plot_efficiency(variable):
 
     legend.Draw()
 
-    if variable in ["muon_pt", "muon_absdxy", "muon_absdz"]:
+    if variable in ["muon_absdxy", "muon_absdz"]:
         canvas.SetLogx()
-    canvas.SaveAs(f"efficiencies/efficiency_plot_{variable}.pdf")
+    canvas.SaveAs(f"efficiencies/{tags}_{year}/efficiency_plot_{variable}.pdf")
 
 
 if __name__ == "__main__":
     print("Making export directory for efficiency plots...", flush=True)
-    os.makedirs("efficiencies", exist_ok=True)
+    os.makedirs(f"efficiencies/{tags}_{year}", exist_ok=True)
 
     for variable in tqdm(
-        ["muon_pt", "muon_abseta", "muon_id", "muon_absdxy", "muon_absdz"],
+        [
+            "muon_pt",
+            "leading_muon_pt",
+            "subleading_muon_pt",
+            "subsubleading_muon_pt",
+            "muon_abseta",
+            "muon_id",
+            "muon_absdxy",
+            "muon_absdz",
+        ],
         desc="Plotting efficiencies",
     ):
         plot_efficiency(variable)
