@@ -338,19 +338,6 @@ def plot_efficiency(
 
     plot_cms_header(year)
 
-    # # Fit with error function
-    # erf_mc = ROOT.TF1("erfc", "[1] * TMath::Erf(x - [0]) + [2]", 0, 20)
-    # erf_mc.SetParameters(10, 2, 0.5)
-    # erf_mc.SetLineColor(ROOT.kBlue)
-    # h_eff_mc.Fit(erf_mc, "R")
-
-    # erf_data = ROOT.TF1("erfc", "[1] * TMath::Erf(x - [0]) + [2]", 0, 20)
-    # erf_data.SetParameters(10, 2, 0.5)
-    # erf_data.SetLineColor(ROOT.kBlack)
-    # h_eff_data.Fit(erf_data, "R")
-
-    # ROOT.gStyle.SetOptFit(0000)
-
     # --- Ratio plot
     canvas.cd(2)
 
@@ -402,14 +389,15 @@ def plot_efficiency(
     one_bottom.SetLineStyle(2)
     one_bottom.Draw()
 
-    pol0_ratio = ROOT.TF1("pol0_ratio", "pol0", 0, 20)
+    pt_min = 3 if "5_3_3" in hlt_path else 5
+    pol0_ratio = ROOT.TF1("pol0_ratio", "pol0", pt_min, 20)
     pol0_ratio.SetLineColor(ROOT.kRed)
-    h_ratio.Fit(pol0_ratio, "R")
+    h_ratio.Fit(pol0_ratio, "R", "", pt_min, 20)
     pol0_ratio.Draw("SAME")
 
-    pol1_ratio = ROOT.TF1("pol1_ratio", "pol1", 0, 20)
+    pol1_ratio = ROOT.TF1("pol1_ratio", "pol1", pt_min, 20)
     pol1_ratio.SetLineColor(ROOT.kGreen)
-    h_ratio.Fit(pol1_ratio, "R")
+    h_ratio.Fit(pol1_ratio, "R", "", pt_min, 20)
     pol1_ratio.Draw("SAME")
 
     legend_ratio = ROOT.TLegend(0.83, 0.77, 0.93, 0.93)
@@ -440,6 +428,7 @@ def plot_efficiency(
 if __name__ == "__main__":
     args = parse_args()
 
+    rebin = 2j
     per_year_global_SFs = {}
 
     for year in args.year:
@@ -465,28 +454,29 @@ if __name__ == "__main__":
             trigger_paths[year]["paths"], desc=f"Processing HLT paths for {year}"
         ):
             h_mc_NUM = uproot.to_writable(
-                plots[qcd_sample][f"NUM_{hlt_path}"][::2j]
+                plots[qcd_sample][f"NUM_{hlt_path}"][::rebin]
             ).to_pyroot()  # type: ignore[attr-defined]
             h_mc_DEN = uproot.to_writable(
-                plots[qcd_sample][f"DEN_{hlt_path}"][::2j]
+                plots[qcd_sample][f"DEN_{hlt_path}"][::rebin]
             ).to_pyroot()  # type: ignore[attr-defined]
             h_data_NUM = uproot.to_writable(
-                plots[f"Data_{year}"][f"NUM_{hlt_path}"][::2j]
+                plots[f"Data_{year}"][f"NUM_{hlt_path}"][::rebin]
             ).to_pyroot()  # type: ignore[attr-defined]
             h_data_DEN = uproot.to_writable(
-                plots[f"Data_{year}"][f"DEN_{hlt_path}"][::2j]
+                plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin]
             ).to_pyroot()  # type: ignore[attr-defined]
             if args.normalize533data and hlt_path == "HLT_TripleMu_5_3_3":
                 ratio = np.divide(
-                    plots[f"Data_{year}"][f"NUM_{hlt_path}"][::2j].values(),
-                    plots[f"Data_{year}"][f"DEN_{hlt_path}"][::2j].values(),
+                    plots[f"Data_{year}"][f"NUM_{hlt_path}"][::rebin].values(),
+                    plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin].values(),
                     out=np.zeros_like(
-                        plots[f"Data_{year}"][f"NUM_{hlt_path}"][::2j].values()
+                        plots[f"Data_{year}"][f"NUM_{hlt_path}"][::rebin].values()
                     ),
-                    where=plots[f"Data_{year}"][f"DEN_{hlt_path}"][::2j].values() != 0,
+                    where=plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin].values()
+                    != 0,
                 )
                 h_data_DEN = uproot.to_writable(
-                    plots[f"Data_{year}"][f"DEN_{hlt_path}"][::2j] * max(ratio)
+                    plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin] * max(ratio)
                 ).to_pyroot()  # type: ignore[attr-defined]
             h_mc_NUM.Sumw2()
             h_mc_NUM.Rebuild()
@@ -507,12 +497,6 @@ if __name__ == "__main__":
                 plots[f"Data_{year}"][f"NUM_{hlt_path}"][cut::sum].value
                 / plots[f"Data_{year}"][f"DEN_{hlt_path}"][cut::sum].value
             )
-
-            # rebin
-            # h_mc_NUM.Rebin(2)
-            # h_mc_DEN.Rebin(2)
-            # h_data_NUM.Rebin(2)
-            # h_data_DEN.Rebin(2)
 
             plot_counts(
                 args, year, hlt_path, "data", h_data_NUM.Clone(), h_data_DEN.Clone()
@@ -540,12 +524,6 @@ if __name__ == "__main__":
         global_sf_unc = math.sqrt(1.0 / sum_w)
         sf_spread = np.array(SFs) - global_sf
         max_deviation = np.max(np.abs(sf_spread))
-        # print(
-        #     f"\nWeighted mean for global scale factor in {year}: "
-        #     f"{global_sf:.3f} ± {global_sf_unc:.3f} (w. av. err.) "
-        #     f"± {max_deviation:.3f} (spread among HLT paths)\n",
-        #     flush=True,
-        # )
 
         print(tot_effs_mc)
         tot_eff_OR_mc = 1.0 - np.prod(1.0 - np.array(tot_effs_mc))

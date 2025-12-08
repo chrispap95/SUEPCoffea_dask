@@ -445,11 +445,12 @@ class SUEP_processor(SUEP_common.SUEP_base):
             raise RuntimeError(f"Era {self.era} not recognized.")
         histograms = {}
         for path in hlt_paths:
+            n_bins = 100 if "5_3_3" in path else 80
             histograms[f"NUM_{path}"] = hist.Hist.new.Regular(
-                100, 0, 20, name="muon_pt", label="muon_pt"
+                n_bins, 0, 20, name="muon_pt", label="muon_pt"
             ).Weight()
             histograms[f"DEN_{path}"] = hist.Hist.new.Regular(
-                100, 0, 20, name="muon_pt", label="muon_pt"
+                n_bins, 0, 20, name="muon_pt", label="muon_pt"
             ).Weight()
 
         output = {
