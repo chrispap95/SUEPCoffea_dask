@@ -1,7 +1,6 @@
 import argparse
 import os
 import pathlib
-import re
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -22,15 +21,25 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=[
+            "2016",
+            "2017",
+            "2018",
+            "Run2",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+            "Run3",
+        ],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--dest",
@@ -55,49 +64,6 @@ sample_names = {
     "QCD_Pt_MuEnrichedPt5_2018": "QCD",
     "DY_2018": "DY",
 }
-
-
-def merge_runs(plots, run, args):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Add signal processes
-    signal_processes = list(
-        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
-    )
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-        # Add signal processes
-        signal_processes = list(
-            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
-        )
-    if args.data:
-        names.append("Data")
-    names.extend(signal_processes)
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots.keys():
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 def make_plot(plots, sample, region):
@@ -252,10 +218,10 @@ if "__main__" == __name__:
         dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
     for year in track(args.year, description="Plotting regions"):

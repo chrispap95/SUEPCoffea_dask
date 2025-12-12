@@ -29,7 +29,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
     def muon_filter(self, events):
         muons = events.Muon
         events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
-        clean_muons = (muons.mediumId) & (abs(muons.eta) < 2.4) & (abs(muons.dz) < 0.1)
+        clean_muons = (muons.looseId) & (abs(muons.eta) < 2.4) & (abs(muons.dz) < 0.2)
         muons = muons[clean_muons]
         select_by_muons_low = ak.num(muons, axis=-1) > 2
         events = events[select_by_muons_low]
@@ -47,14 +47,14 @@ class SUEP_processor(SUEP_common.SUEP_base):
         weights,
         mass_min=3.8,
         mass_max=np.inf,
-        dz_min=np.inf,
+        dz_max=np.inf,
         n_pairs=3,
     ):
         # Make sure at least three dimuons pass the mass cut
         dimuons = ak.combinations(muons, 2, fields=["mu1", "mu2"])
         dimuon_masses = (dimuons.mu1 + dimuons.mu2).mass
         dimuon_dz = abs(dimuons.mu1.dz - dimuons.mu2.dz)
-        dimuon_masses = dimuon_masses[dimuon_dz < dz_min]
+        dimuon_masses = dimuon_masses[dimuon_dz < dz_max]
         pass_mass_cut = (ak.sum(dimuon_masses > mass_min, axis=-1) >= n_pairs) & (
             ak.sum(dimuon_masses < mass_max, axis=-1) >= n_pairs
         )
@@ -130,7 +130,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
     #         mu_probes,
     #         weights,
     #         mass_min=3.8,
-    #         dz_min=0.1,
+    #         dz_max=0.2,
     #         n_pairs=3,
     #     )
 
@@ -167,7 +167,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             weights,
             mass_min=3.8,
             mass_max=60.0,
-            dz_min=0.1,
+            dz_max=0.2,
             n_pairs=3,
         )
 
@@ -203,7 +203,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             mu_probes,
             weights,
             mass_min=3.8,
-            dz_min=0.1,
+            dz_max=0.2,
             n_pairs=3,
         )
 
@@ -229,16 +229,28 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weight=ak.flatten(ak.broadcast_arrays(weights_, mu_probes_.pt)[0]),
             )
 
-    def eff_TripleMu_10_5_5_DZ(self, events, mu_probes, weights, output, dataset):
+    def eff_TripleMu_10_5_5_DZ(
+        self, events, muons, mu_probes, weights, output, dataset
+    ):
         if len(weights) == 0:
             return
 
-        output[dataset]["histograms"]["DEN_HLT_TripleMu_10_5_5_DZ"].fill(
-            ak.flatten(mu_probes.pt),
-            weight=ak.flatten(ak.broadcast_arrays(weights, mu_probes.pt)[0]),
+        events_, muons_, mu_probes_, weights_ = self.mass_cut(
+            events,
+            muons,
+            mu_probes,
+            weights,
+            mass_min=0.0,
+            dz_max=0.2,
+            n_pairs=3,
         )
-        mu_probes_ = mu_probes[events.HLT.TripleMu_10_5_5_DZ]
-        weights_ = weights[events.HLT.TripleMu_10_5_5_DZ]
+
+        output[dataset]["histograms"]["DEN_HLT_TripleMu_10_5_5_DZ"].fill(
+            ak.flatten(mu_probes_.pt),
+            weight=ak.flatten(ak.broadcast_arrays(weights_, mu_probes_.pt)[0]),
+        )
+        mu_probes_ = mu_probes_[events_.HLT.TripleMu_10_5_5_DZ]
+        weights_ = weights_[events_.HLT.TripleMu_10_5_5_DZ]
         if len(weights_) > 0:
             output[dataset]["histograms"]["NUM_HLT_TripleMu_10_5_5_DZ"].fill(
                 ak.flatten(mu_probes_.pt),
@@ -331,7 +343,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     events, muons, mu_probes, weights, output, dataset
                 )
             if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                self.eff_TripleMu_10_5_5_DZ(events, mu_probes, weights, output, dataset)
+                self.eff_TripleMu_10_5_5_DZ(
+                    events, muons, mu_probes, weights, output, dataset
+                )
             if "TripleMu_12_10_5" in events.HLT.fields:
                 self.eff_TripleMu_12_10_5(
                     events, muons, mu_probes, weights, output, dataset
@@ -346,7 +360,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     events, muons, mu_probes, weights, output, dataset
                 )
             if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                self.eff_TripleMu_10_5_5_DZ(events, mu_probes, weights, output, dataset)
+                self.eff_TripleMu_10_5_5_DZ(
+                    events, muons, mu_probes, weights, output, dataset
+                )
             if "TripleMu_12_10_5" in events.HLT.fields:
                 self.eff_TripleMu_12_10_5(
                     events, muons, mu_probes, weights, output, dataset
@@ -357,7 +373,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     events, muons, mu_probes, weights, output, dataset
                 )
             if "TripleMu_10_5_5_DZ" in events.HLT.fields:
-                self.eff_TripleMu_10_5_5_DZ(events, mu_probes, weights, output, dataset)
+                self.eff_TripleMu_10_5_5_DZ(
+                    events, muons, mu_probes, weights, output, dataset
+                )
             if "TripleMu_12_10_5" in events.HLT.fields:
                 self.eff_TripleMu_12_10_5(
                     events, muons, mu_probes, weights, output, dataset

@@ -27,13 +27,15 @@ def parse_args():
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=["2016", "2017", "2018", "2022", "2022EE", "2023", "2023BPix"],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--normalize533data",
         action="store_true",
-        help="If set, normalize the data histograms for HLT_TripleMu_5_3_3.",
+        help="If set, normalize the data histograms for HLT_TripleMu_5_3_3 in 2016."
+        "This is to account for the prescale factor that multiplies the denominator for data."
+        "This gives some efficiency bins slightly above 1, thus breaking the calculation.",
     )
     parser.add_argument(
         "--dest",
@@ -465,7 +467,11 @@ if __name__ == "__main__":
             h_data_DEN = uproot.to_writable(
                 plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin]
             ).to_pyroot()  # type: ignore[attr-defined]
-            if args.normalize533data and hlt_path == "HLT_TripleMu_5_3_3":
+            if (
+                args.normalize533data
+                and hlt_path == "HLT_TripleMu_5_3_3"
+                and year == "2016"
+            ):
                 ratio = np.divide(
                     plots[f"Data_{year}"][f"NUM_{hlt_path}"][::rebin].values(),
                     plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin].values(),
@@ -476,7 +482,9 @@ if __name__ == "__main__":
                     != 0,
                 )
                 h_data_DEN = uproot.to_writable(
-                    plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin] * max(ratio)
+                    plots[f"Data_{year}"][f"DEN_{hlt_path}"][::rebin]
+                    * max(ratio)
+                    * 1.000001  # needed to avoid rounding errors
                 ).to_pyroot()  # type: ignore[attr-defined]
             h_mc_NUM.Sumw2()
             h_mc_NUM.Rebuild()

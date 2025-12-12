@@ -1,6 +1,5 @@
 import argparse
 import logging
-import re
 
 import plot_utils
 from rich.progress import track  # type: ignore[import]
@@ -31,47 +30,6 @@ def parse_args():
         help="Print the table in LaTeX format",
     )
     return parser.parse_args()
-
-
-def merge_runs(plots, run):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Add signal processes
-    signal_processes = list(
-        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
-    )
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-        # Add signal processes
-        signal_processes = list(
-            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
-        )
-    names.extend(signal_processes)
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots.keys():
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 def print_table(plots, region, year, samples, tablefmt):
@@ -213,10 +171,10 @@ if "__main__" == __name__:
         dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2")
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3")
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
     for year in track(args.year, description="Making tables"):

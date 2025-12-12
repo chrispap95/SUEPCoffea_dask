@@ -37,8 +37,18 @@ def parse_args():
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=[
+            "2016",
+            "2017",
+            "2018",
+            "Run2",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+            "Run3",
+        ],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -94,60 +104,6 @@ def get_poisson_errors(N, alpha=0.6827):
     upper = stats.gamma.ppf((1 + alpha) / 2, N + 1) - N
     lower = N - stats.gamma.ppf((1 - alpha) / 2, N)
     return np.nan_to_num(lower), np.nan_to_num(upper)
-
-
-def calculate_QCD_k_factor(plots, year, region="VR_loose", use_extrapolation=False):
-    mc_processes = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-    ]
-
-    non_QCD_bkg = plots["DY_" + year][region].copy().reset()
-    for process in mc_processes:
-        non_QCD_bkg += plots[f"{process}_{year}"][region]
-    k_factor = (
-        plots["Data_" + year][region].sum().value - non_QCD_bkg.sum().value
-    ) / plots["QCD_Pt_MuEnrichedPt5_" + year][
-        region + "_extrapolation" if use_extrapolation else region
-    ].sum().value
-    return k_factor
-
-
-def merge_runs(plots, run, args):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-    if args.data:
-        names.append("Data")
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
@@ -427,7 +383,9 @@ if "__main__" == __name__:
         print("Calculate and apply k-factor to QCD...", flush=True)
         k_factor = {}
         for year in track(years_to_load):
-            k_factor[year] = calculate_QCD_k_factor(plots, year, region="VR_loose")
+            k_factor[year] = plot_utils.calculate_k_factor(
+                plots, year, region="VR_loose", process="QCD_Pt_MuEnrichedPt5"
+            )
             for plot in plots["QCD_Pt_MuEnrichedPt5_" + year]:
                 plots["QCD_Pt_MuEnrichedPt5_" + year][plot] = (
                     k_factor[year] * plots["QCD_Pt_MuEnrichedPt5_" + year][plot]
@@ -448,10 +406,10 @@ if "__main__" == __name__:
         qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
     for year in track(args.year):

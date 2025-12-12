@@ -9,15 +9,15 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis.",
     )
     parser.add_argument(
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=["2016", "2017", "2018", "2022", "2022EE", "2023", "2023BPix"],
+        help="Year of the data. Default is run all years. Can be a single year or multiple years.",
     )
     def_out_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff"
     parser.add_argument(

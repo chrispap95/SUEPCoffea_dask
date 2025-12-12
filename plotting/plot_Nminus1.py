@@ -1,7 +1,6 @@
 import argparse
 import os
 import pathlib
-import re
 
 import cms_styles
 import matplotlib as mpl  # type: ignore[import]
@@ -215,72 +214,6 @@ logx_plots = [
     "muon_iso",
     "muon_neutral_iso",
 ]
-
-
-def calculate_k_factor(plots, year, region="CR_cb", process="QCD_Pt_MuEnrichedPt5"):
-    mc_processes = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-
-    tot_bkg = plots["DY_" + year][region].copy().reset()
-    for mc_proc in mc_processes:
-        if process == mc_proc:
-            continue
-        tot_bkg += plots[f"{mc_proc}_{year}"][region]
-    k_factor = (
-        plots["Data_" + year][region].sum().value - tot_bkg.sum().value
-    ) / plots[f"{process}_{year}"][region].sum().value
-    return k_factor
-
-
-def merge_runs(plots, run, args):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Add signal processes
-    signal_processes = list(
-        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
-    )
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-        # Add signal processes
-        signal_processes = list(
-            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
-        )
-    if args.data:
-        names.append("Data")
-    names.extend(signal_processes)
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots.keys():
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
@@ -642,14 +575,17 @@ if "__main__" == __name__:
         k_factor_qcd = {}
         k_factor_dy = {}
         for year in track(years_to_load, description="Calculating k-factors"):
-            k_factor_qcd[year] = calculate_k_factor(
-                plots, year, region="CR_cb_Nminus1_muon_dxy"
+            k_factor_qcd[year] = plot_utils.calculate_k_factor(
+                plots,
+                year,
+                region="CR_cb_Nminus1_muon_dxy",
+                process="QCD_Pt_MuEnrichedPt5",
             )
             for plot in plots[f"QCD_Pt_MuEnrichedPt5_{year}"]:
                 plots[f"QCD_Pt_MuEnrichedPt5_{year}"][plot] = (
                     k_factor_qcd[year] * plots[f"QCD_Pt_MuEnrichedPt5_{year}"][plot]
                 )
-            k_factor_dy[year] = calculate_k_factor(
+            k_factor_dy[year] = plot_utils.calculate_k_factor(
                 plots, year, region="CR_prompt_Nminus1_prompt_muon_dxy", process="DY"
             )
             for plot in plots[f"DY_{year}"]:

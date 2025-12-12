@@ -1314,7 +1314,7 @@ def rename_uncorrelated_systematics(name, year):
     """
     Uncorrelated systematics are split by year.
     """
-    uncorr_systematics = ["L1PreFire", "MuonSF", "TrkEff"]
+    uncorr_systematics = ["L1PreFire", "MuonSF", "TrkEff", "TrigSF"]
     for syst in uncorr_systematics:
         if syst in name:
             return name.replace(
@@ -1455,3 +1455,79 @@ def make_lhepdf_systematic(plots: dict, cleanup: bool = False) -> dict:
                     del plots[sample][f"{region}_LHEPdf{i}"]
 
     return plots
+
+
+def calculate_k_factor(plots, year, region, process):
+    mc_processes = [
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
+    ]
+
+    tot_bkg = plots[f"{process}_{year}"][region].copy().reset()
+    for mc_proc in mc_processes:
+        if process == mc_proc:
+            continue
+        tot_bkg += plots[f"{mc_proc}_{year}"][region]
+    k_factor = (
+        plots["Data_" + year][region].sum().value - tot_bkg.sum().value
+    ) / plots[f"{process}_{year}"][region].sum().value
+    return k_factor
+
+
+def merge_runs(plots, run, args, slc=slice(None)):
+    names = [
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
+    ]
+    # Add signal processes
+    signal_processes = list(
+        {
+            re.sub(r"_?\d{4}[A-Za-z]*$", "", p)  # Remove year suffix
+            for p in plots.keys()
+            if re.search("GluGluToSUEP.*13TeV", p)
+        }
+    )
+    # Remove 2016APV for now
+    # years = ["2016APV", "2016", "2017", "2018"]
+    years = ["2016", "2017", "2018"]
+    if run == "Run3":
+        years = ["2022", "2022EE", "2023", "2023BPix"]
+        # Add signal processes
+        signal_processes = list(
+            {
+                re.sub(r"_?\d{4}[A-Za-z]*$", "", p)
+                for p in plots.keys()
+                if re.search("GluGluToSUEP.*13p6TeV", p)
+            }
+        )
+    if args.data:
+        names.append("Data")
+    names.extend(signal_processes)
+    run_plots = {}
+    for name in names:
+        run_plots[f"{name}_{run}"] = {}
+        for year in years:
+            if f"{name}_{year}" not in plots.keys():
+                continue
+            for plot in plots[f"{name}_{year}"]:
+                if plot not in run_plots[f"{name}_{run}"].keys():
+                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][plot][
+                        slc
+                    ].copy()
+                else:
+                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot][
+                        slc
+                    ]
+    return run_plots

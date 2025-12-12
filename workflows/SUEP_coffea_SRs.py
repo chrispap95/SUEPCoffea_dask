@@ -433,26 +433,11 @@ class SUEP_processor(SUEP_common.SUEP_base):
             muons_SR_high_temp_loose,
         ) = self.apply_SR_high_temp(events_)
 
-        if len(events_SR_high_temp_tight) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
-                muons_SR_high_temp_tight
-            )
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_SR_high_temp_tight = events_SR_high_temp_tight[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_SR_high_temp_tight = muons_SR_high_temp_tight[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        events_SR_high_temp_tight, muons_SR_high_temp_tight = self.remove_resonaces(  # type: ignore[assignment]
+            events_SR_high_temp_tight, muons_SR_high_temp_tight, veto_mode=False
+        )
 
         if len(events_SR_high_temp_tight) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
-                muons_SR_high_temp_tight
-            )
             weights_SR_high_temp_tight = self.get_weights(
                 events_SR_high_temp_tight, do_vars=True, apply_lumi_factors=True
             )
@@ -517,21 +502,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                             * lhepdf_weights[:, replica],
                         )
 
-        if len(events_SR_high_temp_loose) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
-                muons_SR_high_temp_loose
-            )
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_SR_high_temp_loose = events_SR_high_temp_loose[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_SR_high_temp_loose = muons_SR_high_temp_loose[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        events_SR_high_temp_loose, muons_SR_high_temp_loose = self.remove_resonaces(  # type: ignore[assignment]
+            events_SR_high_temp_loose, muons_SR_high_temp_loose, veto_mode=False
+        )
 
         if len(events_SR_high_temp_loose) > 0:
             weights_SR_high_temp_loose = self.get_weights(
@@ -644,19 +617,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
             muons_SR_low_temp_loose_trk_kill,
         ) = self.apply_SR_low_temp(events_)
 
-        if len(events_SR_low_temp_tight) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_SR_low_temp_tight)
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_SR_low_temp_tight = events_SR_low_temp_tight[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_SR_low_temp_tight = muons_SR_low_temp_tight[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        events_SR_low_temp_tight, muons_SR_low_temp_tight = self.remove_resonaces(  # type: ignore[assignment]
+            events_SR_low_temp_tight, muons_SR_low_temp_tight, veto_mode=False
+        )
 
         if len(events_SR_low_temp_tight) > 0:
             weights_SR_low_temp_tight = self.get_weights(
@@ -725,21 +688,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Systematic for track killing
         # Needs to be handled manually
-        if len(events_SR_low_temp_tight_trk_kill) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
-                muons_SR_low_temp_tight_trk_kill
+        events_SR_low_temp_tight_trk_kill, muons_SR_low_temp_tight_trk_kill = (  # type: ignore[assignment]
+            self.remove_resonaces(
+                events_SR_low_temp_tight_trk_kill,
+                muons_SR_low_temp_tight_trk_kill,
+                veto_mode=False,
             )
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_SR_low_temp_tight_trk_kill = events_SR_low_temp_tight_trk_kill[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_SR_low_temp_tight_trk_kill = muons_SR_low_temp_tight_trk_kill[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        )
 
         if len(events_SR_low_temp_tight_trk_kill) > 0 and self.do_syst:
             weights_SR_low_temp_tight_trk_kill = self.get_weights(
@@ -770,19 +725,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weight=weights_SR_low_temp_tight_trk_kill.weight(),
             )
 
-        if len(events_SR_low_temp_loose) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_SR_low_temp_loose)
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_SR_low_temp_loose = events_SR_low_temp_loose[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_SR_low_temp_loose = muons_SR_low_temp_loose[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        events_SR_low_temp_loose, muons_SR_low_temp_loose = self.remove_resonaces(  # type: ignore[assignment]
+            events_SR_low_temp_loose, muons_SR_low_temp_loose, veto_mode=False
+        )
 
         if len(events_SR_low_temp_loose) > 0:
             weights_SR_low_temp_loose = self.get_weights(
@@ -851,21 +796,13 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         # Systematic for track killing
         # Needs to be handled manually
-        if len(events_SR_low_temp_loose_trk_kill) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(
-                muons_SR_low_temp_loose_trk_kill
+        events_SR_low_temp_loose_trk_kill, muons_SR_low_temp_loose_trk_kill = (  # type: ignore[assignment]
+            self.remove_resonaces(
+                events_SR_low_temp_loose_trk_kill,
+                muons_SR_low_temp_loose_trk_kill,
+                veto_mode=False,
             )
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_SR_low_temp_loose_trk_kill = events_SR_low_temp_loose_trk_kill[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_SR_low_temp_loose_trk_kill = muons_SR_low_temp_loose_trk_kill[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        )
 
         if len(events_SR_low_temp_loose_trk_kill) > 0 and self.do_syst:
             weights_SR_low_temp_loose_trk_kill = self.get_weights(
@@ -913,7 +850,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.trigger_selection(events)
-        trigger_plateau = self.apply_trigger_plateau(events)
+        trigger_plateau = self.apply_trigger_plateau(events, pt3_threshold=4)
         events = events[trigger_plateau]
 
         # Apply HT selection for WJets stiching

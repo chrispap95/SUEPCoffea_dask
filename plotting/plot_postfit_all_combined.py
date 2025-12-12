@@ -48,22 +48,32 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
         "--input",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jun2025/CMSSW_14_1_8/src/postfit_plots_Run2.root",
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src/postfit_plots_Run2.root",
         help="Path to the postfit plots root file. Default is "
-        "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jun2025/CMSSW_14_1_8/src/postfit_plots_Run2.root",
+        "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src/postfit_plots_Run2.root",
     )
     parser.add_argument(
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=[
+            "2016",
+            "2017",
+            "2018",
+            "Run2",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+            "Run3",
+        ],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -151,8 +161,6 @@ def merge_runs(plots, run, args):
     # years = ["2016APV", "2016", "2017", "2018"]
     years = ["2016", "2017", "2018"]
     if run == "Run3":
-        names.remove("TTV")
-        names.remove("ST")
         years = ["2022", "2022EE", "2023", "2023BPix"]
     if args.data:
         names.append("data_obs")

@@ -449,7 +449,7 @@ class SUEP_base(processor.ProcessorABC):
 
         return weights
 
-    def find_dimuon_pairs(self, muons):
+    def find_dimuon_pairs(self, muons, return_indices: bool = False):
         """
         Find recursively all possible pairs of OS muons, starting from the closest in dR.
         Implements a greedy matching algorithm to find the pairs.
@@ -498,20 +498,96 @@ class SUEP_base(processor.ProcessorABC):
         if found_0:
             found_pairs_0 = ak.concatenate(found_0, axis=-1)
             found_pairs_1 = ak.concatenate(found_1, axis=-1)
+            found_pairs_idx_0 = ak.concatenate(idx_0, axis=-1)
+            found_pairs_idx_1 = ak.concatenate(idx_1, axis=-1)
         else:
             # Handle case with no OS pairs anywhere
             # Type preservation
             found_pairs_0 = muons[[]]
             found_pairs_1 = muons[[]]
+            found_pairs_idx_0 = muons[[]]
+            found_pairs_idx_1 = muons[[]]
 
         # Ensure the same number of events as input (important!)
         found_pairs_0 = ak.fill_none(found_pairs_0, [], axis=0)
         found_pairs_1 = ak.fill_none(found_pairs_1, [], axis=0)
+        found_pairs_idx_0 = ak.fill_none(found_pairs_idx_0, [], axis=0)
+        found_pairs_idx_1 = ak.fill_none(found_pairs_idx_1, [], axis=0)
 
         found_pairs_0 = found_pairs_0[~ak.is_none(found_pairs_0, axis=-1)]
         found_pairs_1 = found_pairs_1[~ak.is_none(found_pairs_1, axis=-1)]
+        found_pairs_idx_0 = found_pairs_idx_0[~ak.is_none(found_pairs_idx_0, axis=-1)]
+        found_pairs_idx_1 = found_pairs_idx_1[~ak.is_none(found_pairs_idx_1, axis=-1)]
+
+        if return_indices:
+            return found_pairs_0, found_pairs_1, found_pairs_idx_0, found_pairs_idx_1
 
         return found_pairs_0, found_pairs_1
+
+    def remove_resonaces(
+        self,
+        events,
+        muons,
+        dr_matching_threshold: float = 0.3,
+        jpsi_window: tuple = (2.7, 3.5),
+        upsilon_window: tuple = (8.8, 11.2),
+        veto_mode: bool = True,
+        return_mask: bool = False,
+    ):
+        """
+        Remove events with dimuon resonances (J/psi and Upsilon) by forming all
+        possible pairs of OS muons and checking their invariant mass.
+        If veto_mode is True, events with resonances are removed.
+        If veto_mode is False, only muons from resonances are removed.
+        """
+
+        if len(events) == 0:
+            return events, muons
+
+        muon_pairs_0, muon_pairs_1, muon_pairs_idx_0, muon_pairs_idx_1 = (  # type: ignore[assignment]
+            self.find_dimuon_pairs(muons, return_indices=True)
+        )
+        dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < dr_matching_threshold
+        dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+        dimuon_mass_mask = (
+            (dimuon_mass > jpsi_window[0]) & (dimuon_mass < jpsi_window[1])
+        ) | ((dimuon_mass > upsilon_window[0]) & (dimuon_mass < upsilon_window[1]))
+
+        if veto_mode:
+            events = events[~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)]
+            muons = muons[~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)]
+            if return_mask:
+                return events, muons, ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
+            return events, muons
+
+        if not len(muon_pairs_0):
+            if return_mask:
+                return events, muons, True
+            return events, muons
+
+        # Remove only muons from resonances
+        res_mu_idx_0 = muon_pairs_idx_0[dimuon_dr_mask & dimuon_mass_mask]
+        res_mu_idx_1 = muon_pairs_idx_1[dimuon_dr_mask & dimuon_mass_mask]
+        res_mu_idx = ak.concatenate([res_mu_idx_0, res_mu_idx_1], axis=-1)
+
+        pairs = ak.cartesian(
+            {"idx": ak.local_index(muons), "rm": res_mu_idx},
+            axis=1,
+            nested=True,  # make a sublist over "rm" for each muon
+        )
+
+        same = pairs["idx"] == pairs["rm"]  # True if this (muon, remove) pair matches
+        remove_mask = ak.any(
+            same, axis=-1
+        )  # per muon: True if its index is in res_mu_idx
+        keep_mask = ~remove_mask  # invert to keep the others
+
+        muons = muons[keep_mask]
+
+        if return_mask:
+            return events, muons, keep_mask
+
+        return events, muons
 
     # def find_Z_candidates(self, events, muons):
     #     """

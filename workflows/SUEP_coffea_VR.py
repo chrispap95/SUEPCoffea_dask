@@ -54,24 +54,56 @@ class SUEP_processor(SUEP_common.SUEP_base):
         events, muons = events[ak.num(muons) > 2], muons[ak.num(muons) > 2]
 
         # Veto events with signal dimuons
-        muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons)
-        dimuon_dr = muon_pairs_0.delta_r(muon_pairs_1)
-        dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-        dimuon_dr_mask = dimuon_dr < 0.3
-        dimuon_mass_mask = (
-            ((dimuon_mass > 0.4) & (dimuon_mass < 0.8))
-            | ((dimuon_mass > 2.7) & (dimuon_mass < 3.5))
-            | ((dimuon_mass > 8.8) & (dimuon_mass < 11.2))
+        muon_pairs_0, muon_pairs_1, muon_pairs_idx_0, muon_pairs_idx_1 = (  # type: ignore[assignment]
+            self.find_dimuon_pairs(muons, return_indices=True)
         )
-        alt_sig_mask = (
-            (dimuon_dr > 0.3)
-            & (dimuon_dr < 1.5)
-            & ((dimuon_mass > 1) & (dimuon_mass < 8.5))
-        )
-        events = events[
-            ~ak.any(dimuon_dr_mask & dimuon_mass_mask & alt_sig_mask, axis=1)
-        ]
-        muons = muons[~ak.any(dimuon_dr_mask & dimuon_mass_mask & alt_sig_mask, axis=1)]
+        if len(muon_pairs_0):
+            dimuon_dr = muon_pairs_0.delta_r(muon_pairs_1)
+            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
+            dimuon_dr_mask = dimuon_dr < 0.3
+            dimuon_mass_mask = (
+                # Exclude signal resonances, J/psi, Upsilon
+                ((dimuon_mass > 0.4) & (dimuon_mass < 0.8))
+                | ((dimuon_mass > 2.7) & (dimuon_mass < 3.5))
+                | ((dimuon_mass > 8.8) & (dimuon_mass < 11.2))
+            )
+            alt_sig_mask = (
+                # Additional signal rejection
+                (dimuon_dr > 0.3)
+                & (dimuon_dr < 1.5)
+                & ((dimuon_mass > 1) & (dimuon_mass < 8.5))
+            )
+
+            # # Veto events
+            # events = events[
+            #     ~ak.any(dimuon_dr_mask & dimuon_mass_mask & alt_sig_mask, axis=1)
+            # ]
+            # muons = muons[~ak.any(dimuon_dr_mask & dimuon_mass_mask & alt_sig_mask, axis=1)]
+
+            # Remove only muons from resonances
+            res_mu_idx_0 = muon_pairs_idx_0[
+                (dimuon_dr_mask & dimuon_mass_mask) | alt_sig_mask
+            ]
+            res_mu_idx_1 = muon_pairs_idx_1[
+                (dimuon_dr_mask & dimuon_mass_mask) | alt_sig_mask
+            ]
+            res_mu_idx = ak.concatenate([res_mu_idx_0, res_mu_idx_1], axis=-1)
+
+            pairs = ak.cartesian(
+                {"idx": ak.local_index(muons), "rm": res_mu_idx},
+                axis=1,
+                nested=True,  # make a sublist over "rm" for each muon
+            )
+
+            same = (
+                pairs["idx"] == pairs["rm"]
+            )  # True if this (muon, remove) pair matches
+            remove_mask = ak.any(
+                same, axis=-1
+            )  # per muon: True if its index is in res_mu_idx
+            keep_mask = ~remove_mask  # invert to keep the others
+
+            muons = muons[keep_mask]
 
         # Form loose VR & make sure there is at least one muon in the event after the cuts
         muons_VR_loose = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.2)]
@@ -107,63 +139,63 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         return events_VR_tight, events_VR_loose, muons_VR_tight, muons_VR_loose
 
-    # def apply_VR(self, events):
-    #     """
-    #     Apply the VR selection to the events.
-    #     """
-    #     muons = events.Muon
-    #     events, muons = events[ak.num(muons) > 1], muons[ak.num(muons) > 1]
+    def apply_VR_old(self, events):
+        """
+        Apply the VR selection to the events.
+        """
+        muons = events.Muon
+        events, muons = events[ak.num(muons) > 1], muons[ak.num(muons) > 1]
 
-    #     if self.do_rochester:
-    #         muons = muon_sf_utils.muon_scale_factors(
-    #             events, muons, self.era, self.isMC, var="nominal"
-    #         )
+        if self.do_rochester:
+            muons = muon_sf_utils.muon_scale_factors(
+                events, muons, self.era, self.isMC, var="nominal"
+            )
 
-    #     # Apply basic muon cuts
-    #     clean_muons = (
-    #         (muons.mediumId)
-    #         & (muons.pt > 5)
-    #         & (abs(muons.eta) < 2.4)
-    #         & (abs(muons.dz) < 0.2)
-    #     )
-    #     muons = muons[clean_muons]
+        # Apply basic muon cuts
+        clean_muons = (
+            (muons.mediumId)
+            & (muons.pt > 5)
+            & (abs(muons.eta) < 2.4)
+            & (abs(muons.dz) < 0.2)
+        )
+        muons = muons[clean_muons]
 
-    #     # Make sure we are the trigger plateau
-    #     events, muons = events[ak.num(muons) > 2], muons[ak.num(muons) > 2]
+        # Make sure we are the trigger plateau
+        events, muons = events[ak.num(muons) > 2], muons[ak.num(muons) > 2]
 
-    #     # Form loose VR & make sure there is at least one muon in the event after the cuts
-    #     muons_VR_loose = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.2)]
-    #     events_VR_loose = events[ak.num(muons_VR_loose, axis=-1) > 0]
-    #     muons_VR_loose = muons_VR_loose[ak.num(muons_VR_loose, axis=-1) > 0]
+        # Form loose VR & make sure there is at least one muon in the event after the cuts
+        muons_VR_loose = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.2)]
+        events_VR_loose = events[ak.num(muons_VR_loose, axis=-1) > 0]
+        muons_VR_loose = muons_VR_loose[ak.num(muons_VR_loose, axis=-1) > 0]
 
-    #     # Cut on the max OS dimuon mass
-    #     muons1 = muons_VR_loose[muons_VR_loose.charge == 1]
-    #     muons2 = muons_VR_loose[muons_VR_loose.charge == -1]
-    #     enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
-    #     muons1 = muons1[enough_muons]
-    #     muons2 = muons2[enough_muons]
-    #     muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
-    #     os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
-    #     events_VR_loose = events_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
-    #     muons_VR_loose = muons_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        # Cut on the max OS dimuon mass
+        muons1 = muons_VR_loose[muons_VR_loose.charge == 1]
+        muons2 = muons_VR_loose[muons_VR_loose.charge == -1]
+        enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+        muons1 = muons1[enough_muons]
+        muons2 = muons2[enough_muons]
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
+        events_VR_loose = events_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        muons_VR_loose = muons_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
 
-    #     # Form tight VR & make sure there is at least one muon in the event after the cuts
-    #     muons_VR_tight = muons[(muons.ip3d > 0.02) & (muons.miniPFRelIso_all > 0.4)]
-    #     events_VR_tight = events[ak.num(muons_VR_tight, axis=-1) > 0]
-    #     muons_VR_tight = muons_VR_tight[ak.num(muons_VR_tight, axis=-1) > 0]
+        # Form tight VR & make sure there is at least one muon in the event after the cuts
+        muons_VR_tight = muons[(muons.ip3d > 0.02) & (muons.miniPFRelIso_all > 0.4)]
+        events_VR_tight = events[ak.num(muons_VR_tight, axis=-1) > 0]
+        muons_VR_tight = muons_VR_tight[ak.num(muons_VR_tight, axis=-1) > 0]
 
-    #     # Cut on the max OS dimuon mass
-    #     muons1 = muons_VR_tight[muons_VR_tight.charge == 1]
-    #     muons2 = muons_VR_tight[muons_VR_tight.charge == -1]
-    #     enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
-    #     muons1 = muons1[enough_muons]
-    #     muons2 = muons2[enough_muons]
-    #     muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
-    #     os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
-    #     events_VR_tight = events_VR_tight[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
-    #     muons_VR_tight = muons_VR_tight[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        # Cut on the max OS dimuon mass
+        muons1 = muons_VR_tight[muons_VR_tight.charge == 1]
+        muons2 = muons_VR_tight[muons_VR_tight.charge == -1]
+        enough_muons = (ak.num(muons1) > 0) & (ak.num(muons2) > 0)
+        muons1 = muons1[enough_muons]
+        muons2 = muons2[enough_muons]
+        muon_pairs = ak.unzip(ak.cartesian([muons1, muons2]))
+        os_dimuons = muon_pairs[0] + muon_pairs[1]  # type: ignore[index]
+        events_VR_tight = events_VR_tight[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
+        muons_VR_tight = muons_VR_tight[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
 
-    #     return events_VR_tight, events_VR_loose, muons_VR_tight, muons_VR_loose
+        return events_VR_tight, events_VR_loose, muons_VR_tight, muons_VR_loose
 
     def fill_histograms(self, events, output):
         dataset = events.metadata["dataset"]
@@ -303,7 +335,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.trigger_selection(events)
-        trigger_plateau = self.apply_trigger_plateau(events)
+        trigger_plateau = self.apply_trigger_plateau(events, pt3_threshold=4)
         events = events[trigger_plateau]
 
         # Apply HT selection for WJets stiching

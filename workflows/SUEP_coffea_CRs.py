@@ -174,25 +174,17 @@ class SUEP_processor(SUEP_common.SUEP_base):
             qcd_muons_CR_prompt,
         ) = self.apply_CR_prompt(events_)
 
-        if len(events_CR_prompt) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_CR_prompt)
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_CR_prompt = events_CR_prompt[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_CR_prompt = muons_CR_prompt[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            prompt_muons_CR_prompt = prompt_muons_CR_prompt[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            qcd_muons_CR_prompt = qcd_muons_CR_prompt[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        events_CR_prompt, muons_CR_prompt = self.remove_resonaces(  # type: ignore[assignment]
+            events_CR_prompt, muons_CR_prompt, veto_mode=False
+        )
+
+        events_CR_prompt, prompt_muons_CR_prompt = self.remove_resonaces(  # type: ignore[assignment]
+            events_CR_prompt, prompt_muons_CR_prompt, veto_mode=False
+        )
+
+        events_CR_prompt, qcd_muons_CR_prompt = self.remove_resonaces(  # type: ignore[assignment]
+            events_CR_prompt, qcd_muons_CR_prompt, veto_mode=False
+        )
 
         if len(events_CR_prompt) > 0:
             weights_CR_prompt = self.get_weights(
@@ -285,19 +277,9 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
 
-        if len(events_CR_cb) > 0:
-            muon_pairs_0, muon_pairs_1 = self.find_dimuon_pairs(muons_CR_cb)
-            dimuon_dr_mask = muon_pairs_0.delta_r(muon_pairs_1) < 0.3
-            dimuon_mass = (muon_pairs_0 + muon_pairs_1).mass
-            dimuon_mass_mask = ((dimuon_mass > 2.7) & (dimuon_mass < 3.5)) | (
-                (dimuon_mass > 8.8) & (dimuon_mass < 11.2)
-            )
-            events_CR_cb = events_CR_cb[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
-            muons_CR_cb = muons_CR_cb[
-                ~ak.any(dimuon_dr_mask & dimuon_mass_mask, axis=1)
-            ]
+        events_CR_cb, muons_CR_cb = self.remove_resonaces(  # type: ignore[assignment]
+            events_CR_cb, muons_CR_cb, veto_mode=False
+        )
 
         if len(events_CR_cb) > 0:
             weights_CR_cb = self.get_weights(
@@ -363,7 +345,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 
         events = self.trigger_selection(events)
-        trigger_plateau = self.apply_trigger_plateau(events)
+        trigger_plateau = self.apply_trigger_plateau(events, pt3_threshold=4)
         events = events[trigger_plateau]
 
         # Apply HT selection for WJets stiching

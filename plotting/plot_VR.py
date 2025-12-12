@@ -50,8 +50,18 @@ def parse_args():
     parser.add_argument(
         "--year",
         type=str,
-        default="2018",
-        help="Year of the data. Default is 2018.",
+        default=[
+            "2016",
+            "2017",
+            "2018",
+            "Run2",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+            "Run3",
+        ],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -92,24 +102,6 @@ region_labels = {
     "VR_tight": r"$VR_{tight}$",
     "VR_tight_extrapolation": r"$VR_{tight}$ + extrapolation",
 }
-
-
-def calculate_QCD_k_factor(args, plots, region="VR_loose"):
-    mc_processes = [
-        "Higgs",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-    ]
-    non_QCD_bkg = plots["DY_" + args.year][region].copy().reset()
-    for process in mc_processes:
-        non_QCD_bkg += plots[f"{process}_{args.year}"][region]
-    k_factor = (
-        plots["DoubleMuon_" + args.year][region].sum().value - non_QCD_bkg.sum().value
-    ) / plots["QCD_Pt_MuEnrichedPt5_" + args.year][region].sum().value
-    return k_factor
 
 
 def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
@@ -337,7 +329,9 @@ if "__main__" == __name__:
     # Apply k-factor to QCD
     if args.data and args.normalize:
         print("Calculate and apply k-factor to QCD...", end=" ", flush=True)
-        k_factor = calculate_QCD_k_factor(args, plots)
+        k_factor = plot_utils.calculate_k_factor(
+            plots, args.year, region="VR_loose", process="QCD_Pt_MuEnrichedPt5"
+        )
         for plot in plots["QCD_Pt_MuEnrichedPt5_" + args.year]:
             plots["QCD_Pt_MuEnrichedPt5_" + args.year][plot] = (
                 k_factor * plots["QCD_Pt_MuEnrichedPt5_" + args.year][plot]

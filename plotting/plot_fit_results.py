@@ -28,8 +28,18 @@ def parse_args():
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=[
+            "2016",
+            "2017",
+            "2018",
+            "Run2",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+            "Run3",
+        ],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -51,39 +61,6 @@ def parse_args():
         help="If set, will load the validation region plots as well.",
     )
     return parser.parse_args()
-
-
-def merge_runs(plots, run):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        names.remove("TTV")
-        names.remove("ST_NLO")
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots.keys():
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 if "__main__" == __name__:
@@ -165,10 +142,10 @@ if "__main__" == __name__:
         )
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2")
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3")
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
     # Plot regions

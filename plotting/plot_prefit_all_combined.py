@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 import pathlib
-import re
 
 import cms_styles
 import hist
@@ -48,15 +47,25 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=[
+            "2016",
+            "2017",
+            "2018",
+            "Run2",
+            "2022",
+            "2022EE",
+            "2023",
+            "2023BPix",
+            "Run3",
+        ],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -94,80 +103,6 @@ def parse_args():
         f"{pathlib.Path(__file__).parent / 'regions_plots'}",
     )
     return parser.parse_args()
-
-
-def calculate_k_factor(plots, year, region="CR_cb", process="QCD_Pt_MuEnrichedPt5"):
-    mc_processes = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-
-    tot_bkg = plots["DY_" + year][region].copy().reset()
-    for mc_proc in mc_processes:
-        if process == mc_proc:
-            continue
-        tot_bkg += plots[f"{mc_proc}_{year}"][region]
-    k_factor = (
-        plots["Data_" + year][region].sum().value - tot_bkg.sum().value
-    ) / plots[f"{process}_{year}"][region].sum().value
-    return k_factor
-
-
-def merge_runs(plots, run, args):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Add signal processes
-    signal_processes = list(
-        {
-            "_".join(p.split("_")[:-1])
-            for p in plots.keys()
-            if re.search("GluGluToSUEP.*13TeV", p)
-        }
-    )
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-        # Add signal processes
-        signal_processes = list(
-            {
-                "_".join(p.split("_")[:-1])
-                for p in plots.keys()
-                if re.search("GluGluToSUEP.*13p6TeV", p)
-            }
-        )
-    if args.data:
-        names.append("Data")
-    names.extend(signal_processes)
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots:
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, args):
@@ -496,7 +431,9 @@ if "__main__" == __name__:
     if args.data and args.normalize:
         k_factor = {}
         for year in track(years_to_load, description="Calculating k-factors"):
-            k_factor[year] = calculate_k_factor(plots, year, region="CR_cb")
+            k_factor[year] = plot_utils.calculate_k_factor(
+                plots, year, region="CR_cb", process="QCD_Pt_MuEnrichedPt5"
+            )
             for plot in plots["QCD_Pt_MuEnrichedPt5_" + year]:
                 plots["QCD_Pt_MuEnrichedPt5_" + year][plot] = (
                     k_factor[year] * plots["QCD_Pt_MuEnrichedPt5_" + year][plot]
@@ -561,10 +498,10 @@ if "__main__" == __name__:
         plots[sample]["SUEP"] = h_comb.copy()
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
     # Plot regions

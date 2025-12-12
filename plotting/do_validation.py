@@ -11,7 +11,6 @@ import argparse
 import logging
 import os
 import pathlib
-import re
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
@@ -56,49 +55,6 @@ def parse_args():
         f"{pathlib.Path(__file__).parent / 'validation_plots'}",
     )
     return parser.parse_args()
-
-
-def merge_runs(plots, run, data=True):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Add signal processes
-    signal_processes = list(
-        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
-    )
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-        # Add signal processes
-        signal_processes = list(
-            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
-        )
-    if data:
-        names.append("Data")
-    names.extend(signal_processes)
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots.keys():
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 if "__main__" == __name__:
@@ -182,7 +138,7 @@ if "__main__" == __name__:
         plt.close()
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2", data=True)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
 
         # QCD extrapolation
@@ -229,7 +185,7 @@ if "__main__" == __name__:
         plt.close()
 
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3", data=True)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
         # QCD extrapolation

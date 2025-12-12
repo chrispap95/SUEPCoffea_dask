@@ -12,7 +12,8 @@ hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
 # Definitions
-input_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Jun2025/CMSSW_14_1_8/src"
+input_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src"
+tag = "full_analysis_Dec2025"
 
 mass_vals = np.linspace(100, 1050, 1000)
 masses = np.array([125, 200, 300, 400, 500, 600, 800, 1000])
@@ -201,8 +202,8 @@ def plot_limit(input_path, scan_point, mass_vals, masses):
 
 if __name__ == "__main__":
     # Create output directory if it doesn't exist
-    if not os.path.exists("limit_plots"):
-        os.makedirs("limit_plots")
+    if not os.path.exists(f"limit_plots/{tag}"):
+        os.makedirs(f"limit_plots/{tag}")
 
     xs_spl = log_interp1d(masses, cross_sections)
 
@@ -274,7 +275,7 @@ if __name__ == "__main__":
         )
         plt.tight_layout()
         plt.savefig(
-            f"limit_plots/limits_mPhi{m_phi.replace('.', 'p')}_T{T.replace('.', 'p')}.pdf",
+            f"limit_plots/{tag}/limits_mPhi{m_phi.replace('.', 'p')}_T{T.replace('.', 'p')}.pdf",
             bbox_inches="tight",
         )
         plt.close()

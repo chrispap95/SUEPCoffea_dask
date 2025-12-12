@@ -25,7 +25,7 @@ def parse_args():
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
+        default=["2016", "2017", "2018", "2022", "2022EE", "2023", "2023BPix"],
         help="Year of the data. Default is 2018. Can be a single year or multiple years.",
     )
     parser.add_argument(
@@ -123,9 +123,13 @@ if "__main__" in __name__:
         for dataset in track(plots, description="Sanitizing plots"):
             for region in plots[dataset]:
                 if any(plots[dataset][region].values() < 0):
+                    print(
+                        f"Sanitizing negative values for dataset {dataset} in region {region}...",
+                        flush=True,
+                    )
                     h = plots[dataset][region]
                     for i in np.arange(len(h.values()))[h.values() < 0]:
-                        h[i] = (0.0, h[i].variance)
+                        h[i] = (1e-9, h[i].variance)
 
     # Make sure the SR is blinded if needed
     if not args.unblind:
@@ -245,9 +249,6 @@ if "__main__" in __name__:
     for year in track(args.year, description="Converting bkg & data plots to ROOT"):
         com_energy = "13TeV" if year.startswith("201") else "13p6TeV"
         for process, process_name in mc_processes:
-            if year.startswith("202") and (process == "TTV" or process == "ST_NLO"):
-                # Skip TTV and ST for Run3
-                continue
             do_extrapolation = process_name in ["QCD", "DY"]
             plots_for_export[f"{process_name}_{com_energy}_{year}"] = (
                 plot_utils.convert_to_root(
