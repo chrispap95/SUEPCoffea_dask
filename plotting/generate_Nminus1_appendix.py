@@ -6,11 +6,12 @@ Nminus1_plots_per_event = ["dimuon_mass", "sph1"]
 Nminus1_plots_per_muon = [
     "muon_dxy",
     "muon_dz",
-    "muon_ip3d",
     "muon_iso",
     "muon_pt",
     "muon_neutral_iso",
 ]
+
+tag = "Nminus1_Feb2026"
 
 
 def has_source_plot(plot):
@@ -41,9 +42,7 @@ def create_figure(document, plot):
             + r"\includegraphics[width="
             + fig_width
             + r"\textwidth]{fig/"
-            + plot.replace(".pdf", "_sources.pdf").replace(
-                "Nminus1_plots/", "Nminus1_plots_sources/"
-            )
+            + plot.replace("Nminus1_plots/", "Nminus1_plots_sources/")
             + "}\n"
         )
 
@@ -98,7 +97,7 @@ if __name__ == "__main__":
                 + "}",
                 "N-1-plots-for-" + region.replace("_", "-"),
             )
-            for plot in glob.glob(f"Nminus1_plots/{region}*.pdf"):
+            for plot in glob.glob(f"Nminus1_plots/{tag}/{region}*.pdf"):
                 create_figure(document, plot)
             document.write(r"\clearpage" + "\n")
             document.write("\n")

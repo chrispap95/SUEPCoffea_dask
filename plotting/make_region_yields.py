@@ -16,15 +16,15 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Jun2025",
+        default="full_analysis_Dec2025",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
         "--year",
         type=str,
         nargs="*",
-        default=["2018"],
-        help="Year of the data. Default is 2018. Can be a single year or multiple years.",
+        default=["2016", "2017", "2018", "2022", "2022EE", "2023", "2023BPix"],
+        help="Year of the data. Default is all years. Can be a single year or multiple years.",
     )
     parser.add_argument(
         "--lumi",
@@ -87,25 +87,12 @@ if "__main__" == __name__:
         ]
     plots = {}
     for year in track(years_to_load, description="Loading plots"):
-        plots_CR = plot_utils.loader(
-            tag=f"{args.tag}_{year}_CR",
-            era=year,
-            custom_lumi=args.lumi,
-            load_data=False,
-        )
-        plots_SR = plot_utils.loader(
+        plots = plots | plot_utils.loader(
             tag=f"{args.tag}_{year}_SRs",
             era=year,
             custom_lumi=args.lumi,
             load_data=False,
         )
-        all_datasets = set(plots_CR.keys()) | set(plots_SR.keys())
-        for dataset in list(all_datasets):
-            if dataset not in plots_CR:
-                plots_CR[dataset] = {}
-            if dataset not in plots_SR:
-                plots_SR[dataset] = {}
-            plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
 
     for year in track(years_to_load, description="Fitting and extrapolating"):
         # QCD extrapolation
@@ -244,6 +231,9 @@ if "__main__" == __name__:
             f"{prefix}{SR_low_temp.value:g} {sep} {np.sqrt(SR_low_temp.variance):g}{suffix}"
         )
         table.append(row)
+
+        # append an empty row between years
+        table.append(["-----------------"] * len(header))
 
     print()
     print(tabulate(table, headers=header, tablefmt=tablefmt))

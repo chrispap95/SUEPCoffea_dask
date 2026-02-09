@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="Nminus1_Jul2025",
+        default="Nminus1_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -94,18 +94,24 @@ cuts = {
     "CR_prompt_Nminus1_dimuon_mass": [(86.2, ">"), (96.2, "<")],
     "CR_prompt_Nminus1_prompt_muon_pt": [(25, ">")],
     "CR_prompt_Nminus1_prompt_muon_iso": [(0.1, "<")],
-    "CR_prompt_Nminus1_prompt_muon_ip3d": [(0.01, "<")],
-    "CR_prompt_Nminus1_prompt_muon_dxy": [(0.008, "<")],
+    "CR_prompt_Nminus1_prompt_muon_dxy": [(0.01, "<")],
     "CR_prompt_Nminus1_prompt_muon_dz": [(0.01, "<")],
     "CR_prompt_Nminus1_qcd_muon_iso": [(0.1, ">")],
-    "CR_prompt_Nminus1_qcd_muon_ip3d": [(0.015, ">")],
     "CR_prompt_Nminus1_qcd_muon_dxy": [(0.01, ">")],
     "CR_prompt_Nminus1_qcd_muon_dz": [(0.01, ">")],
     "CR_cb_Nminus1_muon_dxy": [(0.01, 2), (0.2, "<")],
+    "SR_low_temp_loose_Nminus1_muon_dxy": [(0.1, "<")],
+    "SR_low_temp_tight_Nminus1_muon_dxy": [(0.007, "<")],
+    "SR_low_temp_loose_Nminus1_muon_dz": [(0.1, "<")],
+    "SR_low_temp_tight_Nminus1_muon_dz": [(0.007, "<")],
     "SR_low_temp_loose_Nminus1_muon_pt": [(45, "<")],
     "SR_low_temp_tight_Nminus1_muon_pt": [(35, "<")],
     "SR_low_temp_loose_Nminus1_muon_ip3d": [(0.1, "<")],
     "SR_low_temp_tight_Nminus1_muon_ip3d": [(0.007, "<")],
+    "SR_high_temp_loose_Nminus1_muon_dxy": [(0.1, "<")],
+    "SR_high_temp_tight_Nminus1_muon_dxy": [(0.007, "<")],
+    "SR_high_temp_loose_Nminus1_muon_dz": [(0.1, "<")],
+    "SR_high_temp_tight_Nminus1_muon_dz": [(0.007, "<")],
     "SR_high_temp_loose_Nminus1_muon_ip3d": [(0.1, "<")],
     "SR_high_temp_tight_Nminus1_muon_ip3d": [(0.007, "<")],
     "SR_high_temp_loose_Nminus1_muon_iso": [(5, "<")],
@@ -118,11 +124,9 @@ blinding_cuts = {
     "CR_prompt_Nminus1_dimuon_mass": slice(80j, None),
     "CR_prompt_Nminus1_prompt_muon_pt": slice(None),
     "CR_prompt_Nminus1_prompt_muon_iso": slice(None),
-    "CR_prompt_Nminus1_prompt_muon_ip3d": slice(None),
     "CR_prompt_Nminus1_prompt_muon_dxy": slice(None),
     "CR_prompt_Nminus1_prompt_muon_dz": slice(None),
     "CR_prompt_Nminus1_qcd_muon_iso": slice(None),
-    "CR_prompt_Nminus1_qcd_muon_ip3d": slice(None),
     "CR_prompt_Nminus1_qcd_muon_dxy": slice(None),
     "CR_prompt_Nminus1_qcd_muon_dz": slice(None),
     "CR_cb_Nminus1_muon_dxy": slice(None),
@@ -132,7 +136,6 @@ ylims = {
     "CR_prompt_Nminus1_cand_muon_pt": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_pt": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_iso": (1e0, 1e8),
-    "CR_prompt_Nminus1_prompt_muon_ip3d": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_dxy": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_dz": (1e0, 1e8),
     "CR_prompt_Nminus1_qcd_muon_iso": (1e0, 1e8),
@@ -142,10 +145,14 @@ ylims = {
     "CR_cb_Nminus1_muon_dxy": (1e2, 1e12),
     "SR_low_temp_tight_Nminus1_muon_pt": (1, 1e8),
     "SR_low_temp_loose_Nminus1_muon_pt": (1e2, 1e10),
-    "SR_low_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
-    "SR_low_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
-    "SR_high_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
-    "SR_high_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_low_temp_loose_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_dz": (1e2, 1e10),
+    "SR_low_temp_loose_Nminus1_muon_dz": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_high_temp_loose_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_dz": (1e2, 1e10),
+    "SR_high_temp_loose_Nminus1_muon_dz": (1e2, 1e10),
     "SR_high_temp_tight_Nminus1_muon_iso": (10, 1e9),
     "SR_high_temp_loose_Nminus1_muon_iso": (1e2, 1e10),
     "SR_high_temp_tight_Nminus1_muon_neutral_iso": (10, 1e9),
@@ -170,7 +177,6 @@ def get_xlabel(plot):
     xlabels = {
         "Nminus1_muon_pt": r"muon $p_{T}$ (GeV)",
         "Nminus1_muon_iso": "muon isolation",
-        "Nminus1_muon_ip3d": r"muon $IP_{3D}$ (cm)",
         "Nminus1_muon_dxy": r"muon $|d_{xy}|$ (cm)",
         "Nminus1_muon_dz": r"muon $|d_{z}|$ (cm)",
         "Nminus1_muon_neutral_iso": "muon neutral isolation",
@@ -178,11 +184,9 @@ def get_xlabel(plot):
         "Nminus1_dimuon_mass": r"$m_{\mu\mu}$ (GeV)",
         "Nminus1_prompt_muon_pt": r"prompt muon $p_{T}$ (GeV)",
         "Nminus1_prompt_muon_iso": "prompt muon isolation",
-        "Nminus1_prompt_muon_ip3d": r"prompt muon $IP_{3D}$ (cm)",
         "Nminus1_prompt_muon_dxy": r"prompt muon $|d_{xy}|$ (cm)",
         "Nminus1_prompt_muon_dz": r"prompt muon $|d_{z}|$ (cm)",
         "Nminus1_qcd_muon_iso": "qcd muon isolation",
-        "Nminus1_qcd_muon_ip3d": r"qcd muon $IP_{3D}$ (cm)",
         "Nminus1_qcd_muon_dxy": r"qcd muon $|d_{xy}|$ (cm)",
         "Nminus1_qcd_muon_dz": r"qcd muon $|d_{z}|$ (cm)",
     }
@@ -193,7 +197,6 @@ def get_xlabel(plot):
 
 
 logx_plots = [
-    "muon_ip3d",
     "muon_dxy",
     "muon_dz",
     "muon_iso",
@@ -252,8 +255,8 @@ def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
     ax.axhline(1, ls="--", color="gray")
 
 
-def make_plot(plots, plot):
-    mc_processes = [
+def make_plot(plots, plot, year):
+    sources = [
         "tau",
         "unmatched",
         "light",
@@ -262,21 +265,29 @@ def make_plot(plots, plot):
         "b",
     ]
 
-    hists_mc = []
-    hist_bkg_total = plots["unmatched"][plot][::2j].copy().reset()
+    slc = slice(None, None, 2j)
 
-    for process in mc_processes:
-        h_mc = plots[process][plot][::2j]
+    hists_mc = []
+    hist_bkg_total = plots[f"unmatched_{year}"][plot][slc].copy().reset()
+
+    for source in sources:
+        h_mc = plots[f"{source}_{year}"][plot][slc]
         hists_mc.append(h_mc)
         hist_bkg_total += h_mc.copy()
 
     fig, ax1 = plt.subplots(figsize=(12.5, 12))
 
+    if args.ratio:
+        fig = plt.figure(figsize=(12, 12.5))
+        plt.subplots_adjust(bottom=0.08, top=0.92, left=0.1, right=0.95)
+        ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
+        ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
+
     hep.histplot(
         hists_mc,
         yerr=[np.sqrt(h.variances()) for h in hists_mc],
         stack=True,
-        label=mc_processes,
+        label=sources,
         histtype="fill",
         ec="black",
         lw=2,
@@ -305,6 +316,22 @@ def make_plot(plots, plot):
         zorder=2,
     )
 
+    if args.data and plot in plots[f"Data_{year}"]:
+        blinding_cut = slice(None)
+        if plot in blinding_cuts:
+            blinding_cut = blinding_cuts[plot]
+        hep.histplot(
+            plots[f"Data_{year}"][plot][slc][blinding_cut],
+            label=["Data"],
+            histtype="errorbar",
+            mec="black",
+            mfc="black",
+            ecolor="black",
+            markersize=15,
+            lw=3,
+            ax=ax1,
+        )
+
     # Check if logx
     islogx = False
     for key in logx_plots:
@@ -319,15 +346,16 @@ def make_plot(plots, plot):
         hist_bkg_total.axes[0].edges[0],
         hist_bkg_total.axes[0].edges[-1],
     )
-    arrow_length_rel = 0.08
+    arrow_length_rel = 0.07
     arrow_length_abs = arrow_length_rel * (xrange_max - xrange_min)
     if islogx:
         arrow_length_abs = 10 ** (arrow_length_rel * np.log10(xrange_max / xrange_min))
     yrange_min, yrange_max = ylims[plot]
-    y_position_rel = 0.67
+    y_position_rel = 0.5
     y_position_abs = yrange_min * 10 ** (
         y_position_rel * np.log10(yrange_max / yrange_min)
     )
+    plt.sca(ax1)
     for cut in cut_list:
         if cut[1] == "<":
             arrow_position = (
@@ -337,7 +365,7 @@ def make_plot(plots, plot):
             arrow_position = (
                 cut[0] * arrow_length_abs if islogx else cut[0] + arrow_length_abs
             )
-        plt.vlines(x=cut[0], color="black", ymin=1e-3, ymax=2.5 * y_position_abs, lw=7)
+        plt.vlines(x=cut[0], color="black", ymin=1e-3, ymax=2 * y_position_abs, lw=7)
         plt.annotate(
             "",
             xy=(arrow_position, y_position_abs),
@@ -352,8 +380,8 @@ def make_plot(plots, plot):
         )
 
     plt.text(
-        0.5,
-        0.75,
+        0.3,
+        y_position_rel + 0.07,
         region_labels[plot.split("_Nminus1")[0]],
         ha="center",
         weight="bold",
@@ -361,19 +389,47 @@ def make_plot(plots, plot):
         transform=ax1.transAxes,
     )
 
-    hep.cms.label(llabel="Preliminary", data=True, lumi=59.8, ax=ax1)
+    if args.ratio and args.data:
+        plot_ratio(
+            plots[f"Data_{year}"][plot][slc],
+            hist_bkg_total,
+            ax2,
+            x_hatch,
+        )
 
+    lumi_label = plot_utils.lumis[year] if args.lumi is None else args.lumi
+    lumi_label = lumi_label / 1000  # Convert pb^-1 to fb^-1
+    lumi_label = round(lumi_label, 2) if lumi_label < 1 else round(lumi_label, 1)
+    hep.cms.label(
+        llabel="Preliminary",
+        data=True,
+        year=year,
+        lumi=lumi_label,
+        com=13.6 if year.startswith("202") or year == "Run3" else 13,
+        ax=ax1,
+    )
+
+    if args.ratio and args.data:
+        plt.sca(ax2)
+        plt.ylim(0.7, 1.3)
+        plt.ylabel("Data/MC")
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        ax1.set_xlabel("", visible=False)
     plt.xlabel(get_xlabel(plot))
     if islogx:
         plt.xscale("log")
+        if args.ratio:
+            ax2.set_xscale("log")
+    if args.ratio and args.data:
+        plt.sca(ax1)
     plt.yscale("log")
     plt.ylim(ylims[plot])
     plt.legend(ncol=2, loc="upper center")
     plt.ylabel("muons")
-    if "sph1" in plot or "dimuon" in plot:
-        plt.ylabel("events")
-    plt.tight_layout()
-    plt.savefig(f"{args.dest}/{plot}_sources.pdf", bbox_inches="tight")
+    plt.savefig(
+        os.path.join(args.dest, args.tag, f"{plot}_{year}.pdf"),
+        bbox_inches="tight",
+    )
     plt.close()
 
 
@@ -384,7 +440,7 @@ if "__main__" == __name__:
         raise ValueError("Please choose either CRs or SRs, not both.")
 
     # Create destination directory
-    os.makedirs(f"{args.dest}_{args.tag}", exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year
@@ -456,46 +512,73 @@ if "__main__" == __name__:
 
     # Initialize empty plots for sources
     print("Creating plots for sources...", end=" ", flush=True)
-    plots_sources = {
-        "unmatched": {},
-        "prompt": {},
-        "light": {},
-        "c": {},
-        "b": {},
-        "tau": {},
-    }
+    plots_sources = {}
     for year in track(args.year, description=f"source plots"):
+        plots_sources = {
+            f"unmatched_{year}": {},
+            f"prompt_{year}": {},
+            f"light_{year}": {},
+            f"c_{year}": {},
+            f"b_{year}": {},
+            f"tau_{year}": {},
+        }
+        if args.data:
+            plots_sources[f"Data_{year}"] = {}
         for source in plots_sources:
-            for plot in plots["QCD_Pt_MuEnrichedPt5_2018"].keys():
+            for plot in plots[f"QCD_Pt_MuEnrichedPt5_{year}"].keys():
                 if "_muon_" in plot:
                     plots_sources[source][plot] = (
-                        plots["QCD_Pt_MuEnrichedPt5_2018"][plot][:, ::sum]
+                        plots[f"QCD_Pt_MuEnrichedPt5_{year}"][plot][:, ::sum]
                         .copy()
                         .reset()
                     )
+                    if args.data:
+                        plots_sources[f"Data_{year}"][plot] = plots[f"Data_{year}"][
+                            plot
+                        ][:, ::sum].copy()
 
     mc_processes = [
-        "Higgs_2018",
-        "TTV_2018",
-        "ST_NLO_2018",
-        "WJets_2018",
-        "VV+VVV_2018",
-        "TT_powheg_2018",
-        "DY_2018",
-        "QCD_Pt_MuEnrichedPt5_2018",
+        "Higgs",
+        "TTV",
+        "ST_NLO",
+        "WJets",
+        "VV+VVV",
+        "TT_powheg",
+        "DY",
+        "QCD_Pt_MuEnrichedPt5",
     ]
-    for mc_process in mc_processes:
-        for plot in plots[mc_process]:
-            if plot not in plots_sources["unmatched"]:
-                continue
-            plots_sources["unmatched"][plot] += plots[mc_process][plot][:, 0].copy()
-            plots_sources["prompt"][plot] += plots[mc_process][plot][:, 1j].copy()
-            plots_sources["light"][plot] += plots[mc_process][plot][:, 3j].copy()
-            plots_sources["c"][plot] += plots[mc_process][plot][:, 4j].copy()
-            plots_sources["b"][plot] += plots[mc_process][plot][:, 5j].copy()
-            plots_sources["tau"][plot] += plots[mc_process][plot][:, 15j].copy()
+    for year in track(args.year, description=f"populating sources"):
+        for mc_process in mc_processes:
+            for plot in plots[f"{mc_process}_{year}"]:
+                if plot not in plots_sources[f"unmatched_{year}"]:
+                    continue
+                plots_sources[f"unmatched_{year}"][plot] += plots[
+                    f"{mc_process}_{year}"
+                ][plot][:, 0].copy()
+                plots_sources[f"prompt_{year}"][plot] += plots[f"{mc_process}_{year}"][
+                    plot
+                ][:, 1j].copy()
+                plots_sources[f"light_{year}"][plot] += plots[f"{mc_process}_{year}"][
+                    plot
+                ][:, 3j].copy()
+                plots_sources[f"c_{year}"][plot] += plots[f"{mc_process}_{year}"][plot][
+                    :, 4j
+                ].copy()
+                plots_sources[f"b_{year}"][plot] += plots[f"{mc_process}_{year}"][plot][
+                    :, 5j
+                ].copy()
+                plots_sources[f"tau_{year}"][plot] += plots[f"{mc_process}_{year}"][
+                    plot
+                ][:, 15j].copy()
     print("Done!", flush=True)
 
     # Load plots and merge them
-    for plot in track(plots_sources["unmatched"].keys()):
-        make_plot(plots_sources, plot)
+    with Progress(transient=True) as progress:
+        task = progress.add_task(
+            "Plotting...",
+            total=len(args.year) * len(plots_sources[f"unmatched_{args.year[0]}"]),
+        )
+        for year in args.year:
+            for plot in plots_sources[f"unmatched_{year}"]:
+                make_plot(plots_sources, plot, year)
+                progress.advance(task)

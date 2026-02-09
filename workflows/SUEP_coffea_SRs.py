@@ -196,7 +196,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         )
 
         # Tight SR: selection for muons
-        tight_cut = (muons.pt < 35) & (muons.dxy < 0.007) & (muons.dz < 0.007)
+        tight_cut = (muons.pt < 35) & (abs(muons.dxy) < 0.007) & (abs(muons.dz) < 0.007)
         muons_tight_cut = muons[clean_muons & tight_cut]
 
         # Tight SR: Z mass window cut
@@ -251,9 +251,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         tracks_cand_t_trk_kill = tracks_cand_t_trk_kill[sph1_t_trk_kill > 0.7]
 
         # Loose SR: selection for muons
-        loose_cut = (
-            (events.Muon.pt < 45) & (events.Muon.dxy < 0.1) & (events.Muon.dz < 0.1)
-        )
+        loose_cut = (muons.pt < 45) & (abs(muons.dxy) < 0.1) & (abs(muons.dz) < 0.1)
         muons_loose_cut = muons[clean_muons & loose_cut]
 
         # Loose SR: Z mass window cut
@@ -433,7 +431,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             muons_SR_high_temp_loose,
         ) = self.apply_SR_high_temp(events_)
 
-        events_SR_high_temp_tight, muons_SR_high_temp_tight = self.remove_resonaces(  # type: ignore[assignment]
+        events_SR_high_temp_tight, muons_SR_high_temp_tight = self.remove_resonances(  # type: ignore[assignment]
             events_SR_high_temp_tight, muons_SR_high_temp_tight, veto_mode=False
         )
 
@@ -502,7 +500,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                             * lhepdf_weights[:, replica],
                         )
 
-        events_SR_high_temp_loose, muons_SR_high_temp_loose = self.remove_resonaces(  # type: ignore[assignment]
+        events_SR_high_temp_loose, muons_SR_high_temp_loose = self.remove_resonances(  # type: ignore[assignment]
             events_SR_high_temp_loose, muons_SR_high_temp_loose, veto_mode=False
         )
 
@@ -617,7 +615,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
             muons_SR_low_temp_loose_trk_kill,
         ) = self.apply_SR_low_temp(events_)
 
-        events_SR_low_temp_tight, muons_SR_low_temp_tight = self.remove_resonaces(  # type: ignore[assignment]
+        events_SR_low_temp_tight, muons_SR_low_temp_tight = self.remove_resonances(  # type: ignore[assignment]
             events_SR_low_temp_tight, muons_SR_low_temp_tight, veto_mode=False
         )
 
@@ -689,7 +687,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         # Systematic for track killing
         # Needs to be handled manually
         events_SR_low_temp_tight_trk_kill, muons_SR_low_temp_tight_trk_kill = (  # type: ignore[assignment]
-            self.remove_resonaces(
+            self.remove_resonances(
                 events_SR_low_temp_tight_trk_kill,
                 muons_SR_low_temp_tight_trk_kill,
                 veto_mode=False,
@@ -725,7 +723,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                 weight=weights_SR_low_temp_tight_trk_kill.weight(),
             )
 
-        events_SR_low_temp_loose, muons_SR_low_temp_loose = self.remove_resonaces(  # type: ignore[assignment]
+        events_SR_low_temp_loose, muons_SR_low_temp_loose = self.remove_resonances(  # type: ignore[assignment]
             events_SR_low_temp_loose, muons_SR_low_temp_loose, veto_mode=False
         )
 
@@ -797,7 +795,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
         # Systematic for track killing
         # Needs to be handled manually
         events_SR_low_temp_loose_trk_kill, muons_SR_low_temp_loose_trk_kill = (  # type: ignore[assignment]
-            self.remove_resonaces(
+            self.remove_resonances(
                 events_SR_low_temp_loose_trk_kill,
                 muons_SR_low_temp_loose_trk_kill,
                 veto_mode=False,
@@ -836,16 +834,12 @@ class SUEP_processor(SUEP_common.SUEP_base):
         return
 
     def analysis(self, events, output):
-        # get dataset name
         dataset = events.metadata["dataset"]
-
-        # take care of weights
         weights = self.get_weights(events)
 
         # Fill the cutflow columns for all
         output[dataset]["cutflow"].fill(len(events) * ["all"], weight=weights.weight())
 
-        # golden jsons for offline data
         if not self.isMC:
             events = golden_json_utils.apply_golden_JSON(events, self.era)
 

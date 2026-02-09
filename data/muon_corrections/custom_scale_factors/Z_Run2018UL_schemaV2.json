@@ -1,0 +1,3426 @@
+{
+    "schema_version": 2,
+    "description": "This json file contains different scale factors centrally derived by the Muon POG. Corrections are supplied for various reconstructions, working points, IDs, isolation cuts, and resonances (Z or JPsi). In general, the scale factors are factorized into ID*ISO*HLT, and the names follow the next convention: NUM_{NumeratorNAME}_DEN_{DenominatorNAME} where 'NumeratorNAME' can be 'TightID' and denominator can be 'TrackerMuons', for example. Nominal scale factors and uncertainties are provided. 'nominal', 'stat', 'syst', 'systup', and 'systdown' are provided for all the cases. Additional systematic uncertainties may be included such as 'massBin', 'AltSig', etc. Please note the different meanings of the input labels.\n                            'nominal'  : Nominal central scale factor value\n                            'systup'   : Combined statistical+systematic up boundary (Consistent with XPOG format)\n                            'systdown' : Combined statistical+systematic down boundary (Consistent with XPOG format)\n                            'stat'     : Statistical uncertainty\n                            'syst'     : Systematic uncertainty\n            ",
+    "corrections": [
+        {
+            "name": "NUM_MediumID_DEN_TrackerMuons",
+            "description": "NUM_MediumID_DEN_TrackerMuons",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.009830719241685326
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.018270325189883193
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.1153030333254537
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.133573358515337
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0970327081355704
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0007326949827031193
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.002544492579368027
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0010489755160683
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0035934680954364
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9985044829367002
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0002711845351171527
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0008719075812103326
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9892560635971903
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9901279711784007
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.98838415601598
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00011747502141723487
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00047605342137349604
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9926026796228697
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9930787330442432
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9921266262014963
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00001137045523175173
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0003067773973059019
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9929117256942623
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9932185030915682
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9926049482969564
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 3.120900052056008e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00016426867723322685
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9927708636644917
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9929351323417249
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9926065949872586
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 8.176274084559232e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00011696260630981242
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9940290158834175
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9941459784897273
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9939120532771077
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 9.07026200763772e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00012354458258024417
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9944070419228469
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9945305865054271
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9942834973402667
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000013704924357926807
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00019105351897015705
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9945229060280614
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9947139595470316
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9943318525090912
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0004925570123614498
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0002686752176209143
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0004925570123614498
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9936342364308217
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9941953057518419
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9930731671098015
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_TightMiniIso_DEN_MediumID",
+            "description": "NUM_TightMiniIso_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.002613733612860103
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.026768315190665137
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0136695315991124
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0404378467897777
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9869012164084473
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0003838036543311607
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.006951934657330785
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9938956021703541
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0008475368276848
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9869436675130233
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00011664928613763781
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0032981474180719286
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9888372231689379
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9921353705870097
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.985539075750866
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00032847006665698286
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0019529679570377918
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9909725126545397
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9929254806115775
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9890195446975019
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0005596786987377977
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0011968956499008748
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9932044007255253
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9944012963754262
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9920075050756244
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00021626540103397707
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0007380543957076116
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9971720340552407
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9979100884509483
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9964339796595331
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0002864019918966676
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00028861962583592415
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9961925126538708
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9964811322797067
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9959038930280348
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 7.934188189118174e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0001695622603029164
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9974721367672931
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.997641699027596
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9973025745069901
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00019505468304198414
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0002841904343763645
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9981108763717064
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9983950668060827
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.99782668593733
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 3.494496934430824e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0003141195706033509
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9982276966342802
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9985418162048836
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9979135770636769
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_MiniIsoGT0p1_DEN_MediumID",
+            "description": "NUM_MiniIsoGT0p1_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00511435957892703
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.05006543731289961
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.973432150570508
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0234975878834076
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9233667132576084
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0010467933465652113
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.02313274355660324
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0221510224065438
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.045283765963147
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9990182788499405
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0004884743707896932
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.016447174456115217
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.052409728735505
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0688569031916202
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0359625542793898
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0017892528461184165
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.013164840714059442
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0571692708807554
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0703341115948148
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.044004430166696
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0015632629425582634
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.011049478432134255
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0589146625756456
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0699641410077798
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0478651841435114
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0012394688248839048
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.009140552709425017
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0338243880381777
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0429649407476027
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0246838353287526
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.011279841463682994
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.007168291445515733
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.011279841463682994
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.1013916190128812
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.114756469393401
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0880267686323615
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00039960678965711427
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.010988577327425692
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.1457971934273652
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.1567857707547908
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.1348086160999395
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.019270112346094548
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.03333366163719681
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.1799444840173852
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.213278145654582
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.1466108223801883
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.037882691562093895
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.07492279289809418
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.3227747817865396
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.3976975746846338
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.2478519888884454
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_MiniIsoGT0p2_DEN_MediumID",
+            "description": "NUM_MiniIsoGT0p2_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.012794823018013823
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.06289761184082088
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.958565344909049
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0214629567498699
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.8956677330682281
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0008420212656161663
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.03261755700854001
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0377795188313836
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0703970758399237
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0051619618228436
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0009763000512976738
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.02433869176928436
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0417252035366356
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0660638953059198
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0173865117673513
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0033066506326930867
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.02030078678282028
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0984839612822301
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.1187847480650503
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.07818317449941
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.003331852159006221
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.016845473496913878
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0917304412127258
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.1085759147096397
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0748849677158119
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.006108490980299863
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.015392294385760367
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0022559966673386
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0176482910530988
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9868637022815782
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0054446080995608215
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.01712440404382373
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.1070837036887262
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.1242081077325499
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0899592996449026
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0016666444532034141
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.03119541994438781
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.2548038581877348
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.2859992781321226
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.223608438243347
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.003397761894039064
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.07649985987597142
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.2438427392715354
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.3203425991475068
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.167342879395564
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.012154258335823731
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.07881812787210135
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.8631385749757614
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9419567028478628
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.78432044710366
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_MiniIsoGT0p4_DEN_MediumID",
+            "description": "NUM_MiniIsoGT0p4_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.009523818253404315
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.07477728394126566
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.8357798970885452
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9105571810298109
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.7610026131472795
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0012723185700895812
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.05376164410783069
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.066640461660325
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.1204021057681557
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.012878817552494
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.005217743033544497
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.036832715140678686
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9885354817062606
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0253681968469393
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.951702766565582
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0023885865697022
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.03289326164059722
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0189365019552743
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0518297635958715
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.986043240314677
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.002593464398196743
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.026141462993078304
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0356858545066845
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0618273174997628
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0095443915136062
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0029312057988499784
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.02050677610724835
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9879609631322237
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.008467739239472
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9674541870249753
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0016780185732069297
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.03820383455644035
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0256472924668232
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0638511270232636
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9874434579103828
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.005236327908307636
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.057763122519269815
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.3584844866663581
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.416247609185628
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.3007213641470883
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.008744167640035494
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.26673529876469554
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 2.0897873941083587
+                            },
+                            {
+                                "key": "systup",
+                                "value": 2.356522692873054
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.823052095343663
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.01931045999013159
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.29448946915415
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.3295528674847084
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.6240423366388583
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0350633983305584
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_MiniIsoLT0p65_DEN_MediumID",
+            "description": "NUM_MiniIsoLT0p65_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.004151980844714798
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.013896873795519361
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0435245523599876
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.057421426155507
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0296276785644682
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0004516686225081168
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0024435208100427232
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0000184314910556
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0024619523010982
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9975749106810129
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00013655068612872245
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.000986413810589604
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9981277420908667
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9991141559014564
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9971413282802771
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00001888124363169652
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0005772651699158223
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9994703400099204
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0000476051798362
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9988930748400046
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 9.652634076817712e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0003413650093752841
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0001111064483112
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0004524714576866
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9997697414389359
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 3.3734103805915794e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00015658706074735183
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0004386836099863
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0005952706707337
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.000282096549239
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 1.3232534381013572e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.000052064838467691214
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999474787135874
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.999999543552055
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9998954138751197
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 3.1494638914053574e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.000037246484515836
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999374180308382
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9999746645153541
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999001715463224
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000019896066163205273
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00008783685903634963
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999411653336789
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0000290021927152
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9998533284746426
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000042374175358073085
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0000910128804644951
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.000027892649447
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0001189055299116
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999368797689825
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_MiniIsoLT5_DEN_MediumID",
+            "description": "NUM_MiniIsoLT5_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0009129977059507688
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.008367232559817524
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.029349492463242
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0377167250230594
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0209822599034246
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0005676797737640404
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0011503784598514628
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0055209662919067
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0066713447517581
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0043705878320552
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000028135893590630623
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00043076721076136634
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0011457019057615
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0015764691165228
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 1.0007149346950002
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.001665679998463565
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00019780933731663943
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.001665679998463565
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9986015973059832
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.000278981695803
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9969242129161634
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 8.100175225012052e-8
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00004040754425927547
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999213215153165
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9999617290595758
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9998809139710573
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 6.822111764392957e-10
+                            },
+                            {
+                                "key": "stat",
+                                "value": 6.121101360231457e-6
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0000060285478827
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.000012149649243
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999999074465225
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 2.3490527301106567e-9
+                            },
+                            {
+                                "key": "stat",
+                                "value": 6.900304622206634e-6
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 1.0000000949929186
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0000069952975408
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999931946882964
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 3.064659637175282e-12
+                            },
+                            {
+                                "key": "stat",
+                                "value": 2.065362159076045e-8
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999999793463784
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999999586927568
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 5.1405379952740304e-11
+                            },
+                            {
+                                "key": "stat",
+                                "value": 8.717873523078623e-8
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999999128212648
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999998256425295
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 1.2046508235386e-10
+                            },
+                            {
+                                "key": "stat",
+                                "value": 1.7834270027439203e-7
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999998216572997
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9999996433145995
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID",
+            "description": "NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0012087389170017393
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.028158980956332035
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.8786214490160137
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9067804299723458
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.8504624680596816
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0004031637702315849
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0073531878430945115
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9034308200109282
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9107840078540227
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.8960776321678338
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00012982039570413884
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.003218594337287668
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9306405352653812
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9338591296026688
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9274219409280935
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0002821580085701214
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0019080625539141221
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.947471593242759
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.949379655796673
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9455635306888449
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00009942597889317506
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0011738426285988713
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9545476989286485
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9557215415572474
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9533738563000497
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000010901746319735839
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0007716563491250888
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9613617184528999
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.962133374802025
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9605900621037747
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000025234220753844738
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00037994646419483956
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.96892154711725
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9693014935814448
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9685416006530552
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0004635991553254559
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0003621600277620537
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0004635991553254559
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.974047662124885
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9746359512226312
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9734593730271388
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00006873428687831362
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0007118522614187354
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9752299467177504
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9759417989791692
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9745180944563316
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000027492212350432865
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0009906502494321063
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9736556151512306
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9746462654006627
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9726649649017984
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_dxyLT0p01_AND_dzLT0p01_DEN_MediumID",
+            "description": "NUM_dxyLT0p01_AND_dzLT0p01_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0014927704354911198
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.021094001923050304
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.8768268405391553
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.8979208424622056
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.8557328386161049
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00022598257512618236
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0056490608489594505
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9153519334055534
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9210009942545129
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.909702872556594
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00015170071105263805
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.002567819168259533
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.945820865722034
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9483886848902936
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9432530465537745
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00025408930864817547
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0014739759200374483
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9602696391275161
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9617436150475535
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9587956632074787
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00007625994597881824
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0009178777147764547
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9646512991248484
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9655691768396248
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9637334214100719
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00004259641243636869
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0005875863518695157
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9695095099443801
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9700970962962496
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9689219235925106
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000011034371901363915
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0002836171660223497
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9755733577284275
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9758569748944498
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9752897405624051
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000025007860527559433
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00026790819860997625
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9808239839127658
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9810918921113758
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9805560757141558
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00005341332823877165
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0005503239283744047
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.983239153019923
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9837894769482974
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9826888290915486
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0000306176355989729
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0007517730100401958
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9828279762902679
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.983579749300308
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9820762032802277
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        },
+        {
+            "name": "NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID",
+            "description": "NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "Probe pt"
+                },
+                {
+                    "name": "scale_factors",
+                    "type": "string",
+                    "description": "Choose nominal or uncertainty"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real",
+                "description": "Output scale factor"
+            },
+            "data": {
+                "nodetype": "binning",
+                "input": "pt",
+                "edges": [
+                    3.0,
+                    6.0,
+                    10.0,
+                    15.0,
+                    20.0,
+                    25.0,
+                    30.0,
+                    40.0,
+                    50.0,
+                    60.0,
+                    inf
+                ],
+                "content": [
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.002477064477049873
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.005906434886299222
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9896757352190415
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9955821701053408
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9837693003327422
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.0018680992723689172
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0012968335298961537
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0018680992723689172
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9976340210504747
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9999081301278253
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9953599119731241
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000013477991030907965
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0005285709859561251
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9989795081014085
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9995080790873646
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9984509371154523
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.000031451082572742095
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.0002707499529851054
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9995705819031135
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9998413318560987
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9992998319501284
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 9.926301469787013e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00015960254585891935
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9995465632083611
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.99970616575422
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9993869606625022
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00005868921900914481
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00012167213150521736
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9993544879754247
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.99947616010693
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9992328158439194
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 6.769595642830417e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00007908177014864504
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9994885390656565
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9995676208358051
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9994094572955079
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 3.152217913360289e-7
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00006391341195250558
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9995666996532213
+                            },
+                            {
+                                "key": "systup",
+                                "value": 0.9996306130651739
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9995027862412688
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 5.4681896332620106e-6
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00008808611349517048
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.0
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999831933065042
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.0000712794199993
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.999895107193009
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "category",
+                        "input": "scale_factors",
+                        "content": [
+                            {
+                                "key": "massBin",
+                                "value": 0.00011441461083266935
+                            },
+                            {
+                                "key": "stat",
+                                "value": 0.00010334490901492084
+                            },
+                            {
+                                "key": "syst",
+                                "value": 0.00011441461083266935
+                            },
+                            {
+                                "key": "nominal",
+                                "value": 0.9999094374652361
+                            },
+                            {
+                                "key": "systup",
+                                "value": 1.000063615522661
+                            },
+                            {
+                                "key": "systdown",
+                                "value": 0.9997552594078113
+                            }
+                        ]
+                    }
+                ],
+                "flow": "error"
+            }
+        }
+    ]
+}

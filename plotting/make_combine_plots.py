@@ -1,6 +1,7 @@
 import argparse
 import logging
 import math
+import os
 import shutil
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -116,7 +117,9 @@ if "__main__" in __name__:
                 plots_SR[dataset] = {}
             plots[dataset] = plots_CR[dataset] | plots_SR[dataset]
 
+    print("Calculating LHE PDF systematics...", end=" ", flush=True)
     plots = plot_utils.make_lhepdf_systematic(plots, cleanup=True)
+    print("Done!", flush=True)
 
     # Sanitize plots if requested
     if args.sanitize:
@@ -130,6 +133,46 @@ if "__main__" in __name__:
                     h = plots[dataset][region]
                     for i in np.arange(len(h.values()))[h.values() < 0]:
                         h[i] = (1e-9, h[i].variance)
+
+    # If the nominal histogram exists but not the systematics, create null systematics histograms
+    print("Populating null systematics histograms...", end=" ", flush=True)
+    systematics = [
+        "MuonSF",
+        "PUReweight",
+        "ISR",
+        "FSR",
+        "LHEScaleMuF",
+        "LHEScaleMuR",
+        "LHEPdf",
+        "TrigSF",
+    ]
+    regions = [
+        "CR_cb",
+        "CR_prompt",
+        "SR_high_temp_loose",
+        "SR_high_temp_tight",
+        "SR_low_temp_loose",
+        "SR_low_temp_tight",
+    ]
+    for dataset in plots:
+        for region in regions:
+            if (
+                region in plots[dataset]
+                and f"{region}_{systematics[0]}Down" not in plots[dataset]
+            ):
+                for syst in systematics:
+                    plots[dataset][f"{region}_{syst}Down"] = plots[dataset][
+                        region
+                    ].copy()
+                    plots[dataset][f"{region}_{syst}Up"] = plots[dataset][region].copy()
+                if region == "SR_low_temp_loose":
+                    plots[dataset]["SR_low_temp_loose_TrkEffDown"] = plots[dataset][
+                        "SR_low_temp_loose"
+                    ].copy()
+                    plots[dataset]["SR_low_temp_loose_TrkEffUp"] = plots[dataset][
+                        "SR_low_temp_loose"
+                    ].copy()
+    print("Done!", flush=True)
 
     # Make sure the SR is blinded if needed
     if not args.unblind:
@@ -276,6 +319,11 @@ if "__main__" in __name__:
         output_name += f"_signal_scale{args.signal_scale}"
     if args.inject_signal:
         output_name += f"_signal_injected{args.inject_signal}"
+
+    # Create a fresh exports directory
+    if os.path.exists("exports"):
+        shutil.rmtree("exports")
+    os.makedirs("exports")
 
     plot_utils.export_histograms_to_root(
         plots_for_export,

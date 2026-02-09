@@ -97,46 +97,39 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
     match region:
         case "CR_prompt_prompt":
             config += [
-                # "NUM_miniIsoLT01_DEN_MediumID",
-                # "NUM_absdxyLT001_DEN_miniIsoLT01 and MediumID",
-                # "NUM_absdzLT001_DEN_absdxyLT001 and miniIsoLT01 and MediumID",
+                "NUM_TightMiniIso_DEN_MediumID",
+                "NUM_dxyLT0p01_AND_dzLT0p01_DEN_MediumID",
             ]
         case "CR_prompt_qcd":
-            config += []
+            config += ["NUM_MiniIsoGT0p1_DEN_MediumID"]
         case "CR_cb":
             config += []
         case "VR_loose":
-            config += []
+            config += ["NUM_MiniIsoGT0p2_DEN_MediumID"]
         case "VR_tight":
-            config += []
+            config += ["NUM_MiniIsoGT0p4_DEN_MediumID"]
         case "SR_low_temp_loose":
-            config += [
-                # "absdxyLT01", "absdzLT01"
-            ]
+            config += ["NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID"]
         case "SR_low_temp_tight":
-            config += [
-                # "absdxyLT0007", "absdzLT0007"
-            ]
+            config += ["NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID"]
         case "SR_high_temp_loose":
             config += [
-                # "NUM_miniIsoLT5_DEN_MediumID",
-                # "neutralIsoLT3",
-                # "absdxyLT01",
-                # "absdzLT01",
+                "NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID",
+                "NUM_MiniIsoLT0p65_DEN_MediumID",
             ]
         case "SR_high_temp_tight":
-            config += [
-                # "NUM_miniIsoLT065_DEN_MediumID",
-                # "neutralIsoLT05",
-                # "absdxyLT0007",
-                # "absdzLT0007",
-            ]
+            config += ["NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID"]
 
     json_file_JPsi = f"data/muon_corrections/{era}/muon_JPsi.json"
     corrs_JPsi = correctionlib.CorrectionSet.from_file(json_file_JPsi)
 
     json_file_Z = f"data/muon_corrections/{era}/muon_Z.json"
     corrs_Z = correctionlib.CorrectionSet.from_file(json_file_Z)
+
+    custom_corrs_file = (
+        f"data/muon_corrections/custom_scale_factors/Z_Run{era}_schemaV2.json"
+    )
+    custom_corrs = correctionlib.CorrectionSet.from_file(custom_corrs_file)
 
     muon_SF = np.ones_like(muons_flat.pt)
 
@@ -162,17 +155,14 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
         muon_corr_id = corrs_Z["NUM_MediumID_DEN_TrackerMuons"]
         muon_SF = muon_SF * muon_corr_id.evaluate(muons_flat.eta, 50.0, var)
 
-    # Evaluate all other efficiencies
+    # Evaluate all other efficiencies. They are all in the custom corrections file.
     for corr_name in config:
         if corr_name in [
             "NUM_TrackerMuons_DEN_genTracks",
             "NUM_MediumID_DEN_TrackerMuons",
         ]:
             continue
-        if peak == "JPsi":
-            corr = corrs_JPsi[corr_name]
-        elif peak == "Z":
-            corr = corrs_Z[corr_name]
+        corr = custom_corrs[corr_name]
         muon_pt_vals = muons_flat.pt
         if override_low_pt_bound:
             muon_pt_vals = np.where(muon_pt_vals < 10, 10, muon_pt_vals)

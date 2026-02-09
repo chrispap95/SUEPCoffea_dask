@@ -14,7 +14,7 @@ signal=0
 background=0
 data=0
 era=2018
-tag=Nminus1_Jul2025
+tag=Nminus1_Feb2026
 blind=1 # 0 for unblinded, 1 for blinded
 
 while getopts 'sbde:t:' flag; do
@@ -74,54 +74,54 @@ else
 fi
 
 if [ $signal -eq 1 ]; then
-    # echo "Processing signal SR_low_temp..."
-    # python runner.py \
-    #     --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
-    #     --json $signal_filelist --era "$era" --skimmed \
-    #     --isMC --executor futures -j 32 --chunk 4000
-    # echo "Processing signal SR_high_temp..."
-    # python runner.py \
-    #     --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
-    #     --json $signal_filelist --era "$era" --skimmed \
-    #     --isMC --executor futures -j 32 --chunk 80000
+    echo "Processing signal SR_low_temp..."
+    python runner.py \
+        --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
+        --json $signal_filelist --era "$era" --skimmed --isMC \
+        --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
+    echo "Processing signal SR_high_temp..."
+    python runner.py \
+        --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
+        --json $signal_filelist --era "$era" --skimmed --isMC \
+        --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
     echo "Processing signal CRs..."
     python runner.py \
         --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_${era}_CRs" \
-        --json $signal_filelist --era "$era" --skimmed \
-        --isMC --executor futures -j 32 --chunk 80000
+        --json $signal_filelist --era "$era" --skimmed --isMC \
+        --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
 fi
 
 if [ $background -eq 1 ]; then
-    # echo "Processing BKG SR_low_temp..."
-    # python runner.py \
-    #     --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
-    #     --json $background_filelist --era "$era" --skimmed \
-    #     --isMC --executor futures -j 32 --chunk 7000
-    # echo "Processing BKG SR_high_temp..."
-    # python runner.py \
-    #     --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
-    #     --json $background_filelist --era "$era" --skimmed \
-    #     --isMC --executor futures -j 32 --chunk 80000
+    echo "Processing BKG SR_low_temp..."
+    python runner.py \
+        --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
+        --json $background_filelist --era "$era" --skimmed --isMC \
+        --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
+    echo "Processing BKG SR_high_temp..."
+    python runner.py \
+        --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
+        --json $background_filelist --era "$era" --skimmed --isMC \
+        --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
     echo "Processing BKG CRs..."
     python runner.py \
         --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_${era}_CRs" \
-        --json $background_filelist --era "$era" --skimmed \
-        --isMC --executor futures -j 32 --chunk 80000
+        --json $background_filelist --era "$era" --skimmed --isMC \
+        --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
 fi
 
 if [ $data -eq 1 ]; then
     if [ $blind -eq 0 ]; then
-        echo "Processing BKG SR_low_temp..."
+        echo "Processing data SR_low_temp..."
         python runner.py \
             --workflow SUEP_coffea_SR_low_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_low_temp" \
-            --json $data_filelist --era "$era" --executor futures -j 32 --chunk 7000
-        echo "Processing BKG SR_high_temp..."
+            --json $data_filelist --era "$era" --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
+        echo "Processing data SR_high_temp..."
         python runner.py \
             --workflow SUEP_coffea_SR_high_temp_Nminus1 -o "processor_output_files/${tag}_${era}_SR_high_temp" \
-            --json $data_filelist --era "$era" --executor futures -j 32 --chunk 80000
+            --json $data_filelist --era "$era" --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
     fi
-    echo "Processing BKG CRs..."
+    echo "Processing data CRs..."
     python runner.py \
         --workflow SUEP_coffea_CRs_Nminus1 -o "processor_output_files/${tag}_${era}_CRs" \
-        --json $data_filelist --era "$era" --executor futures -j 32 --chunk 80000
+        --json $data_filelist --era "$era" --executor dask/lpc --memory 8GB --mild-scaleout --chunk 10000
 fi

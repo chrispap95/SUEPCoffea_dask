@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import plot_utils
-from rich.progress import track  # type: ignore[import]
+from rich.progress import Progress, track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="Nminus1_Jul2025",
+        default="Nminus1_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -97,24 +97,26 @@ cuts = {
     "CR_prompt_Nminus1_dimuon_mass": [(86.2, ">"), (96.2, "<")],
     "CR_prompt_Nminus1_prompt_muon_pt": [(25, ">")],
     "CR_prompt_Nminus1_prompt_muon_iso": [(0.1, "<")],
-    "CR_prompt_Nminus1_prompt_muon_ip3d": [(0.01, "<")],
-    "CR_prompt_Nminus1_prompt_muon_dxy": [(0.008, "<")],
+    "CR_prompt_Nminus1_prompt_muon_dxy": [(0.01, "<")],
     "CR_prompt_Nminus1_prompt_muon_dz": [(0.01, "<")],
     "CR_prompt_Nminus1_qcd_muon_iso": [(0.1, ">")],
-    "CR_prompt_Nminus1_qcd_muon_ip3d": [(0.015, ">")],
     "CR_prompt_Nminus1_qcd_muon_dxy": [(0.01, ">")],
     "CR_prompt_Nminus1_qcd_muon_dz": [(0.01, ">")],
     "CR_cb_Nminus1_muon_dxy": [(0.01, ">"), (0.2, "<")],
+    "SR_low_temp_loose_Nminus1_muon_dxy": [(0.1, "<")],
+    "SR_low_temp_tight_Nminus1_muon_dxy": [(0.007, "<")],
+    "SR_low_temp_loose_Nminus1_muon_dz": [(0.1, "<")],
+    "SR_low_temp_tight_Nminus1_muon_dz": [(0.007, "<")],
     "SR_low_temp_loose_Nminus1_muon_pt": [(45, "<")],
     "SR_low_temp_tight_Nminus1_muon_pt": [(35, "<")],
-    "SR_low_temp_loose_Nminus1_muon_ip3d": [(0.1, "<")],
-    "SR_low_temp_tight_Nminus1_muon_ip3d": [(0.007, "<")],
     "SR_low_temp_loose_Nminus1_sph1": [(0.2, ">")],
     "SR_low_temp_tight_Nminus1_sph1": [(0.7, ">")],
     "SR_low_temp_loose_Nminus1_dimuon_mass": [(45, "<")],
     "SR_low_temp_tight_Nminus1_dimuon_mass": [(35, "<")],
-    "SR_high_temp_loose_Nminus1_muon_ip3d": [(0.1, "<")],
-    "SR_high_temp_tight_Nminus1_muon_ip3d": [(0.007, "<")],
+    "SR_high_temp_loose_Nminus1_muon_dxy": [(0.1, "<")],
+    "SR_high_temp_tight_Nminus1_muon_dxy": [(0.007, "<")],
+    "SR_high_temp_loose_Nminus1_muon_dz": [(0.1, "<")],
+    "SR_high_temp_tight_Nminus1_muon_dz": [(0.007, "<")],
     "SR_high_temp_loose_Nminus1_muon_iso": [(5, "<")],
     "SR_high_temp_tight_Nminus1_muon_iso": [(0.65, "<")],
     "SR_high_temp_loose_Nminus1_muon_neutral_iso": [(3, "<")],
@@ -127,11 +129,9 @@ blinding_cuts = {
     "CR_prompt_Nminus1_dimuon_mass": slice(80j, None),
     "CR_prompt_Nminus1_prompt_muon_pt": slice(None),
     "CR_prompt_Nminus1_prompt_muon_iso": slice(None),
-    "CR_prompt_Nminus1_prompt_muon_ip3d": slice(None),
     "CR_prompt_Nminus1_prompt_muon_dxy": slice(None),
     "CR_prompt_Nminus1_prompt_muon_dz": slice(None),
     "CR_prompt_Nminus1_qcd_muon_iso": slice(None),
-    "CR_prompt_Nminus1_qcd_muon_ip3d": slice(None),
     "CR_prompt_Nminus1_qcd_muon_dxy": slice(None),
     "CR_prompt_Nminus1_qcd_muon_dz": slice(None),
     "CR_cb_Nminus1_muon_dxy": slice(None),
@@ -141,24 +141,26 @@ ylims = {
     "CR_prompt_Nminus1_dimuon_mass": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_pt": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_iso": (1e0, 1e8),
-    "CR_prompt_Nminus1_prompt_muon_ip3d": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_dxy": (1e0, 1e8),
     "CR_prompt_Nminus1_prompt_muon_dz": (1e0, 1e8),
     "CR_prompt_Nminus1_qcd_muon_iso": (1e0, 1e8),
-    "CR_prompt_Nminus1_qcd_muon_ip3d": (1e0, 1e8),
     "CR_prompt_Nminus1_qcd_muon_dxy": (1e0, 1e8),
     "CR_prompt_Nminus1_qcd_muon_dz": (1e0, 1e8),
     "CR_cb_Nminus1_muon_dxy": (1e2, 1e12),
     "SR_low_temp_tight_Nminus1_muon_pt": (1, 1e8),
     "SR_low_temp_loose_Nminus1_muon_pt": (1e2, 1e10),
-    "SR_low_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
-    "SR_low_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_dxy": (10, 1e9),
+    "SR_low_temp_loose_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_low_temp_tight_Nminus1_muon_dz": (10, 1e9),
+    "SR_low_temp_loose_Nminus1_muon_dz": (1e2, 1e10),
     "SR_low_temp_tight_Nminus1_sph1": (10, 1e9),
     "SR_low_temp_loose_Nminus1_sph1": (1e2, 1e10),
     "SR_low_temp_tight_Nminus1_dimuon_mass": (1, 1e8),
     "SR_low_temp_loose_Nminus1_dimuon_mass": (1e2, 1e10),
-    "SR_high_temp_tight_Nminus1_muon_ip3d": (1e2, 1e10),
-    "SR_high_temp_loose_Nminus1_muon_ip3d": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_dxy": (10, 1e9),
+    "SR_high_temp_loose_Nminus1_muon_dxy": (1e2, 1e10),
+    "SR_high_temp_tight_Nminus1_muon_dz": (10, 1e9),
+    "SR_high_temp_loose_Nminus1_muon_dz": (1e2, 1e10),
     "SR_high_temp_tight_Nminus1_muon_iso": (10, 1e9),
     "SR_high_temp_loose_Nminus1_muon_iso": (1e2, 1e10),
     "SR_high_temp_tight_Nminus1_muon_neutral_iso": (10, 1e9),
@@ -185,7 +187,6 @@ def get_xlabel(plot):
     xlabels = {
         "Nminus1_muon_pt": r"muon $p_{T}$ (GeV)",
         "Nminus1_muon_iso": "muon isolation",
-        "Nminus1_muon_ip3d": r"muon $IP_{3D}$ (cm)",
         "Nminus1_muon_dxy": r"muon $|d_{xy}|$ (cm)",
         "Nminus1_muon_dz": r"muon $|d_{z}|$ (cm)",
         "Nminus1_muon_neutral_iso": "muon neutral isolation",
@@ -193,11 +194,9 @@ def get_xlabel(plot):
         "Nminus1_dimuon_mass": r"$m_{\mu\mu}$ (GeV)",
         "Nminus1_prompt_muon_pt": r"prompt muon $p_{T}$ (GeV)",
         "Nminus1_prompt_muon_iso": "prompt muon isolation",
-        "Nminus1_prompt_muon_ip3d": r"prompt muon $IP_{3D}$ (cm)",
         "Nminus1_prompt_muon_dxy": r"prompt muon $|d_{xy}|$ (cm)",
         "Nminus1_prompt_muon_dz": r"prompt muon $|d_{z}|$ (cm)",
         "Nminus1_qcd_muon_iso": "qcd muon isolation",
-        "Nminus1_qcd_muon_ip3d": r"qcd muon $IP_{3D}$ (cm)",
         "Nminus1_qcd_muon_dxy": r"qcd muon $|d_{xy}|$ (cm)",
         "Nminus1_qcd_muon_dz": r"qcd muon $|d_{z}|$ (cm)",
     }
@@ -208,7 +207,6 @@ def get_xlabel(plot):
 
 
 logx_plots = [
-    "muon_ip3d",
     "muon_dxy",
     "muon_dz",
     "muon_iso",
@@ -216,24 +214,28 @@ logx_plots = [
 ]
 
 
-def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch):
+def plot_ratio(hist_data, hist_bkg_total, ax, x_hatch, blinding_cut):
     ratio = np.divide(
-        hist_data.values(),
-        hist_bkg_total.values(),
-        out=np.ones_like(hist_data.values()),
-        where=hist_bkg_total.values() != 0,
+        hist_data[blinding_cut].values(),
+        hist_bkg_total[blinding_cut].values(),
+        out=np.ones_like(hist_data[blinding_cut].values()),
+        where=hist_bkg_total[blinding_cut].values() != 0,
     )
     ratio_err = np.where(
-        hist_bkg_total.values() > 0,
+        hist_bkg_total[blinding_cut].values() > 0,
         np.sqrt(
-            (hist_bkg_total.values() ** -2) * (hist_data.variances())
-            + (hist_data.values() ** 2 * hist_bkg_total.values() ** -4)
-            * (hist_bkg_total.variances())
+            (hist_bkg_total[blinding_cut].values() ** -2)
+            * (hist_data[blinding_cut].variances())
+            + (
+                hist_data[blinding_cut].values() ** 2
+                * hist_bkg_total[blinding_cut].values() ** -4
+            )
+            * (hist_bkg_total[blinding_cut].variances())
         ),
         0,
     )
     ax.errorbar(
-        hist_data.axes.centers[0],
+        hist_data[blinding_cut].axes.centers[0],
         ratio,
         yerr=ratio_err,
         color="black",
@@ -476,10 +478,7 @@ def make_plot(plots, plot, year, args):
 
     if args.ratio and args.data:
         plot_ratio(
-            plots[f"Data_{year}"][plot][slc],
-            hist_bkg_total,
-            ax2,
-            x_hatch,
+            plots[f"Data_{year}"][plot][slc], hist_bkg_total, ax2, x_hatch, blinding_cut
         )
 
     lumi_label = plot_utils.lumis[year] if args.lumi is None else args.lumi
@@ -496,7 +495,6 @@ def make_plot(plots, plot, year, args):
 
     if args.ratio and args.data:
         plt.sca(ax2)
-        plt.xlabel(r"$n_{muon}$")
         plt.ylim(0.7, 1.3)
         plt.ylabel("Data/MC")
         plt.setp(ax1.get_xticklabels(), visible=False)
@@ -504,7 +502,8 @@ def make_plot(plots, plot, year, args):
     plt.xlabel(get_xlabel(plot))
     if islogx:
         ax1.set_xscale("log")
-        ax2.set_xscale("log")
+        if args.ratio:
+            ax2.set_xscale("log")
     if args.ratio and args.data:
         plt.sca(ax1)
     plt.yscale("log")
@@ -513,8 +512,10 @@ def make_plot(plots, plot, year, args):
     plt.ylabel("muons")
     if "sph1" in plot or "dimuon" in plot:
         plt.ylabel("events")
-    plt.tight_layout()
-    plt.savefig(f"{args.dest}_{args.tag}/{plot}_{year}.pdf", bbox_inches="tight")
+    plt.savefig(
+        os.path.join(args.dest, args.tag, f"{plot}_{year}.pdf"),
+        bbox_inches="tight",
+    )
     plt.close()
 
 
@@ -525,7 +526,7 @@ if "__main__" == __name__:
         raise ValueError("Please choose either CRs or SRs, not both.")
 
     # Create destination directory
-    os.makedirs(f"{args.dest}_{args.tag}", exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots and merge them
     years_to_load = args.year
@@ -596,6 +597,12 @@ if "__main__" == __name__:
         print("DY k_factors =", k_factor_dy, flush=True)
 
     # Load plots and merge them
-    for year in track(args.year, description="Plotting regions"):
-        for plot in plots[f"QCD_Pt_MuEnrichedPt5_{year}"].keys():
-            make_plot(plots, plot, year, args)
+    with Progress() as progress:
+        task = progress.add_task(
+            "Plotting regions...",
+            total=len(args.year) * len(plots[f"QCD_Pt_MuEnrichedPt5_{args.year[0]}"]),
+        )
+        for year in args.year:
+            for plot in plots[f"QCD_Pt_MuEnrichedPt5_{year}"].keys():
+                make_plot(plots, plot, year, args)
+                progress.update(task, advance=1)

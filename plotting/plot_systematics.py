@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 import pathlib
-import re
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.gridspec as gridspec  # type: ignore[import]
@@ -51,47 +50,6 @@ def parse_args():
         f"{pathlib.Path(__file__).parent / 'systematics_plots'}.",
     )
     return parser.parse_args()
-
-
-def merge_runs(plots, run):
-    names = [
-        "Higgs",
-        "TTV",
-        "ST_NLO",
-        "WJets",
-        "VV+VVV",
-        "TT_powheg",
-        "DY",
-        "QCD_Pt_MuEnrichedPt5",
-    ]
-    # Add signal processes
-    signal_processes = list(
-        {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13TeV", p)}
-    )
-    # Remove 2016APV for now
-    # years = ["2016APV", "2016", "2017", "2018"]
-    years = ["2016", "2017", "2018"]
-    if run == "Run3":
-        years = ["2022", "2022EE", "2023", "2023BPix"]
-        # Add signal processes
-        signal_processes = list(
-            {p[:-5] for p in plots.keys() if re.search("GluGluToSUEP.*13p6TeV", p)}
-        )
-    names.extend(signal_processes)
-    run_plots = {}
-    for name in names:
-        run_plots[f"{name}_{run}"] = {}
-        for year in years:
-            if f"{name}_{year}" not in plots.keys():
-                continue
-            for plot in plots[f"{name}_{year}"]:
-                if plot not in run_plots[f"{name}_{run}"].keys():
-                    run_plots[f"{name}_{run}"][plot] = plots[f"{name}_{year}"][
-                        plot
-                    ].copy()
-                else:
-                    run_plots[f"{name}_{run}"][plot] += plots[f"{name}_{year}"][plot]
-    return run_plots
 
 
 def plot_systematics(args, plots, sample, region):
@@ -161,25 +119,27 @@ def plot_systematics(args, plots, sample, region):
         )
 
         ax2.axhline(1, ls="--", color="gray")
+        ratio_up = np.divide(
+            plots[sample][f"{region}_{syst}Up"].values(),
+            plots[sample][region].values(),
+            out=np.ones_like(plots[sample][region].values()),
+            where=(plots[sample][region].values() > 0),
+        )
         hep.histplot(
-            np.divide(
-                plots[sample][f"{region}_{syst}Up"].values(),
-                plots[sample][region].values(),
-                out=np.ones_like(plots[sample][region].values()),
-                where=(plots[sample][region].values() > 0),
-            ),
+            ratio_up,
             bins=plots[sample][region].axes[0].edges,
             label="up",
             color="C1",
             ax=ax2,
         )
+        ratio_down = np.divide(
+            plots[sample][f"{region}_{syst}Down"].values(),
+            plots[sample][region].values(),
+            out=np.ones_like(plots[sample][region].values()),
+            where=(plots[sample][region].values() > 0),
+        )
         hep.histplot(
-            np.divide(
-                plots[sample][f"{region}_{syst}Down"].values(),
-                plots[sample][region].values(),
-                out=np.ones_like(plots[sample][region].values()),
-                where=(plots[sample][region].values() > 0),
-            ),
+            ratio_down,
             bins=plots[sample][region].axes[0].edges,
             label="down",
             color="C2",
@@ -192,7 +152,9 @@ def plot_systematics(args, plots, sample, region):
         ax1.legend()
         ax1.xaxis.set_minor_locator(ticker.NullLocator())
         ax1.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-        ax2.set_ylim(0.5, 1.5)
+        ax2.set_ylim(0.8, 1.2)
+        if max(ratio_up) > 1.2 or min(ratio_down) < 0.8:
+            ax2.set_ylim(0.5, 1.5)
         ax2.set_ylabel("Ratio")
         ax2.set_xlabel("nMuon")
         ax1.set_xlabel("")
@@ -285,10 +247,10 @@ if "__main__" == __name__:
         dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = merge_runs(plots, "Run2")
+        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = merge_runs(plots, "Run3")
+        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
         plots = plots | run3_plots
 
     # Plot systematics

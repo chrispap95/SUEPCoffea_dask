@@ -524,7 +524,7 @@ class SUEP_base(processor.ProcessorABC):
 
         return found_pairs_0, found_pairs_1
 
-    def remove_resonaces(
+    def remove_resonances(
         self,
         events,
         muons,
@@ -542,6 +542,8 @@ class SUEP_base(processor.ProcessorABC):
         """
 
         if len(events) == 0:
+            if return_mask:
+                return events, muons, ak.Array([])
             return events, muons
 
         muon_pairs_0, muon_pairs_1, muon_pairs_idx_0, muon_pairs_idx_1 = (  # type: ignore[assignment]
@@ -562,7 +564,7 @@ class SUEP_base(processor.ProcessorABC):
 
         if not len(muon_pairs_0):
             if return_mask:
-                return events, muons, True
+                return events, muons, ak.Array([])
             return events, muons
 
         # Remove only muons from resonances

@@ -106,7 +106,11 @@ class SUEP_processor(SUEP_common.SUEP_base):
             muons = muons[keep_mask]
 
         # Form loose VR & make sure there is at least one muon in the event after the cuts
-        muons_VR_loose = muons[(muons.ip3d > 0.01) & (muons.miniPFRelIso_all > 0.2)]
+        muons_VR_loose = muons[
+            (abs(muons.dxy) > 0.01)
+            & (abs(muons.dz) > 0.01)
+            & (muons.miniPFRelIso_all > 0.2)
+        ]
         events_VR_loose = events[ak.num(muons_VR_loose, axis=-1) > 0]
         muons_VR_loose = muons_VR_loose[ak.num(muons_VR_loose, axis=-1) > 0]
 
@@ -122,7 +126,11 @@ class SUEP_processor(SUEP_common.SUEP_base):
         muons_VR_loose = muons_VR_loose[ak.max(os_dimuons.mass, axis=-1) > 20]  # type: ignore[op_type]
 
         # Form tight VR & make sure there is at least one muon in the event after the cuts
-        muons_VR_tight = muons[(muons.ip3d > 0.02) & (muons.miniPFRelIso_all > 0.4)]
+        muons_VR_tight = muons[
+            (abs(muons.dxy) > 0.02)
+            & (abs(muons.dz) > 0.02)
+            & (muons.miniPFRelIso_all > 0.4)
+        ]
         events_VR_tight = events[ak.num(muons_VR_tight, axis=-1) > 0]
         muons_VR_tight = muons_VR_tight[ak.num(muons_VR_tight, axis=-1) > 0]
 

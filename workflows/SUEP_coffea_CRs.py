@@ -174,15 +174,15 @@ class SUEP_processor(SUEP_common.SUEP_base):
             qcd_muons_CR_prompt,
         ) = self.apply_CR_prompt(events_)
 
-        events_CR_prompt, muons_CR_prompt = self.remove_resonaces(  # type: ignore[assignment]
+        events_CR_prompt, muons_CR_prompt = self.remove_resonances(  # type: ignore[assignment]
             events_CR_prompt, muons_CR_prompt, veto_mode=False
         )
 
-        events_CR_prompt, prompt_muons_CR_prompt = self.remove_resonaces(  # type: ignore[assignment]
+        events_CR_prompt, prompt_muons_CR_prompt = self.remove_resonances(  # type: ignore[assignment]
             events_CR_prompt, prompt_muons_CR_prompt, veto_mode=False
         )
 
-        events_CR_prompt, qcd_muons_CR_prompt = self.remove_resonaces(  # type: ignore[assignment]
+        events_CR_prompt, qcd_muons_CR_prompt = self.remove_resonances(  # type: ignore[assignment]
             events_CR_prompt, qcd_muons_CR_prompt, veto_mode=False
         )
 
@@ -277,7 +277,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
 
         events_CR_cb, muons_CR_cb = self.apply_CR_cb(events_)
 
-        events_CR_cb, muons_CR_cb = self.remove_resonaces(  # type: ignore[assignment]
+        events_CR_cb, muons_CR_cb = self.remove_resonances(  # type: ignore[assignment]
             events_CR_cb, muons_CR_cb, veto_mode=False
         )
 
