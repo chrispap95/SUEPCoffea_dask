@@ -16,6 +16,7 @@ workflows/__pycache__/
 dask-worker-space/
 .vscode/
 *.pyc
+temp/
 
 # Local environment files/directories
 .bashrc
@@ -23,7 +24,7 @@ dask-worker-space/
 .ipython/
 .local/
 parton/
-pythia/
+pythia*/
 python3.10/
 shell
 
@@ -35,10 +36,12 @@ venv/
 myenv/
 .myenv/
 myenv*/
+vendor/
 
 # Testing stuff
 test*
 test*/
+lumi/
 
 # Log & txt files
 dask-report.html
