@@ -107,7 +107,7 @@ def convert_MC_uncertainties(name, sample, histogram):
         hist_variations |= {
             f"{name}_MCStat{sample}Bin{i_str}Up": histogram + std_i,
             f"{name}_MCStat{sample}Bin{i_str}Down": histogram
-            - np.where(histogram.values() > std_i, std_i, histogram.values() + 1e-9),
+            - np.where(histogram.values() > std_i, std_i, histogram.values() - 1e-9),
         }
     return hist_variations
 
