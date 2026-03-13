@@ -472,18 +472,23 @@ if "__main__" == __name__:
                 load_data=args.data,
             )
         if args.SRs:
-            plots = plots | plot_utils.loader(
+            plots = plot_utils.loader(
                 tag=f"{args.tag}_{year}_SR_low_temp",
                 era=year,
                 custom_lumi=args.lumi,
                 load_data=args.data,
             )
-            plots = plots | plot_utils.loader(
+            plots_SR_high = plot_utils.loader(
                 tag=f"{args.tag}_{year}_SR_high_temp",
                 era=year,
                 custom_lumi=args.lumi,
                 load_data=args.data,
             )
+            for key in plots_SR_high:
+                if key in plots:
+                    plots[key] = plots_SR_high[key] | plots[key]
+                else:
+                    plots[key] = plots_SR_high[key]
 
     # Apply k-factor to QCD and DY
     if args.data and args.normalize:

@@ -10,6 +10,7 @@ import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
 import numpy as np
 import plot_utils
+from rich.pretty import pprint  # type: ignore[import]
 from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
@@ -44,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -110,6 +111,8 @@ def parse_args():
 region_labels = {
     "CR_cb": r"$CR_{QCD}$",
     "CR_prompt": r"$CR_{DY}$",
+    "CR_prompt_prompt": r"$CR_{DY}$ prompt $\mu$",
+    "CR_prompt_qcd": r"$CR_{DY}$ QCD $\mu$",
     "SR_high_temp_loose": r"$SR^{loose}_{high~T}$",
     "SR_high_temp_loose_extrapolation": r"$SR^{loose}_{high~T}$ + extrapolation",
     "SR_high_temp_tight": r"$SR^{tight}_{high~T}$",
@@ -123,6 +126,8 @@ region_labels = {
 y_ranges = {
     "CR_cb": (100, 1e12),
     "CR_prompt": (1, 1e9),
+    "CR_prompt_prompt": (1, 1e9),
+    "CR_prompt_qcd": (1, 1e9),
     "SR_high_temp_loose_extrapolation": (1e-2, 1e13),
     "SR_high_temp_loose": (1e-2, 1e13),
     "SR_high_temp_tight_extrapolation": (1e-2, 1e13),
@@ -249,6 +254,7 @@ def plot_region(args, plots, year, region):
     fig, ax1 = plt.subplots(figsize=(12.5, 12))
 
     if args.ratio:
+        plt.close(fig)
         fig = plt.figure(figsize=(11.5, 12.5))
         plt.subplots_adjust(bottom=0.08, top=0.92, left=0.1, right=0.95)
         ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
@@ -354,12 +360,18 @@ def plot_region(args, plots, year, region):
     )
 
     # modify last x tick label
-    if "CR_cb" in region:
+    if region == "CR_cb":
         ax1.set_xticks([0.75, 1, 2, 3, 4, 5.25])
         ax1.set_xticklabels(["", "1", "2", "3", "4+", ""])
-    elif "CR_prompt" in region:
+    elif region == "CR_prompt":
         ax1.set_xticks([1.75, 2, 3, 4, 5, 6.25])
         ax1.set_xticklabels(["", "2", "3", "4", "5+", ""])
+    elif region == "CR_prompt_prompt":
+        ax1.set_xticks([-0.25, 0, 1, 2, 3, 4, 5.25])
+        ax1.set_xticklabels(["", "0", "1", "2", "3", "4+", ""])
+    elif region == "CR_prompt_qcd":
+        ax1.set_xticks([-0.25, 0, 1, 2, 3, 4, 5.25])
+        ax1.set_xticklabels(["", "0", "1", "2", "3", "4+", ""])
     elif "SR" in region:
         ax1.set_xticks([2.75, 3, 4, 5, 6, 7, 8.25])
         ax1.set_xticklabels(["", "3", "4", "5", "6", "7+", ""])
@@ -473,8 +485,10 @@ if "__main__" == __name__:
                 plots[f"DY_{year}"][plot] = (
                     k_factor_dy[year] * plots[f"DY_{year}"][plot]
                 )
-        print("QCD k_factors =", k_factor_qcd, flush=True)
-        print("DY k_factors =", k_factor_dy, flush=True)
+        pprint("QCD k_factors:")
+        pprint(k_factor_qcd)
+        pprint("DY k_factors:")
+        pprint(k_factor_dy)
 
     for year in track(years_to_load, description="Fitting and extrapolations"):
         # QCD extrapolation
@@ -504,10 +518,10 @@ if "__main__" == __name__:
         dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=args.data)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=args.data)
         plots = plots | run3_plots
 
     # Plot regions
@@ -523,6 +537,8 @@ if "__main__" == __name__:
         "SR_high_temp_tight",
         "SR_high_temp_tight_extrapolation",
     ]
+    if args.CRs:
+        regions += ["CR_prompt_prompt", "CR_prompt_qcd"]
     for year in track(args.year, description="Plotting regions"):
         for region in regions:
             if args.CRs and "CR" not in region:

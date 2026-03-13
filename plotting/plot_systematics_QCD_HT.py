@@ -243,10 +243,10 @@ if "__main__" == __name__:
         dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=args.data)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=args.data)
         plots = plots | run3_plots
 
     samples = []

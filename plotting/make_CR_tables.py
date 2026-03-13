@@ -23,8 +23,14 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--year",
+        type=str,
+        default="2018",
+        help="Year of the data to be used (e.g., 2016, 2017, 2018). Default is 2018.",
     )
     parser.add_argument(
         "--lumi",
@@ -42,34 +48,38 @@ if "__main__" == __name__:
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
     plots = plot_utils.loader(
-        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=False
+        tag=f"{args.tag}_{args.year}_CR",
+        custom_lumi=args.lumi,
+        load_data=False,
+        era=args.year,
     )
     print("Done!", flush=True)
 
     mc_processes = [
-        ("Higgs_2018", "Higgs"),
-        ("TTV_2018", "TTV"),
-        ("ST_NLO_2018", "ST"),
-        ("WJets_2018", "WJets"),
-        ("VV+VVV_2018", "VV+VVV"),
-        ("TT_powheg_2018", "TT"),
-        ("DY_2018", f"DY+extr."),
-        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD+extr."),
+        ("Higgs", "Higgs"),
+        ("TTV", "TTV"),
+        ("ST_NLO", "ST"),
+        ("WJets", "WJets"),
+        ("VV+VVV", "VV+VVV"),
+        ("TT_powheg", "TT"),
+        ("DY", f"DY+extr."),
+        ("QCD_Pt_MuEnrichedPt5", f"QCD+extr."),
     ]
-    regions = ["CR_light", "CR_cb", "CR_prompt"]
+    regions = ["CR_cb", "CR_prompt"]
 
     # Calculate total bkg
-    plots["total_bkg_2018"] = {}
+    plots["total_bkg"] = {}
     for process, proc_label in mc_processes:
         for region in regions:
-            if region not in plots["total_bkg_2018"]:
-                plots["total_bkg_2018"][region] = plots[process][region].copy()
+            if region not in plots["total_bkg"]:
+                plots["total_bkg"][region] = plots[f"{process}_{args.year}"][
+                    region
+                ].copy()
             else:
-                plots["total_bkg_2018"][region] += plots[process][region]
+                plots["total_bkg"][region] += plots[f"{process}_{args.year}"][region]
 
-    bkg_CR_light_vals = plots["total_bkg_2018"]["CR_cb"].values()
-    bkg_CR_cb_vals = plots["total_bkg_2018"]["CR_light"].values()
-    bkg_CR_prompt_vals = plots["total_bkg_2018"]["CR_prompt"].values()
+    bkg_CR_cb_vals = plots["total_bkg"]["CR_cb"].values()
+    bkg_CR_prompt_vals = plots["total_bkg"]["CR_prompt"].values()
 
     # Add signal
     signal_models = [model for model in plots if "SUEP" in model]
@@ -80,13 +90,10 @@ if "__main__" == __name__:
         model_name = (
             model.replace("GluGluTo", "")
             .replace(".000", "")
-            .replace("_13TeV_2018", "")
+            .replace(f"_13TeV_{args.year}", "")
             .replace("00_mode", "_mode")
             .replace("0_mode", "_mode")
             .replace("00_T", "_T")
-        )
-        SoverB_CR_light[model_name] = (
-            plots[model]["CR_light"].values() / bkg_CR_light_vals
         )
         SoverB_CR_cb[model_name] = plots[model]["CR_cb"].values() / bkg_CR_cb_vals
         SoverB_CR_prompt[model_name] = (

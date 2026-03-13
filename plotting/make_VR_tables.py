@@ -3,7 +3,6 @@ import logging
 
 import plot_utils
 from colorama import Fore, Style  # type: ignore[import]
-from rich.progress import track  # type: ignore[import]
 from tabulate import tabulate  # type: ignore[import]
 
 # Suppress warnings from Extrapolation class
@@ -24,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -95,14 +94,16 @@ if "__main__" == __name__:
             .replace("00_mode", "_mode")
             .replace("0_mode", "_mode")
             .replace("00_T", "_T")
+            .replace("mode", "")
         )
         SoverB_loose[model_name] = plots[model]["VR_loose"].values() / QCD_VR_loose_vals
         SoverB_tight[model_name] = plots[model]["VR_tight"].values() / QCD_VR_tight_vals
 
+    print("Table of S/B values for signal models in VR bins:\n", flush=True)
     header = (
         ["Model"]
-        + [f"S/B loose bin {i}" for i in range(len(QCD_VR_loose_vals))]
-        + [f"S/B tight bin {i}" for i in range(len(QCD_VR_tight_vals))]
+        + [f"loose_{i}" for i in range(len(QCD_VR_loose_vals))]
+        + [f"tight_{i}" for i in range(len(QCD_VR_tight_vals))]
     )
     SoverB_table = [
         [key]

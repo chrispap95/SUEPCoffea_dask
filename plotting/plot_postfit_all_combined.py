@@ -48,15 +48,15 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
         "--input",
         type=str,
-        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src/postfit_plots_Run2.root",
+        default="/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Mar2026/CMSSW_14_1_0_pre4/src/postfit_plots.root",
         help="Path to the postfit plots root file. Default is "
-        "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src/postfit_plots_Run2.root",
+        "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Mar2026/CMSSW_14_1_0_pre4/src/postfit_plots.root",
     )
     parser.add_argument(
         "--year",
@@ -124,7 +124,7 @@ def parse_args():
 regions = ["CR_QCD", "CR_DY", "SR_low_temp", "SR_high_temp"]
 processes = [
     "DY",
-    "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic",
+    "GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic",
     "VV+VVV",
     "QCD",
     "ST",
@@ -139,6 +139,8 @@ processes = [
 com_energy = lambda year: (
     "13TeV" if year.startswith("201") or year == "Run2" else "13p6TeV"
 )
+
+run_id = lambda year: "run2" if year.startswith("201") else "run3"
 
 
 def merge_runs(plots, run, args):
@@ -186,14 +188,15 @@ def merge_runs(plots, run, args):
 
 def load_postfits(input_file, regions, processes, year, args):
     era = f"{com_energy(year)}_{year}"
+    prefix = f"{run_id(year)}_{com_energy(year)}"
     plots = {}
     with uproot.open(input_file) as f:
         for process in processes:
             plots[process] = {}
             for region in regions:
-                if f"{region}_{era}_postfit/{process}" not in f:
+                if f"{prefix}_{region}_{era}_postfit/{process}" not in f:
                     continue
-                plots[process][f"{region}_{era}"] = f[f"{region}_{era}_postfit/{process}"].to_hist()  # type: ignore[attr-defined]
+                plots[process][f"{region}_{era}"] = f[f"{prefix}_{region}_{era}_postfit/{process}"].to_hist()  # type: ignore[attr-defined]
                 if "GluGluToSUEP" in process and args.rescale_signal != 1:
                     plots[process][f"{region}_{era}"] *= args.rescale_signal
     return plots
@@ -265,7 +268,7 @@ def plot_SUEP_combined(args, plots, year):
     ]
     data_name = ("data_obs", "Data")
 
-    signal_processes = ["GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic"]
+    signal_processes = ["GluGluToSUEP_mS125.000_mPhi8.000_T8.000_modeleptonic"]
     signal_labels = [r"$m_\phi=8\,$GeV, $T=32\,$GeV"]
 
     era = f"{com_energy(year)}_{year}"
@@ -486,6 +489,7 @@ if __name__ == "__main__":
             plots[sample] |= plots_year[sample]
 
     for sample in track(plots, description="Processing samples"):
+        print(sample)
         for year in years_to_load:
             era = f"{com_energy(year)}_{year}"
             h_comb = hist.Hist.new.Variable(
@@ -498,14 +502,28 @@ if __name__ == "__main__":
                     name="SUEP",
                 ).Weight()
 
-            h_comb[0] = plots[sample][f"CR_QCD_{era}"][1j]
-            h_comb[1] = plots[sample][f"CR_QCD_{era}"][2j]
-            h_comb[2] = plots[sample][f"CR_QCD_{era}"][3j]
-            h_comb[3] = plots[sample][f"CR_QCD_{era}"][4j]
-            h_comb[4] = plots[sample][f"CR_DY_{era}"][2j]
-            h_comb[5] = plots[sample][f"CR_DY_{era}"][3j]
-            h_comb[6] = plots[sample][f"CR_DY_{era}"][4j]
-            h_comb[7] = plots[sample][f"CR_DY_{era}"][5j]
+            if f"CR_QCD_{era}" not in plots[sample]:
+                print(f"Warning: CR_QCD_{era} not found for sample {sample}. Skipping.")
+                h_comb[0] = (0, 0)
+                h_comb[1] = (0, 0)
+                h_comb[2] = (0, 0)
+                h_comb[3] = (0, 0)
+            else:
+                h_comb[0] = plots[sample][f"CR_QCD_{era}"][1j]
+                h_comb[1] = plots[sample][f"CR_QCD_{era}"][2j]
+                h_comb[2] = plots[sample][f"CR_QCD_{era}"][3j]
+                h_comb[3] = plots[sample][f"CR_QCD_{era}"][4j]
+            if f"CR_DY_{era}" not in plots[sample]:
+                print(f"Warning: CR_DY_{era} not found for sample {sample}. Skipping.")
+                h_comb[4] = (0, 0)
+                h_comb[5] = (0, 0)
+                h_comb[6] = (0, 0)
+                h_comb[7] = (0, 0)
+            else:
+                h_comb[4] = plots[sample][f"CR_DY_{era}"][2j]
+                h_comb[5] = plots[sample][f"CR_DY_{era}"][3j]
+                h_comb[6] = plots[sample][f"CR_DY_{era}"][4j]
+                h_comb[7] = plots[sample][f"CR_DY_{era}"][5j]
             if args.unblind or "data_obs" not in sample:
                 if f"{args.signal_region}_{era}" in plots[sample]:
                     h_comb[8] = plots[sample][f"{args.signal_region}_{era}"][7j]

@@ -16,8 +16,15 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Apr2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
+    )
+    parser.add_argument(
+        "--year",
+        type=int,
+        default=2018,
+        choices=[2016, 2017, 2018],
+        help="Year of the data to be used. This is used to determine the integrated luminosity if --lumi is not provided.",
     )
     parser.add_argument(
         "--lumi",
@@ -59,10 +66,16 @@ if "__main__" == __name__:
     # Load plots and merge them
     print("Loading plots...", end=" ", flush=True)
     plots_CR = plot_utils.loader(
-        tag=f"{args.tag}_CR", custom_lumi=args.lumi, load_data=False
+        tag=f"{args.tag}_{args.year}_CR",
+        custom_lumi=args.lumi,
+        load_data=False,
+        era=args.year,
     )
     plots_SR = plot_utils.loader(
-        tag=f"{args.tag}_SRs", custom_lumi=args.lumi, load_data=False
+        tag=f"{args.tag}_{args.year}_SRs",
+        custom_lumi=args.lumi,
+        load_data=False,
+        era=args.year,
     )
     plots = {}
     for dataset in plots_CR:
@@ -72,14 +85,14 @@ if "__main__" == __name__:
     print("Done!", flush=True)
 
     mc_processes = [
-        ("Higgs_2018", "Higgs"),
-        ("TTV_2018", "TTV"),
-        ("ST_NLO_2018", "ST"),
-        ("WJets_2018", "WJets"),
-        ("VV+VVV_2018", "VV+VVV"),
-        ("TT_powheg_2018", "TT"),
-        ("DY_2018", f"DY"),
-        ("QCD_Pt_MuEnrichedPt5_2018", f"QCD"),
+        ("Higgs", "Higgs"),
+        ("TTV", "TTV"),
+        ("ST_NLO", "ST"),
+        ("WJets", "WJets"),
+        ("VV+VVV", "VV+VVV"),
+        ("TT_powheg", "TT"),
+        ("DY", f"DY"),
+        ("QCD_Pt_MuEnrichedPt5", f"QCD"),
     ]
     regions = ["SR_high_temp_tight", "SR_low_temp_tight"]
     regions_latex = [r"\SRhigh discovery bin", r"\SRlow discovery bin"]
@@ -93,9 +106,11 @@ if "__main__" == __name__:
             "eff. MC events ((sumw)^2/sumw2)",
             "Poisson unc. band for y=0",
         ]
+        prefix = suffix = "$" if args.latex else ""
+        pm_sign = r"\pm" if args.latex else " ± "
         table = []
         for proc, label in mc_processes:
-            h = plots[proc][region]
+            h = plots[f"{proc}_{args.year}"][region]
             # Get scale of rightmost non-zero bin
             values = h.values()[h.values() > 0]
             variances = h.variances()[h.values() > 0]
@@ -104,8 +119,8 @@ if "__main__" == __name__:
             unc_band = get_poisson_errors(0, scale=scale)
             row = [
                 label,
-                np.where(plots[proc][region].values() > 0)[0][-1] + 3,
-                f"{smart_round(values[-1])} +/- {smart_round(np.sqrt(variances[-1]))}",
+                np.where(plots[f"{proc}_{args.year}"][region].values() > 0)[0][-1] + 3,
+                f"{prefix}{smart_round(values[-1])}{pm_sign}{smart_round(np.sqrt(variances[-1]))}{suffix}",
                 smart_round(scale),
                 round(mc_events, 1),
                 (smart_round(unc_band[0]), smart_round(unc_band[1])),

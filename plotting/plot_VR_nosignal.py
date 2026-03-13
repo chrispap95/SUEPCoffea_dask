@@ -11,6 +11,7 @@ import mplhep as hep
 import numpy as np
 import plot_utils
 import scipy.stats as stats  # type: ignore[import]
+from rich.pretty import pprint  # type: ignore[import]
 from rich.progress import track  # type: ignore[import]
 
 hep.style.use(hep.style.CMS)
@@ -30,7 +31,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -232,6 +233,7 @@ def plot_VR(args, plots, year, region):
     fig, ax1 = plt.subplots(figsize=(7, 7))
 
     if args.ratio:
+        plt.close(fig)
         fig = plt.figure(figsize=(9, 11))
         plt.subplots_adjust(bottom=0.1, top=0.92, left=0.15, right=0.96)
         ax1 = plt.subplot2grid((5, 1), (0, 0), rowspan=3)
@@ -370,7 +372,7 @@ if "__main__" == __name__:
             "2023BPix",
         ]
     plots = {}
-    for year in track(years_to_load):
+    for year in track(years_to_load, description="Loading plots"):
         plots = plots | plot_utils.loader(
             tag=f"{args.tag}_{year}_VR",
             era=year,
@@ -382,7 +384,7 @@ if "__main__" == __name__:
     if args.data and args.normalize:
         print("Calculate and apply k-factor to QCD...", flush=True)
         k_factor = {}
-        for year in track(years_to_load):
+        for year in track(years_to_load, description="Calculating k-factors"):
             k_factor[year] = plot_utils.calculate_k_factor(
                 plots, year, region="VR_loose", process="QCD_Pt_MuEnrichedPt5"
             )
@@ -390,7 +392,8 @@ if "__main__" == __name__:
                 plots["QCD_Pt_MuEnrichedPt5_" + year][plot] = (
                     k_factor[year] * plots["QCD_Pt_MuEnrichedPt5_" + year][plot]
                 )
-        print("k_factor :", k_factor, flush=True)
+        pprint("QCD k_factors:")
+        pprint(k_factor)
 
     print("Fit and extrapolation...", flush=True)
     # QCD extrapolation
@@ -399,19 +402,19 @@ if "__main__" == __name__:
         "VR_loose": slice(3j, 6j),
         "VR_tight": slice(3j, 6j),
     }
-    for year in track(years_to_load):
+    for year in track(years_to_load, description="Fitting and extrapolations"):
         qcd_extrapolation = plot_utils.Extrapolation(
             plots["QCD_Pt_MuEnrichedPt5_" + year], uncertainty_scheme="full"
         )
         qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=args.data)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=args.data)
         plots = plots | run3_plots
 
-    for year in track(args.year):
+    for year in track(args.year, description="Plotting regions"):
         for region in regions:
             plot_VR(args, plots, year, region)

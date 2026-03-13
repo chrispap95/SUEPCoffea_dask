@@ -9,7 +9,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis.",
     )
     parser.add_argument(
@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "--dest",
         type=str,
-        default=f"{def_out_path}/Dec2025/CMSSW_14_1_0_pre4/src/auxiliaries/input/",
+        default=f"{def_out_path}/Mar2026/CMSSW_14_1_0_pre4/src/auxiliaries/input/",
         help="Destination folder for the config files.",
     )
     return parser.parse_args()

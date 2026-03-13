@@ -69,12 +69,14 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
         Muon scale factors. The shape is the same as the muon collection.
     """
     # NOTE: systup and systdown have the stat + syst uncertainties added in quadrature
-    # In the case of Run 2 JPsi efficiencies, the systup and systdown are only the stat uncertainties
+    # In the case of Run 2 JPsi efficiencies, the systup and systdown are only the stat uncertainties)
     var = "nominal"
     if syst == "up":
         var = "systup"
     elif syst == "down":
         var = "systdown"
+
+    print(var, era, region)
 
     muons_flat = ak.flatten(muons)
     n_muons = ak.num(muons)
@@ -126,13 +128,16 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
     json_file_Z = f"data/muon_corrections/{era}/muon_Z.json"
     corrs_Z = correctionlib.CorrectionSet.from_file(json_file_Z)
 
+    era_tag = era + "UL" if era.startswith("201") else era
     custom_corrs_file = (
-        f"data/muon_corrections/custom_scale_factors/Z_Run{era}_schemaV2.json"
+        f"data/muon_corrections/custom_scale_factors/Z_Run{era_tag}_schemaV2.json"
     )
     custom_corrs = correctionlib.CorrectionSet.from_file(custom_corrs_file)
 
     muon_SF = np.ones_like(muons_flat.pt)
 
+    if var == "nominal":
+        print(f"muons.pt: {muons_flat.pt}")
     # Evaluate RECO efficiency
     # Only for Run 2. Muons with pt < 10 GeV use JPsi corrections.
     if "NUM_TrackerMuons_DEN_genTracks" in config:
@@ -146,14 +151,22 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
         muon_SF = muon_SF * np.where(
             muons_flat.pt > 10, medium_pt_muon_eff, low_pt_muon_eff
         )
+        if var == "nominal":
+            print(f"tracking eff: {muon_SF}")
 
     # Evaluate medium ID efficiency
     if peak == "JPsi":
         muon_corr_id = corrs_JPsi["NUM_MediumID_DEN_TrackerMuons"]
         muon_SF = muon_SF * muon_corr_id.evaluate(muons_flat.eta, muons_flat.pt, var)
+        if var == "nominal":
+            print(
+                f"medium eff JPsi: {muon_corr_id.evaluate(muons_flat.eta, muons_flat.pt, var)}"
+            )
     elif peak == "Z":
         muon_corr_id = corrs_Z["NUM_MediumID_DEN_TrackerMuons"]
         muon_SF = muon_SF * muon_corr_id.evaluate(muons_flat.eta, 50.0, var)
+        if var == "nominal":
+            print(f"medium eff Z: {muon_corr_id.evaluate(muons_flat.eta, 50.0, var)}")
 
     # Evaluate all other efficiencies. They are all in the custom corrections file.
     for corr_name in config:
@@ -166,7 +179,9 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
         muon_pt_vals = muons_flat.pt
         if override_low_pt_bound:
             muon_pt_vals = np.where(muon_pt_vals < 10, 10, muon_pt_vals)
-        muon_SF = muon_SF * corr.evaluate(abs(muons_flat.eta), muon_pt_vals, var)
+        muon_SF = muon_SF * corr.evaluate(muon_pt_vals, var)
+        if var == "nominal":
+            print(f"{corr_name}: {corr.evaluate(muon_pt_vals, var)}")
 
     return ak.unflatten(muon_SF, n_muons)
 

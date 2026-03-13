@@ -252,8 +252,18 @@ class SUEP_processor(SUEP_common.SUEP_base):
                     weightDown=prompt_muon_SFs_down * qcd_muon_SFs_down,
                 )
             nMuon_CR_prompt = ak.num(muons_CR_prompt, axis=-1)
+            nMuon_prompt_CR_prompt = ak.num(prompt_muons_CR_prompt, axis=-1)
+            nMuon_qcd_CR_prompt = ak.num(qcd_muons_CR_prompt, axis=-1)
             output[dataset]["histograms"]["CR_prompt"].fill(
                 ak.where(nMuon_CR_prompt > 5, 5, nMuon_CR_prompt),
+                weight=weights_CR_prompt.weight(),
+            )
+            output[dataset]["histograms"]["CR_prompt_prompt"].fill(
+                ak.where(nMuon_prompt_CR_prompt > 4, 4, nMuon_prompt_CR_prompt),
+                weight=weights_CR_prompt.weight(),
+            )
+            output[dataset]["histograms"]["CR_prompt_qcd"].fill(
+                ak.where(nMuon_qcd_CR_prompt > 4, 4, nMuon_qcd_CR_prompt),
                 weight=weights_CR_prompt.weight(),
             )
             if self.do_syst:
@@ -380,6 +390,12 @@ class SUEP_processor(SUEP_common.SUEP_base):
         histograms = {
             "CR_prompt": hist.Hist.new.Regular(
                 4, 2, 6, name="nMuon", label="nMuon"
+            ).Weight(),
+            "CR_prompt_prompt": hist.Hist.new.Regular(
+                5, 0, 5, name="nMuon_prompt", label="nMuon_prompt"
+            ).Weight(),
+            "CR_prompt_qcd": hist.Hist.new.Regular(
+                5, 0, 5, name="nMuon_qcd", label="nMuon_qcd"
             ).Weight(),
             "CR_cb": hist.Hist.new.Regular(
                 4, 1, 5, name="nMuon", label="nMuon"

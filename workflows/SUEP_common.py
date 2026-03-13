@@ -451,7 +451,7 @@ class SUEP_base(processor.ProcessorABC):
 
     def find_dimuon_pairs(self, muons, return_indices: bool = False):
         """
-        Find recursively all possible pairs of OS muons, starting from the closest in dR.
+        Find iteratively all possible pairs of OS muons, starting from the closest in dR.
         Implements a greedy matching algorithm to find the pairs.
         """
         muons1 = muons[muons.charge == 1]

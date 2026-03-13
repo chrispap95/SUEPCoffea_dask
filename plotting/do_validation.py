@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -138,7 +138,7 @@ if "__main__" == __name__:
         plt.close()
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=True)
         plots = plots | run2_plots
 
         # QCD extrapolation
@@ -185,7 +185,7 @@ if "__main__" == __name__:
         plt.close()
 
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=True)
         plots = plots | run3_plots
 
         # QCD extrapolation

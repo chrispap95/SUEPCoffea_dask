@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -40,6 +40,11 @@ def parse_args():
             "Run3",
         ],
         help="Year of the data. Default is all years. Can be a single year or multiple years.",
+    )
+    parser.add_argument(
+        "--data",
+        action="store_true",
+        help="Plot data points in the regions. Default is False.",
     )
     parser.add_argument(
         "--dest",
@@ -61,8 +66,8 @@ region_labels = {
 
 # Abbreviations for the sample names
 sample_names = {
-    "QCD_Pt_MuEnrichedPt5_2018": "QCD",
-    "DY_2018": "DY",
+    "QCD_Pt_MuEnrichedPt5": "QCD",
+    "DY": "DY",
 }
 
 
@@ -129,7 +134,7 @@ def make_plot(plots, sample, region):
     ax1.text(
         0.5,
         0.95,
-        sample_names[sample],
+        sample_names["_".join(sample.split("_")[:-1])],
         ha="center",
         va="top",
         transform=ax1.transAxes,
@@ -148,9 +153,12 @@ def make_plot(plots, sample, region):
     plt.yscale("log")
     plt.legend()
     plt.ylabel("density")
-    plt.tight_layout()
     plt.savefig(
-        f"{args.dest}/tight_vs_loose_{region}_{sample_names[sample]}.pdf",
+        os.path.join(
+            args.dest,
+            args.tag,
+            f"tight_vs_loose_{region}_{year}_{sample_names['_'.join(sample.split('_')[:-1])]}.pdf",
+        ),
         bbox_inches="tight",
     )
     plt.close()
@@ -160,7 +168,7 @@ if "__main__" == __name__:
     args = parse_args()
 
     # Create destination directory
-    os.makedirs(args.dest, exist_ok=True)
+    os.makedirs(os.path.join(args.dest, args.tag), exist_ok=True)
 
     # Load plots
     years_to_load = args.year
@@ -218,10 +226,10 @@ if "__main__" == __name__:
         dy_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=args.data)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=args.data)
         plots = plots | run3_plots
 
     for year in track(args.year, description="Plotting regions"):

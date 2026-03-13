@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -47,30 +47,30 @@ def parse_args():
         help="Unblind the SRs.",
     )
     parser.add_argument(
-        "--signal_scale",
+        "--signal-scale",
         type=float,
         default=0.0001,
         help="Scale signal by this factor. Can be used to scale r value in combine. "
         "This is the inverse of the scaling of the signal strength.",
     )
     parser.add_argument(
-        "--inject_signal",
+        "--inject-signal",
         type=int,
         default=0,
         help="Inject signal in the data_obs plot for the SR. "
         "This is the number (integer) of signal events to inject.",
     )
     parser.add_argument(
-        "--signal_filter",
+        "--signal-filter",
         type=str,
         default="",
-        help="Export only signal containing this string. E.g., 'mPhi8.000_T32.000'.",
+        help="Export only signal containing this string. E.g., ' -'.",
     )
     def_out_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff"
     parser.add_argument(
         "--dest",
         type=str,
-        default=f"{def_out_path}/Dec2025/CMSSW_14_1_0_pre4/src/auxiliaries/input/",
+        default=f"{def_out_path}/Mar2026/CMSSW_14_1_0_pre4/src/auxiliaries/input/",
         help="Destination directory for the ROOT files.",
     )
     parser.add_argument(
@@ -84,7 +84,32 @@ def parse_args():
         action="store_true",
         help="Use multiprocessing to convert signal plots to ROOT.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print debug information during processing.",
+    )
     return parser.parse_args()
+
+
+def convert_MC_uncertainties(name, sample, histogram):
+    hist_variations = {}
+    std = np.sqrt(histogram.variances())
+    for i in range(len(histogram.values())):
+        if "SR" in name and i < 4:
+            # NOTE: This might be confusing. The first 4 bins are skipped because
+            # they will not be exported to the combine fit. The output bin is
+            # renamed to 0 because the exported histogram will be sliced.
+            continue
+        i_str = i if "SR" not in name else 0
+        std_i = np.zeros_like(std)
+        std_i[i] = std[i]
+        hist_variations |= {
+            f"{name}_MCStat{sample}Bin{i_str}Up": histogram + std_i,
+            f"{name}_MCStat{sample}Bin{i_str}Down": histogram
+            - np.where(histogram.values() > std_i, std_i, histogram.values() + 1e-9),
+        }
+    return hist_variations
 
 
 if "__main__" in __name__:
@@ -126,10 +151,11 @@ if "__main__" in __name__:
         for dataset in track(plots, description="Sanitizing plots"):
             for region in plots[dataset]:
                 if any(plots[dataset][region].values() < 0):
-                    print(
-                        f"Sanitizing negative values for dataset {dataset} in region {region}...",
-                        flush=True,
-                    )
+                    if args.debug:
+                        print(
+                            f"Sanitizing negative values for dataset {dataset} in region {region}...",
+                            flush=True,
+                        )
                     h = plots[dataset][region]
                     for i in np.arange(len(h.values()))[h.values() < 0]:
                         h[i] = (1e-9, h[i].variance)
@@ -141,6 +167,7 @@ if "__main__" in __name__:
         "PUReweight",
         "ISR",
         "FSR",
+        "L1Prefire",
         "LHEScaleMuF",
         "LHEScaleMuR",
         "LHEPdf",
@@ -165,11 +192,11 @@ if "__main__" in __name__:
                         region
                     ].copy()
                     plots[dataset][f"{region}_{syst}Up"] = plots[dataset][region].copy()
-                if region == "SR_low_temp_loose":
-                    plots[dataset]["SR_low_temp_loose_TrkEffDown"] = plots[dataset][
+                if region == "SR_low_temp_tight":
+                    plots[dataset]["SR_low_temp_tight_TrkEffDown"] = plots[dataset][
                         "SR_low_temp_loose"
                     ].copy()
-                    plots[dataset]["SR_low_temp_loose_TrkEffUp"] = plots[dataset][
+                    plots[dataset]["SR_low_temp_tight_TrkEffUp"] = plots[dataset][
                         "SR_low_temp_loose"
                     ].copy()
     print("Done!", flush=True)
@@ -203,7 +230,7 @@ if "__main__" in __name__:
                 old_content = plots[dataset][region][7j]
                 plots[dataset][region][7j] = (
                     old_content.value + float(args.inject_signal),
-                    old_content.variance + float(args.inject_signal) ** 2,
+                    old_content.variance + float(args.inject_signal),
                 )
         print("Done!", flush=True)
 
@@ -227,7 +254,9 @@ if "__main__" in __name__:
         qcd_extrapolation = plot_utils.Extrapolation(
             plots["QCD_Pt_MuEnrichedPt5_" + year], uncertainty_scheme="full"
         )
-        qcd_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
+        qcd_extrapolation.fit_syst_variations(
+            slice_hists=slice_hists, verbose=args.debug
+        )
         qcd_extrapolation.create_syst_variation(sample="QCD")
         # DY extrapolation
         # Slice the first bin out where needed for fit stability
@@ -240,8 +269,20 @@ if "__main__" in __name__:
         dy_extrapolation = plot_utils.Extrapolation(
             plots["DY_" + year], uncertainty_scheme="full"
         )
-        dy_extrapolation.fit_syst_variations(slice_hists=slice_hists, verbose=False)
+        dy_extrapolation.fit_syst_variations(
+            slice_hists=slice_hists, verbose=args.debug
+        )
         dy_extrapolation.create_syst_variation(sample="DY")
+
+    # Names to be used for the manual MC stat naming
+    regions_renamed = {
+        "CR_cb": "CRQCD",
+        "CR_prompt": "CRDY",
+        "SR_high_temp_loose": "SRHighT",
+        "SR_high_temp_tight": "SRHighT",
+        "SR_low_temp_loose": "SRLowT",
+        "SR_low_temp_tight": "SRLowT",
+    }
 
     # Prepare plots for export
     plots_for_export = {}
@@ -250,13 +291,30 @@ if "__main__" in __name__:
     signal_models = [model for model in plots if "SUEP" in model]
     signal_models = [model for model in signal_models if args.signal_filter in model]
 
+    def add_signal_mcstats(histogram):
+        for region in regions_renamed:
+            histogram |= convert_MC_uncertainties(
+                region,
+                f"SUEP{regions_renamed[region]}",
+                histogram[region],
+            )
+        return histogram
+
     if args.multiproc:
 
         def convert_model_pair(pair):
             model, histogram = pair
             import plot_utils
 
-            return model, plot_utils.convert_to_root(model, histogram, do_syst=True)
+            histogram = add_signal_mcstats(histogram)
+
+            return (
+                model,
+                histogram,
+                plot_utils.convert_to_root(
+                    model, histogram, do_syst=True, verbose=args.debug
+                ),
+            )
 
         pairs = [(model, plots[model]) for model in signal_models]
         with ProcessPoolExecutor() as executor:
@@ -268,14 +326,16 @@ if "__main__" in __name__:
                 total=len(futures),
                 description="Converting signal plots to ROOT",
             ):
-                model, converted = future.result()
+                model, histogram, converted = future.result()
+                plots[model] = histogram
                 plots_for_export[model] = converted
     else:
         for model in track(
             signal_models, description="Converting signal plots to ROOT"
         ):
+            plots[model] = add_signal_mcstats(plots[model])
             plots_for_export[model] = plot_utils.convert_to_root(
-                model, plots[model], do_syst=True
+                model, plots[model], do_syst=True, verbose=args.debug
             )
 
     # MC bkg
@@ -293,19 +353,32 @@ if "__main__" in __name__:
         com_energy = "13TeV" if year.startswith("201") else "13p6TeV"
         for process, process_name in mc_processes:
             do_extrapolation = process_name in ["QCD", "DY"]
+            for region in regions_renamed:
+                suffix = "_extrapolation" if do_extrapolation and "SR" in region else ""
+                plots[f"{process}_{year}"] |= convert_MC_uncertainties(
+                    f"{region}{suffix}",
+                    f"{process_name}{regions_renamed[region]}",
+                    plots[f"{process}_{year}"][f"{region}{suffix}"],
+                )
             plots_for_export[f"{process_name}_{com_energy}_{year}"] = (
                 plot_utils.convert_to_root(
                     f"{process}_{year}",
                     plots[f"{process}_{year}"],
                     extrapolation=do_extrapolation,
                     do_syst=True,
+                    verbose=args.debug,
                 )
             )
 
         # Data
         if args.data:
             plots_for_export[f"data_obs_{com_energy}_{year}"] = (
-                plot_utils.convert_to_root(f"Data_{year}", plots[f"Data_{year}"])
+                plot_utils.convert_to_root(
+                    f"Data_{year}",
+                    plots[f"Data_{year}"],
+                    do_syst=False,
+                    verbose=args.debug,
+                )
             )
 
     # Export histograms to ROOT files
@@ -321,19 +394,19 @@ if "__main__" in __name__:
         output_name += f"_signal_injected{args.inject_signal}"
 
     # Create a fresh exports directory
-    if os.path.exists("exports"):
-        shutil.rmtree("exports")
-    os.makedirs("exports")
+    if os.path.exists(os.path.join("exports", args.tag)):
+        shutil.rmtree(os.path.join("exports", args.tag))
+    os.makedirs(os.path.join("exports", args.tag))
 
     plot_utils.export_histograms_to_root(
         plots_for_export,
-        output_path="exports",
+        output_path=os.path.join("exports", args.tag),
         output_name=f"{output_name}.root",
         years=args.year,
     )
 
     # Copy to destination
-    shutil.copytree("exports", args.dest, dirs_exist_ok=True)
+    shutil.copytree(os.path.join("exports", args.tag), args.dest, dirs_exist_ok=True)
     print("Done!", flush=True)
 
     end_time = time.time()

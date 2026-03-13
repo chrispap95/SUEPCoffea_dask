@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -206,6 +206,7 @@ def plot_SUEP_combined(args, plots, year):
     fig, ax1 = plt.subplots(figsize=(13.5, 11))
 
     if args.ratio:
+        plt.close(fig)
         fig = plt.figure(figsize=(14, 13))
         plt.subplots_adjust(bottom=0.12, top=0.95, left=0.1, right=0.97)
         ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
@@ -498,10 +499,10 @@ if "__main__" == __name__:
         plots[sample]["SUEP"] = h_comb.copy()
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=args.data)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=args.data)
         plots = plots | run3_plots
 
     # Plot regions

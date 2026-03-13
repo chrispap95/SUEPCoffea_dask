@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="full_analysis_Dec2025",
+        default="full_analysis_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(
@@ -54,6 +54,11 @@ def parse_args():
         default=str(pathlib.Path(__file__).parent / "fit_results_plots"),
         help="Destination directory to save the plots. Default is "
         f"{pathlib.Path(__file__).parent / 'fit_results_plots'}",
+    )
+    parser.add_argument(
+        "--data",
+        action="store_true",
+        help="If set, will load the data plots as well. Note that the fits are performed on MC only.",
     )
     parser.add_argument(
         "--VR",
@@ -103,6 +108,8 @@ if "__main__" == __name__:
                 load_data=False,
             )
             for key in plots:
+                if key not in plots_vr:
+                    continue
                 plots[key] = plots[key] | plots_vr[key]
 
     qcd_extrapolations = {}
@@ -142,10 +149,10 @@ if "__main__" == __name__:
         )
 
     if "Run2" in args.year:
-        run2_plots = plot_utils.merge_runs(plots, "Run2", args)
+        run2_plots = plot_utils.merge_runs(plots, "Run2", data=args.data)
         plots = plots | run2_plots
     if "Run3" in args.year:
-        run3_plots = plot_utils.merge_runs(plots, "Run3", args)
+        run3_plots = plot_utils.merge_runs(plots, "Run3", data=args.data)
         plots = plots | run3_plots
 
     # Plot regions
@@ -156,7 +163,7 @@ if "__main__" == __name__:
     if args.VR:
         regions += ["VR"]
 
-    for year in track(args.year, description="Plotting regions"):
+    for year in track(years_to_load, description="Plotting regions"):
         for region in regions:
             qcd_extrapolations[year].plot_fit(region, add_text="QCD")
             plt.savefig(

@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument(
         "--tag",
         type=str,
-        default="HLT_eff_Dec2025",
+        default="HLT_eff_Feb2026",
         help="Tag to identify the analysis",
     )
     parser.add_argument(

@@ -1248,61 +1248,67 @@ def convert_to_root(
         "SR_high_temp_tight",
         "SR_low_temp_tight",
     ]
+    cr_regions = {"CR_cb", "CR_prompt"}
+    region_export_names = {
+        "CR_cb": "CR_QCD",
+        "CR_prompt": "CR_DY",
+        "SR_low_temp_tight": "SR_low_temp",
+        "SR_high_temp_tight": "SR_high_temp",
+    }
 
-    systematic_vars = {""}
+    systematic_vars_by_region = {region: {""} for region in all_regions}
     if do_syst:
         for region_var in plots_in:
+            if "CR_prompt_prompt" in region_var or "CR_prompt_qcd" in region_var:
+                continue
             for region in all_regions:
-                if f"{region}{suffix}_" in region_var:
-                    systematic_vars.add(region_var.replace(f"{region}{suffix}", ""))
+                region_prefix = (
+                    f"{region}_" if region in cr_regions else f"{region}{suffix}_"
+                )
+                if region_var.startswith(region_prefix):
+                    systematic_vars_by_region[region].add(
+                        region_var.replace(region_prefix[:-1], "")
+                    )
 
-    systematic_vars = list(systematic_vars)
     if verbose:
         print("Systematic variations:")
-        print(sorted(systematic_vars), "\n")
-
-    for syst in systematic_vars:
-        CR_cb_plot = (
-            plots_in["CR_cb"]
-            if f"CR_cb{syst}" not in plots_in
-            else plots_in[f"CR_cb{syst}"]
+        print(
+            {
+                region_export_names[region]: sorted(systs)
+                for region, systs in systematic_vars_by_region.items()
+            },
+            "\n",
         )
-        plots_out[f"CR_QCD{syst}"] = uproot.to_writable(CR_cb_plot).to_pyroot()  # type: ignore[attr-defined]
-        plots_out[f"CR_QCD{syst}"].SetName(f"nMuon_CR_QCD{syst}_{sample}")
 
-        CR_prompt_plot = (
-            plots_in["CR_prompt"]
-            if f"CR_prompt{syst}" not in plots_in
-            else plots_in[f"CR_prompt{syst}"]
-        )
-        plots_out[f"CR_DY{syst}"] = uproot.to_writable(CR_prompt_plot).to_pyroot()  # type: ignore[attr-defined]
-        plots_out[f"CR_DY{syst}"].SetName(f"nMuon_CR_DY{syst}_{sample}")
+    for region in all_regions:
+        export_name = region_export_names[region]
+        base_region_name = region if region in cr_regions else f"{region}{suffix}"
 
-        if f"SR_low_temp_tight{suffix}" in plots_in:
-            SR_low_temp_plot = (
-                plots_in[f"SR_low_temp_tight{suffix}"]
-                if f"SR_low_temp_tight{suffix}{syst}" not in plots_in
-                else plots_in[f"SR_low_temp_tight{suffix}{syst}"]
-            )
-            h_SR_low_temp = ROOT.TH1D(
-                f"nMuon_SR_low_temp{syst}_{sample}", "nMuon", 1, 7, 8
-            )
-            h_SR_low_temp.SetBinContent(1, SR_low_temp_plot[7j].value)
-            h_SR_low_temp.SetBinError(1, np.sqrt(SR_low_temp_plot[7j].variance))
-            plots_out[f"SR_low_temp{syst}"] = h_SR_low_temp.Clone()
+        if base_region_name not in plots_in:
+            continue
 
-        if f"SR_high_temp_tight{suffix}" in plots_in:
-            SR_high_temp_plot = (
-                plots_in[f"SR_high_temp_tight{suffix}"]
-                if f"SR_high_temp_tight{suffix}{syst}" not in plots_in
-                else plots_in[f"SR_high_temp_tight{suffix}{syst}"]
+        for syst in sorted(systematic_vars_by_region[region]):
+            hist_name = base_region_name if syst == "" else f"{base_region_name}{syst}"
+            if hist_name not in plots_in:
+                continue
+
+            region_plot = plots_in[hist_name]
+
+            if region in cr_regions:
+                plots_out[f"{export_name}{syst}"] = uproot.to_writable(
+                    region_plot
+                ).to_pyroot()  # type: ignore[attr-defined]
+                plots_out[f"{export_name}{syst}"].SetName(
+                    f"nMuon_{export_name}{syst}_{sample}"
+                )
+                continue
+
+            h_region = ROOT.TH1D(
+                f"nMuon_{export_name}{syst}_{sample}", "nMuon", 1, 7, 8
             )
-            h_SR_high_temp = ROOT.TH1D(
-                f"nMuon_SR_high_temp{syst}_{sample}", "nMuon", 1, 7, 8
-            )
-            h_SR_high_temp.SetBinContent(1, SR_high_temp_plot[7j].value)
-            h_SR_high_temp.SetBinError(1, np.sqrt(SR_high_temp_plot[7j].variance))
-            plots_out[f"SR_high_temp{syst}"] = h_SR_high_temp.Clone()
+            h_region.SetBinContent(1, region_plot[7j].value)
+            h_region.SetBinError(1, np.sqrt(region_plot[7j].variance))
+            plots_out[f"{export_name}{syst}"] = h_region.Clone()
 
     return plots_out
 
@@ -1320,6 +1326,8 @@ def rename_uncorrelated_systematics(name, year):
             return name.replace(
                 f"{syst}_{com_energy(year)}", f"{syst}_{com_energy(year)}_{year}"
             )
+    if "MCStat" in name:
+        return name.replace(f"_{com_energy(year)}", f"_{com_energy(year)}_{year}")
     return name
 
 
@@ -1480,7 +1488,7 @@ def calculate_k_factor(plots, year, region, process):
     return k_factor
 
 
-def merge_runs(plots, run, args, slc=slice(None)):
+def merge_runs(plots, run, data, slc=slice(None)):
     names = [
         "Higgs",
         "TTV",
@@ -1512,7 +1520,7 @@ def merge_runs(plots, run, args, slc=slice(None)):
                 if re.search("GluGluToSUEP.*13p6TeV", p)
             }
         )
-    if args.data:
+    if data:
         names.append("Data")
     names.extend(signal_processes)
     run_plots = {}
