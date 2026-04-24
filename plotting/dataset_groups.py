@@ -17,6 +17,7 @@ dataset_groups_Run2 = {
         r"^JetHT_Run2016.*HIPM_UL2016_MiniAODv2_NanoAODv9-v._NANOAOD$",
         r"^JetHT_Run2016.-UL2016_MiniAODv2_NanoAODv9-v._NANOAOD$",
         r"^JetHT_Run2017.-UL2017_MiniAODv2_NanoAODv9-v._NANOAOD$",
+        r"^JetHT_Run2018.-UL2018_MiniAODv2_NanoAODv9_GT36-v.$",
     ],
     "Data": [
         r"^DoubleMuon_Run2016(B-ver1_|B-ver2_|C-|D-|E-|F-)HIPM_UL2016_MiniAODv2-v._MINIAOD$",

@@ -7,6 +7,12 @@ from colorama import Fore, Style  # type: ignore[import]
 from rich.progress import track  # type: ignore[import]
 from tabulate import tabulate  # type: ignore[import]
 
+RUN_PERIODS = {
+    # Leaving out 2016APV for now to match the rest of the plotting scripts.
+    "Run2": ["2016", "2017", "2018"],
+    "Run3": ["2022", "2022EE", "2023", "2023BPix"],
+}
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -31,6 +37,16 @@ def parse_args():
     return parser.parse_args()
 
 
+def expand_years(years):
+    expanded_years = []
+    for year in years:
+        year_list = RUN_PERIODS.get(year, [year])
+        for expanded_year in year_list:
+            if expanded_year not in expanded_years:
+                expanded_years.append(expanded_year)
+    return expanded_years
+
+
 def smart_rounding(value, uncertainty, mode="simple"):
     prefix = suffix = ""
     sep = "±"
@@ -52,10 +68,12 @@ def smart_rounding(value, uncertainty, mode="simple"):
 
 if "__main__" == __name__:
     args = parse_args()
+    years_to_load = expand_years(args.year)
+    print(f"Loading plots for years: {', '.join(years_to_load)}")
 
     # Load plots and merge them
     plots = {}
-    for year in track(args.year, description="Loading plots"):
+    for year in track(years_to_load, description="Loading plots"):
         plots = plots | plot_utils.loader(
             tag=f"{args.tag}_{year}_SRs",
             era=year,
@@ -90,17 +108,18 @@ if "__main__" == __name__:
                             f"$m_S={mS}$, $m_" + r"\phi" + f"={mPhi}$, $T={T}$, {mode}"
                         )
 
-                    sample_yields = []
                     y_high = hist.accumulators.WeightedSum()
                     y_low = hist.accumulators.WeightedSum()
                     exists = False
-                    for year in args.year:
+                    for year in years_to_load:
                         sample_year = f"{sample}_{com_energy(year)}_{year}"
                         if sample_year not in plots:
                             continue
                         exists = True
-                        y_high += plots[sample_year]["SR_high_temp_tight"][7j::sum]
-                        y_low += plots[sample_year]["SR_low_temp_tight"][7j::sum]
+                        y_high_year = plots[sample_year]["SR_high_temp_tight"][7j::sum]
+                        y_low_year = plots[sample_year]["SR_low_temp_tight"][7j::sum]
+                        y_high += y_high_year
+                        y_low += y_low_year
 
                     if not exists:
                         continue

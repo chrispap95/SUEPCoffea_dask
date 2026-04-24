@@ -94,6 +94,72 @@ class SUEP_base(processor.ProcessorABC):
         },
     }
 
+    triplemu_data_run_ranges = {
+        "2016APV": {
+            "HLT_TripleMu_5_3_3": (274954, 281616),
+        },
+        "2016": {
+            "HLT_TripleMu_5_3_3": (274954, 281616),
+            "HLT_TripleMu_5_3_3_DZ_Mass3p8": (281613, 284044),
+        },
+        "2017": {
+            "HLT_TripleMu_5_3_3_Mass3p8to60_DZ": (297046, 306462),
+        },
+        "2018": {
+            "HLT_TripleMu_5_3_3_Mass3p8to60_DZ": (315252, 315973),
+            "HLT_TripleMu_5_3_3_Mass3p8_DZ": (315974, 325175),
+        },
+    }
+
+    def get_triplemu_hlt_paths(self) -> list[str]:
+        if self.era in self.hlt_path_lumi:
+            return list(self.hlt_path_lumi[self.era].keys())
+        if self.era in ["2022", "2022EE", "2023", "2023BPix"]:
+            return [
+                "HLT_TripleMu_5_3_3_Mass3p8_DZ",
+                "HLT_TripleMu_10_5_5_DZ",
+                "HLT_TripleMu_12_10_5",
+            ]
+        raise ValueError(f"Invalid era: {self.era}")
+
+    def get_triplemu_path_run_mask(self, events, path: str):
+        if self.isMC or "run" not in events.fields:
+            return np.ones(len(events), dtype=bool)
+        start, end = self.triplemu_data_run_ranges.get(self.era, {}).get(
+            path, (None, None)
+        )
+        run_mask = np.ones(len(events), dtype=bool)
+        if start is not None:
+            run_mask = run_mask & (events.run >= start)
+        if end is not None:
+            run_mask = run_mask & (events.run <= end)
+        return run_mask
+
+    def can_evaluate_triplemu_hlt_path(self, events, path: str) -> bool:
+        path_name = path.removeprefix("HLT_")
+        if path_name in events.HLT.fields:
+            return True
+        if self.isMC and path == "HLT_TripleMu_5_3_3_DZ_Mass3p8":
+            return "TripleMu_5_3_3" in events.HLT.fields
+        if self.isMC and path == "HLT_TripleMu_5_3_3_Mass3p8to60_DZ":
+            return "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields
+        return False
+
+    def get_triplemu_hlt_mask(self, events, path: str):
+        path_name = path.removeprefix("HLT_")
+        trigger = np.zeros(len(events), dtype=bool)
+
+        if path_name in events.HLT.fields:
+            trigger = events.HLT[path_name]
+        elif self.isMC and path == "HLT_TripleMu_5_3_3_DZ_Mass3p8":
+            if "TripleMu_5_3_3" in events.HLT.fields:
+                trigger = self.emulate_HLT_TripleMu_5_3_3_DZ_Mass3p8(events)
+        elif self.isMC and path == "HLT_TripleMu_5_3_3_Mass3p8to60_DZ":
+            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
+                trigger = self.emulate_HLT_TripleMu_5_3_3_Mass3p8to60_DZ(events)
+
+        return trigger & self.get_triplemu_path_run_mask(events, path)
+
     def emulate_HLT_TripleMu_5_3_3_DZ_Mass3p8(self, events):
         # Begin from the HLT_TripleMu_5_3_3 trigger
         trigger = events.HLT.TripleMu_5_3_3

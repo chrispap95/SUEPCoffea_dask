@@ -12,8 +12,8 @@ hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
 # Definitions
-input_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src"
-tag = "full_analysis_Dec2025"
+input_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Mar2026/CMSSW_14_1_0_pre4/src"
+tag = "full_analysis_Feb2026"
 
 mass_vals = np.linspace(100, 1050, 1000)
 masses = np.array([125, 200, 300, 400, 500, 600, 800, 1000])

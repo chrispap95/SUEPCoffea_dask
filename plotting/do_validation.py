@@ -14,7 +14,9 @@ import pathlib
 
 import matplotlib as mpl  # type: ignore[import]
 import matplotlib.pyplot as plt  # type: ignore[import]
+import matplotlib.ticker as ticker  # type: ignore[import]
 import mplhep as hep
+import numpy as np
 import plot_utils
 from rich.progress import track  # type: ignore[import]
 
@@ -23,6 +25,161 @@ mpl.rcParams["figure.facecolor"] = "white"
 
 # Suppress warnings from Extrapolation class
 logging.getLogger().setLevel(logging.ERROR)
+
+SLICE_HISTS = {
+    "VR_loose": slice(4j, None),
+    "VR_tight": slice(3j, None),
+}
+
+EXTRAPOLATED_REGIONS = {
+    "VR loose": "VR_loose_extrapolation",
+    "VR tight": "VR_tight_extrapolation",
+}
+
+
+def snapshot_extrapolated_hists(plots):
+    return {
+        region: plots[region].copy()
+        for region in EXTRAPOLATED_REGIONS.values()
+        if region in plots
+    }
+
+
+def calculate_ratio(numerator, denominator):
+    numerator_vals = numerator.values()
+    denominator_vals = denominator.values()
+    numerator_vars = numerator.variances()
+    denominator_vars = denominator.variances()
+
+    ratio = np.divide(
+        numerator_vals,
+        denominator_vals,
+        out=np.zeros_like(numerator_vals, dtype=float),
+        where=denominator_vals != 0,
+    )
+    ratio_unc = np.sqrt(
+        np.divide(
+            numerator_vars,
+            denominator_vals**2,
+            out=np.zeros_like(numerator_vars, dtype=float),
+            where=denominator_vals != 0,
+        )
+        + np.divide(
+            numerator_vals**2 * denominator_vars,
+            denominator_vals**4,
+            out=np.zeros_like(denominator_vars, dtype=float),
+            where=denominator_vals != 0,
+        )
+    )
+
+    return ratio, ratio_unc
+
+
+def plot_run_stability(
+    summed_yearly_extrapolation,
+    total_run_extrapolation,
+    run,
+    sample_label,
+    output_dir,
+    is_data=False,
+):
+    max_y = 1
+    min_y = np.inf
+    for region in EXTRAPOLATED_REGIONS.values():
+        for plots in (summed_yearly_extrapolation, total_run_extrapolation):
+            values = plots[region].values()
+            positive_values = values[values > 0]
+            if len(positive_values) == 0:
+                continue
+            max_y = max(max_y, positive_values.max())
+            min_y = min(min_y, positive_values.min())
+
+    if not np.isfinite(min_y):
+        min_y = 0.1
+
+    fig, axes = plt.subplots(
+        2,
+        2,
+        figsize=(18, 10),
+        sharex="col",
+        gridspec_kw={"height_ratios": [3, 1], "hspace": 0.05},
+    )
+
+    for column, (title, region) in enumerate(EXTRAPOLATED_REGIONS.items()):
+        ax_top = axes[0, column]
+        ax_bottom = axes[1, column]
+
+        h_sum = summed_yearly_extrapolation[region]
+        h_total = total_run_extrapolation[region]
+
+        h_sum.plot(
+            yerr=np.sqrt(h_sum.variances()),
+            label="sum of yearly fits",
+            color="C0",
+            ax=ax_top,
+        )
+        h_total.plot(
+            yerr=np.sqrt(h_total.variances()),
+            label=f"{run} fit",
+            color="C1",
+            ls="--",
+            ax=ax_top,
+        )
+
+        ax_top.set_title(title)
+        ax_top.set_yscale("log")
+        ax_top.set_ylim(
+            10 ** np.floor(np.log10(0.5 * min_y)),
+            10 ** np.ceil(np.log10(2 * max_y)),
+        )
+        ax_top.set_ylabel("Events")
+        ax_top.xaxis.set_minor_locator(ticker.NullLocator())
+        ax_top.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        ax_top.legend()
+
+        if column == 0:
+            hep.cms.label(
+                llabel="Preliminary" if is_data else "Simulation",
+                data=is_data,
+                ax=ax_top,
+            )
+            ax_top.text(
+                0.5,
+                0.9,
+                f"{sample_label}, {run}",
+                transform=ax_top.transAxes,
+                verticalalignment="top",
+                horizontalalignment="center",
+            )
+
+        ratio, ratio_unc = calculate_ratio(h_sum, h_total)
+        ax_bottom.errorbar(
+            h_sum.axes[0].centers,
+            ratio,
+            yerr=ratio_unc,
+            color="black",
+            fmt="o",
+            linestyle="none",
+        )
+        ax_bottom.axhline(1, ls="--", color="gray")
+        ax_bottom.set_ylim(0, 2)
+        ax_bottom.set_xlim(h_sum.axes[0].edges[0], h_sum.axes[0].edges[-1])
+        ax_bottom.set_xlabel("nMuon")
+        ax_bottom.set_ylabel("year sum / run")
+        ax_bottom.xaxis.set_minor_locator(ticker.NullLocator())
+        ax_bottom.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+        for label in ax_top.xaxis.get_ticklabels():
+            label.set_visible(False)
+
+    plt.savefig(
+        os.path.join(
+            output_dir,
+            f"fit_stability_{sample_label.lower()}_{run}.pdf",
+        ),
+        bbox_inches="tight",
+    )
+    plt.close(fig)
 
 
 def parse_args():
@@ -94,22 +251,15 @@ if "__main__" == __name__:
         )
 
     for year in track(years_to_load, description="Fitting and extrapolations"):
-        # QCD extrapolation
-        # Slice the first bin out where needed for fit stability
-        slice_hists = {
-            "VR_loose": slice(4j, None),
-            "VR_tight": slice(3j, None),
-        }
-
         qcd_extrapolation = plot_utils.Extrapolation(
             plots[f"QCD_Pt_MuEnrichedPt5_{year}"], uncertainty_scheme="full"
         )
-        qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        qcd_extrapolation.extrapolate(slice_hists=SLICE_HISTS, verbose=False)
 
         data_extrapolation = plot_utils.Extrapolation(
             plots[f"Data_{year}"], is_data=True, uncertainty_scheme="full"
         )
-        data_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        data_extrapolation.extrapolate(slice_hists=SLICE_HISTS, verbose=False)
 
         qcd_extrapolation.plot_fit("VR", add_label=True, add_text="QCD")
         plt.savefig(
@@ -141,22 +291,25 @@ if "__main__" == __name__:
         run2_plots = plot_utils.merge_runs(plots, "Run2", data=True)
         plots = plots | run2_plots
 
-        # QCD extrapolation
-        # Slice the first bin out where needed for fit stability
-        slice_hists = {
-            "VR_loose": slice(4j, None),
-            "VR_tight": slice(3j, None),
-        }
+        # The merged run plots already contain the sum of the per-year
+        # extrapolated histograms. Snapshot them before the combined fit
+        # overwrites the same keys with the run-wide extrapolation.
+        qcd_summed_yearly_extrapolation = snapshot_extrapolated_hists(
+            plots["QCD_Pt_MuEnrichedPt5_Run2"]
+        )
+        data_summed_yearly_extrapolation = snapshot_extrapolated_hists(
+            plots["Data_Run2"]
+        )
 
         qcd_extrapolation = plot_utils.Extrapolation(
             plots[f"QCD_Pt_MuEnrichedPt5_Run2"], uncertainty_scheme="full"
         )
-        qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        qcd_extrapolation.extrapolate(slice_hists=SLICE_HISTS, verbose=False)
 
         data_extrapolation = plot_utils.Extrapolation(
             plots[f"Data_Run2"], is_data=True, uncertainty_scheme="full"
         )
-        data_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        data_extrapolation.extrapolate(slice_hists=SLICE_HISTS, verbose=False)
 
         qcd_extrapolation.plot_fit("VR", add_label=True, add_text="QCD")
         plt.savefig(
@@ -169,6 +322,14 @@ if "__main__" == __name__:
             os.path.join(output_dir, f"fit_overlay_qcd_Run2.pdf"), bbox_inches="tight"
         )
         plt.close()
+
+        plot_run_stability(
+            qcd_summed_yearly_extrapolation,
+            qcd_extrapolation.plots,
+            "Run2",
+            "QCD",
+            output_dir,
+        )
 
         data_extrapolation.plot_fit("VR", add_label=True, add_text="Data")
         plt.savefig(
@@ -184,26 +345,35 @@ if "__main__" == __name__:
         )
         plt.close()
 
+        plot_run_stability(
+            data_summed_yearly_extrapolation,
+            data_extrapolation.plots,
+            "Run2",
+            "Data",
+            output_dir,
+            is_data=True,
+        )
+
     if "Run3" in args.year:
         run3_plots = plot_utils.merge_runs(plots, "Run3", data=True)
         plots = plots | run3_plots
 
-        # QCD extrapolation
-        # Slice the first bin out where needed for fit stability
-        slice_hists = {
-            "VR_loose": slice(4j, None),
-            "VR_tight": slice(3j, None),
-        }
+        qcd_summed_yearly_extrapolation = snapshot_extrapolated_hists(
+            plots["QCD_Pt_MuEnrichedPt5_Run3"]
+        )
+        data_summed_yearly_extrapolation = snapshot_extrapolated_hists(
+            plots["Data_Run3"]
+        )
 
         qcd_extrapolation = plot_utils.Extrapolation(
             plots[f"QCD_Pt_MuEnrichedPt5_Run3"], uncertainty_scheme="full"
         )
-        qcd_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        qcd_extrapolation.extrapolate(slice_hists=SLICE_HISTS, verbose=False)
 
         data_extrapolation = plot_utils.Extrapolation(
             plots[f"Data_Run3"], is_data=True, uncertainty_scheme="full"
         )
-        data_extrapolation.extrapolate(slice_hists=slice_hists, verbose=False)
+        data_extrapolation.extrapolate(slice_hists=SLICE_HISTS, verbose=False)
 
         qcd_extrapolation.plot_fit("VR", add_label=True, add_text="QCD")
         plt.savefig(
@@ -216,6 +386,14 @@ if "__main__" == __name__:
             os.path.join(output_dir, f"fit_overlay_qcd_Run3.pdf"), bbox_inches="tight"
         )
         plt.close()
+
+        plot_run_stability(
+            qcd_summed_yearly_extrapolation,
+            qcd_extrapolation.plots,
+            "Run3",
+            "QCD",
+            output_dir,
+        )
 
         data_extrapolation.plot_fit("VR", add_label=True, add_text="Data")
         plt.savefig(
@@ -230,3 +408,12 @@ if "__main__" == __name__:
             bbox_inches="tight",
         )
         plt.close()
+
+        plot_run_stability(
+            data_summed_yearly_extrapolation,
+            data_extrapolation.plots,
+            "Run3",
+            "Data",
+            output_dir,
+            is_data=True,
+        )

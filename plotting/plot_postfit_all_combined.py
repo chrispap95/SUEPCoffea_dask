@@ -446,7 +446,6 @@ def plot_SUEP_combined(args, plots, year):
     plt.yscale("log")
     plt.legend(ncol=3, loc="upper center")
     plt.ylabel("events")
-    plt.tight_layout()
     plt.savefig(
         os.path.join(args.dest, args.tag, f"postfit_all_regions_combined_{year}.pdf"),
         bbox_inches="tight",
@@ -509,10 +508,10 @@ if __name__ == "__main__":
                 h_comb[2] = (0, 0)
                 h_comb[3] = (0, 0)
             else:
-                h_comb[0] = plots[sample][f"CR_QCD_{era}"][1j]
-                h_comb[1] = plots[sample][f"CR_QCD_{era}"][2j]
-                h_comb[2] = plots[sample][f"CR_QCD_{era}"][3j]
-                h_comb[3] = plots[sample][f"CR_QCD_{era}"][4j]
+                h_comb[0] = plots[sample][f"CR_QCD_{era}"][0]
+                h_comb[1] = plots[sample][f"CR_QCD_{era}"][1]
+                h_comb[2] = plots[sample][f"CR_QCD_{era}"][2]
+                h_comb[3] = plots[sample][f"CR_QCD_{era}"][3]
             if f"CR_DY_{era}" not in plots[sample]:
                 print(f"Warning: CR_DY_{era} not found for sample {sample}. Skipping.")
                 h_comb[4] = (0, 0)
@@ -520,13 +519,13 @@ if __name__ == "__main__":
                 h_comb[6] = (0, 0)
                 h_comb[7] = (0, 0)
             else:
-                h_comb[4] = plots[sample][f"CR_DY_{era}"][2j]
-                h_comb[5] = plots[sample][f"CR_DY_{era}"][3j]
-                h_comb[6] = plots[sample][f"CR_DY_{era}"][4j]
-                h_comb[7] = plots[sample][f"CR_DY_{era}"][5j]
+                h_comb[4] = plots[sample][f"CR_DY_{era}"][0]
+                h_comb[5] = plots[sample][f"CR_DY_{era}"][1]
+                h_comb[6] = plots[sample][f"CR_DY_{era}"][2]
+                h_comb[7] = plots[sample][f"CR_DY_{era}"][3]
             if args.unblind or "data_obs" not in sample:
                 if f"{args.signal_region}_{era}" in plots[sample]:
-                    h_comb[8] = plots[sample][f"{args.signal_region}_{era}"][7j]
+                    h_comb[8] = plots[sample][f"{args.signal_region}_{era}"][0]
             plots[sample][f"SUEP_{era}"] = h_comb.copy()
 
     if "Run2" in args.year:

@@ -1,4 +1,5 @@
 import argparse
+import gc
 import logging
 import math
 import os
@@ -12,6 +13,17 @@ from rich.progress import track  # type: ignore[import]
 
 # Suppress warnings from Extrapolation class
 logging.getLogger().setLevel(logging.ERROR)
+
+
+REGIONS_RENAMED = {
+    "CR_cb": "CRQCD",
+    "CR_prompt": "CRDY",
+    "SR_high_temp_loose": "SRHighT",
+    "SR_high_temp_tight": "SRHighT",
+    "SR_low_temp_loose": "SRLowT",
+    "SR_low_temp_tight": "SRLowT",
+}
+CONTROL_REGIONS = {"CR_cb", "CR_prompt"}
 
 
 def parse_args():
@@ -85,6 +97,18 @@ def parse_args():
         help="Use multiprocessing to convert signal plots to ROOT.",
     )
     parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=None,
+        help="Maximum number of worker processes to use with --multiproc. "
+        "If not provided, Python's default worker count is used.",
+    )
+    parser.add_argument(
+        "--add-mcstats-cr",
+        action="store_true",
+        help="Create per-bin MCStat histogram variations for the control regions.",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Print debug information during processing.",
@@ -110,6 +134,27 @@ def convert_MC_uncertainties(name, sample, histogram):
             - np.where(histogram.values() > std_i, std_i, histogram.values() - 1e-9),
         }
     return hist_variations
+
+
+def add_signal_mcstats(histogram, add_cr_mcstats=False):
+    for region in REGIONS_RENAMED:
+        if region in CONTROL_REGIONS and not add_cr_mcstats:
+            continue
+        histogram |= convert_MC_uncertainties(
+            region,
+            f"SUEP{REGIONS_RENAMED[region]}",
+            histogram[region],
+        )
+    return histogram
+
+
+def convert_signal_model(model, histogram, add_cr_mcstats=False, verbose=False):
+    import plot_utils
+
+    histogram = add_signal_mcstats(histogram, add_cr_mcstats=add_cr_mcstats)
+    return model, plot_utils.convert_to_root(
+        model, histogram, do_syst=True, verbose=verbose
+    )
 
 
 if "__main__" in __name__:
@@ -273,16 +318,8 @@ if "__main__" in __name__:
             slice_hists=slice_hists, verbose=args.debug
         )
         dy_extrapolation.create_syst_variation(sample="DY")
-
-    # Names to be used for the manual MC stat naming
-    regions_renamed = {
-        "CR_cb": "CRQCD",
-        "CR_prompt": "CRDY",
-        "SR_high_temp_loose": "SRHighT",
-        "SR_high_temp_tight": "SRHighT",
-        "SR_low_temp_loose": "SRLowT",
-        "SR_low_temp_tight": "SRLowT",
-    }
+        del qcd_extrapolation, dy_extrapolation
+        gc.collect()
 
     # Prepare plots for export
     plots_for_export = {}
@@ -290,53 +327,40 @@ if "__main__" in __name__:
     # Add signal
     signal_models = [model for model in plots if "SUEP" in model]
     signal_models = [model for model in signal_models if args.signal_filter in model]
-
-    def add_signal_mcstats(histogram):
-        for region in regions_renamed:
-            histogram |= convert_MC_uncertainties(
-                region,
-                f"SUEP{regions_renamed[region]}",
-                histogram[region],
-            )
-        return histogram
+    add_cr_mcstats = args.add_mcstats_cr
 
     if args.multiproc:
-
-        def convert_model_pair(pair):
-            model, histogram = pair
-            import plot_utils
-
-            histogram = add_signal_mcstats(histogram)
-
-            return (
-                model,
-                histogram,
-                plot_utils.convert_to_root(
-                    model, histogram, do_syst=True, verbose=args.debug
-                ),
-            )
-
-        pairs = [(model, plots[model]) for model in signal_models]
-        with ProcessPoolExecutor() as executor:
-            futures = {
-                executor.submit(convert_model_pair, pair): pair[0] for pair in pairs
-            }
+        with ProcessPoolExecutor(max_workers=args.max_workers) as executor:
+            futures = {}
+            for model in signal_models:
+                futures[
+                    executor.submit(
+                        convert_signal_model,
+                        model,
+                        plots.pop(model),
+                        add_cr_mcstats,
+                        args.debug,
+                    )
+                ] = model
             for future in track(
                 as_completed(futures),
                 total=len(futures),
                 description="Converting signal plots to ROOT",
             ):
-                model, histogram, converted = future.result()
-                plots[model] = histogram
+                model, converted = future.result()
                 plots_for_export[model] = converted
     else:
         for model in track(
             signal_models, description="Converting signal plots to ROOT"
         ):
-            plots[model] = add_signal_mcstats(plots[model])
+            histogram = plots.pop(model)
+            histogram = add_signal_mcstats(histogram, add_cr_mcstats=add_cr_mcstats)
             plots_for_export[model] = plot_utils.convert_to_root(
-                model, plots[model], do_syst=True, verbose=args.debug
+                model, histogram, do_syst=True, verbose=args.debug
             )
+            del histogram
+
+    gc.collect()
 
     # MC bkg
     mc_processes = [
@@ -353,22 +377,26 @@ if "__main__" in __name__:
         com_energy = "13TeV" if year.startswith("201") else "13p6TeV"
         for process, process_name in mc_processes:
             do_extrapolation = process_name in ["QCD", "DY"]
-            for region in regions_renamed:
+            sample_key = f"{process}_{year}"
+            for region in REGIONS_RENAMED:
+                if region in CONTROL_REGIONS and not add_cr_mcstats:
+                    continue
                 suffix = "_extrapolation" if do_extrapolation and "SR" in region else ""
-                plots[f"{process}_{year}"] |= convert_MC_uncertainties(
+                plots[sample_key] |= convert_MC_uncertainties(
                     f"{region}{suffix}",
-                    f"{process_name}{regions_renamed[region]}",
-                    plots[f"{process}_{year}"][f"{region}{suffix}"],
+                    f"{process_name}{REGIONS_RENAMED[region]}",
+                    plots[sample_key][f"{region}{suffix}"],
                 )
             plots_for_export[f"{process_name}_{com_energy}_{year}"] = (
                 plot_utils.convert_to_root(
-                    f"{process}_{year}",
-                    plots[f"{process}_{year}"],
+                    sample_key,
+                    plots[sample_key],
                     extrapolation=do_extrapolation,
                     do_syst=True,
                     verbose=args.debug,
                 )
             )
+            del plots[sample_key]
 
         # Data
         if args.data:
@@ -380,6 +408,9 @@ if "__main__" in __name__:
                     verbose=args.debug,
                 )
             )
+            del plots[f"Data_{year}"]
+
+        gc.collect()
 
     # Export histograms to ROOT files
     print(

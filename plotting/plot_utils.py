@@ -1,6 +1,5 @@
 import logging
 import math
-import multiprocessing as mp
 import os
 import pickle
 import re
@@ -249,7 +248,9 @@ def loader(
         for b in basenames
         if ("pythia8" in b) and ("SUEP" not in b) and ("ggHBSMpythia" not in b)
     ]
-    files_data = [str(plot_dir / b) for b in basenames if ("Muon" in b)]
+    files_data = [
+        str(plot_dir / b) for b in basenames if ("Muon" in b) or ("JetHT" in b)
+    ]
 
     if verbosity > 0:
         pprint(files_bkg)
@@ -1331,37 +1332,6 @@ def rename_uncorrelated_systematics(name, year):
     return name
 
 
-def export_year_shared_progress(
-    plots, output_path, output_name, year, all_regions, progress_queue
-):
-    new_output_name = output_name.replace(".root", f"_{year}.root")
-    os.makedirs(output_path, exist_ok=True)
-
-    suffix = f"_{com_energy(year)}_{year}"
-
-    with uproot.recreate(os.path.join(output_path, new_output_name)) as f:
-        for sample_name, region_vars in plots.items():
-            if not sample_name.endswith(suffix):
-                continue
-            for region_var, histogram in region_vars.items():
-                region_name = ""
-                for region in all_regions:
-                    if region in region_var:
-                        region_name = region
-                        break
-                if region_name == "":
-                    continue
-                syst_name = region_var.replace(region_name, "")
-                syst_name = syst_name.replace("Up", f"_{com_energy(year)}Up")
-                syst_name = syst_name.replace("Down", f"_{com_energy(year)}Down")
-                syst_name = rename_uncorrelated_systematics(syst_name, year)
-                cleaned_sample_name = sample_name.replace(suffix, "")
-                f[f"{region_name}{suffix}/{cleaned_sample_name}{syst_name}{suffix}"] = (
-                    uproot.from_pyroot(histogram)
-                )
-                progress_queue.put(1)
-
-
 def export_histograms_to_root(
     plots: dict,
     output_path: str,
@@ -1369,8 +1339,7 @@ def export_histograms_to_root(
     years: list[str] = ["2018"],
 ):
     """
-    Parallel export of hist.Hist histograms to ROOT files.
-    Uses a shared progress bar to show total export progress across all years.
+    Export histograms to ROOT files without duplicating the full payload per year.
     """
     all_regions = ["CR_DY", "CR_QCD", "SR_low_temp", "SR_high_temp"]
     total_histograms = 0
@@ -1382,37 +1351,36 @@ def export_histograms_to_root(
             if sample_name.endswith(suffix):
                 total_histograms += len(region_vars)
 
-    progress_queue = mp.Queue()
-    processes = []
-
-    for year in years:
-        p = mp.Process(
-            target=export_year_shared_progress,
-            args=(
-                plots,
-                output_path,
-                output_name,
-                year,
-                all_regions,
-                progress_queue,
-            ),
-        )
-        processes.append(p)
-        p.start()
-
     with Progress() as progress:
         task = progress.add_task("Exporting histograms", total=total_histograms)
-        completed = 0
-        while completed < total_histograms:
-            try:
-                progress_queue.get(timeout=1)
-                completed += 1
-                progress.update(task, advance=1)
-            except:
-                continue
+        for year in years:
+            new_output_name = output_name.replace(".root", f"_{year}.root")
+            os.makedirs(output_path, exist_ok=True)
+            suffix = f"_{com_energy(year)}_{year}"
 
-    for p in processes:
-        p.join()
+            with uproot.recreate(os.path.join(output_path, new_output_name)) as f:
+                for sample_name, region_vars in plots.items():
+                    if not sample_name.endswith(suffix):
+                        continue
+                    for region_var, histogram in region_vars.items():
+                        region_name = ""
+                        for region in all_regions:
+                            if region in region_var:
+                                region_name = region
+                                break
+                        if region_name == "":
+                            continue
+                        syst_name = region_var.replace(region_name, "")
+                        syst_name = syst_name.replace("Up", f"_{com_energy(year)}Up")
+                        syst_name = syst_name.replace(
+                            "Down", f"_{com_energy(year)}Down"
+                        )
+                        syst_name = rename_uncorrelated_systematics(syst_name, year)
+                        cleaned_sample_name = sample_name.replace(suffix, "")
+                        f[
+                            f"{region_name}{suffix}/{cleaned_sample_name}{syst_name}{suffix}"
+                        ] = uproot.from_pyroot(histogram)
+                        progress.update(task, advance=1)
 
 
 def make_lhepdf_systematic(plots: dict, cleanup: bool = False) -> dict:

@@ -176,6 +176,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                             era=self.era,
                             region="CR_prompt_prompt",
                             syst="",
+                            apply_IP_corr=False,
                         ),
                         axis=-1,
                     )
@@ -185,6 +186,7 @@ class SUEP_processor(SUEP_common.SUEP_base):
                             era=self.era,
                             region="CR_prompt_qcd",
                             syst="",
+                            apply_IP_corr=False,
                         ),
                         axis=-1,
                     )
@@ -327,7 +329,11 @@ class SUEP_processor(SUEP_common.SUEP_base):
                         "MuonSF",
                         weight=ak.prod(
                             muon_sf_utils.muon_efficiencies(
-                                muons_CR_cb, self.era, region="CR_cb", syst=""
+                                muons_CR_cb,
+                                self.era,
+                                region="CR_cb",
+                                syst="",
+                                apply_IP_corr=False,
                             ),
                             axis=-1,
                         ),

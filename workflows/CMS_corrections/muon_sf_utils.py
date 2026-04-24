@@ -4,7 +4,9 @@ import numpy as np
 from coffea.lookup_tools import rochester_lookup, txt_converters
 
 
-def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
+def muon_efficiencies(
+    muons, era, region, syst, override_low_pt_bound=False, apply_IP_corr=True
+):
     """
     This will return the total muon scale factors. The muon scale factors are the product of
     muon RECO efficiency, muon ID efficiency, and muon ISO efficiency. Following the MUO POG
@@ -98,10 +100,9 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
     # Add all other corrections for each region
     match region:
         case "CR_prompt_prompt":
-            config += [
-                "NUM_TightMiniIso_DEN_MediumID",
-                "NUM_dxyLT0p01_AND_dzLT0p01_DEN_MediumID",
-            ]
+            config += ["NUM_TightMiniIso_DEN_MediumID"]
+            if apply_IP_corr:
+                config += ["NUM_dxyLT0p01_AND_dzLT0p01_DEN_MediumID"]
         case "CR_prompt_qcd":
             config += ["NUM_MiniIsoGT0p1_DEN_MediumID"]
         case "CR_cb":
@@ -111,16 +112,18 @@ def muon_efficiencies(muons, era, region, syst, override_low_pt_bound=False):
         case "VR_tight":
             config += ["NUM_MiniIsoGT0p4_DEN_MediumID"]
         case "SR_low_temp_loose":
-            config += ["NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID"]
+            if apply_IP_corr:
+                config += ["NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID"]
         case "SR_low_temp_tight":
-            config += ["NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID"]
+            if apply_IP_corr:
+                config += ["NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID"]
         case "SR_high_temp_loose":
-            config += [
-                "NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID",
-                "NUM_MiniIsoLT0p65_DEN_MediumID",
-            ]
+            config += ["NUM_MiniIsoLT0p65_DEN_MediumID"]
+            if apply_IP_corr:
+                config += ["NUM_dxyLT0p1_AND_dzLT0p1_DEN_MediumID"]
         case "SR_high_temp_tight":
-            config += ["NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID"]
+            if apply_IP_corr:
+                config += ["NUM_dxyLT0p007_AND_dzLT0p007_DEN_MediumID"]
 
     json_file_JPsi = f"data/muon_corrections/{era}/muon_JPsi.json"
     corrs_JPsi = correctionlib.CorrectionSet.from_file(json_file_JPsi)
