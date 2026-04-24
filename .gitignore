@@ -17,6 +17,9 @@ dask-worker-space/
 .vscode/
 *.pyc
 temp/
+.cmslpc-local-conf
+.codex
+bootstrap.sh
 
 # Local environment files/directories
 .bashrc
