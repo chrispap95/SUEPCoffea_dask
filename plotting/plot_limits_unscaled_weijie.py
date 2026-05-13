@@ -12,13 +12,13 @@ hep.style.use(hep.style.CMS)
 mpl.rcParams["figure.facecolor"] = "white"
 
 # Definitions
-input_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Dec2025/CMSSW_14_1_0_pre4/src"
-tag = "full_analysis_Dec2025"
+input_path = "/uscms/home/chpapage/nobackup/SUEPs/MuonTriggers/combine_stuff/Mar2026/CMSSW_14_1_0_pre4/src"
+tag = "full_analysis_Feb2026"
 
 input_other = "combine_from_weijie"
 
-mass_vals = np.linspace(100, 2050, 1000)
-masses = np.array([125, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 2000])
+mass_vals = np.linspace(100, 1050, 1000)
+masses = np.array([125, 200, 300, 400, 500, 600, 700, 800, 900, 1000])
 
 green = "#607641"
 yellow = "#F5BB54"
@@ -366,7 +366,7 @@ if __name__ == "__main__":
         )
         plt.gca().add_artist(legend1)
 
-        plt.xlim(100, 2050)
+        plt.xlim(100, 1050)
         plt.ylim(1e-6, 1e3)
         plt.yscale("log")
         ax.set_xlabel(r"$m_{S}$ (GeV)")

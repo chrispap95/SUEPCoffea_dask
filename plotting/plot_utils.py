@@ -868,7 +868,12 @@ class Extrapolation:
             label.set_visible(False)
 
     def plot_fit(
-        self, region: str, syst: str = "", add_label: bool = False, add_text: str = ""
+        self,
+        region: str,
+        syst: str = "",
+        add_label: bool = False,
+        add_text: str = "",
+        paper_style: bool = False,
     ) -> None:
         """
         Plot the region's MC histograms and extrapolations, as well as the ratio and pulls.
@@ -884,6 +889,8 @@ class Extrapolation:
             Flag to indicate if the CMS label & lumi should be added to the plot.
         add_text : str
             Text to add to the plot. Useful for adding the MC sample name or data label.
+        paper_style : bool
+            Flag to indicate if the plot should be in paper style (no text)
         """
         if not syst.startswith("_") and syst != "":
             syst = f"_{syst}"
@@ -944,41 +951,42 @@ class Extrapolation:
             )
 
         # Add fit results to the left plot
-        fit_result = self.fit_results[f"{region}{syst}"]
-        fit_rslt_str = "Fit result:\n"
-        fit_rslt_str += r"$\chi^2$/ndf = "
-        fit_rslt_str += f"{fit_result.fmin.reduced_chi2:.2f}\n"
-        if self.fit_function == "exponential":
-            fit_rslt_str += r"$A_\text{tight} = $"
-            fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
-            fit_rslt_str += r"$A_\text{loose} = $"
-            fit_rslt_str += f"{fit_result.values['loga_l']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['loga_l']:.3f}\n"
-            fit_rslt_str += r"$B = $"
-            fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
-        elif self.fit_function == "binomial":
-            fit_rslt_str += r"$A_\text{tight} = $"
-            fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
-            fit_rslt_str += r"$A_\text{loose} = $"
-            fit_rslt_str += f"{fit_result.values['loga_l']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['loga_l']:.3f}\n"
-            fit_rslt_str += r"$B = $"
-            fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
-            fit_rslt_str += r"$N = $"
-            fit_rslt_str += f"{fit_result.values['N']:.3f} ± "
-            fit_rslt_str += f"{fit_result.errors['N']:.3f}\n"
-        ax1_left.text(
-            0.07,
-            0.45,
-            fit_rslt_str,
-            transform=ax1_left.transAxes,
-            verticalalignment="top",
-            horizontalalignment="left",
-        )
+        if not paper_style:
+            fit_result = self.fit_results[f"{region}{syst}"]
+            fit_rslt_str = "Fit result:\n"
+            fit_rslt_str += r"$\chi^2$/ndf = "
+            fit_rslt_str += f"{fit_result.fmin.reduced_chi2:.2f}\n"
+            if self.fit_function == "exponential":
+                fit_rslt_str += r"$A_\text{tight} = $"
+                fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
+                fit_rslt_str += r"$A_\text{loose} = $"
+                fit_rslt_str += f"{fit_result.values['loga_l']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['loga_l']:.3f}\n"
+                fit_rslt_str += r"$B = $"
+                fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
+            elif self.fit_function == "binomial":
+                fit_rslt_str += r"$A_\text{tight} = $"
+                fit_rslt_str += f"{fit_result.values['loga_t']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['loga_t']:.3f}\n"
+                fit_rslt_str += r"$A_\text{loose} = $"
+                fit_rslt_str += f"{fit_result.values['loga_l']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['loga_l']:.3f}\n"
+                fit_rslt_str += r"$B = $"
+                fit_rslt_str += f"{fit_result.values['logb']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['logb']:.3f}\n"
+                fit_rslt_str += r"$N = $"
+                fit_rslt_str += f"{fit_result.values['N']:.3f} ± "
+                fit_rslt_str += f"{fit_result.errors['N']:.3f}\n"
+            ax1_left.text(
+                0.07,
+                0.45,
+                fit_rslt_str,
+                transform=ax1_left.transAxes,
+                verticalalignment="top",
+                horizontalalignment="left",
+            )
 
         # Set y-axis limits for top two plots
         ax1_left.set_ylim(

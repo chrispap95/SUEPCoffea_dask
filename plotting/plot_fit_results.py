@@ -65,6 +65,11 @@ def parse_args():
         action="store_true",
         help="If set, will load the validation region plots as well.",
     )
+    parser.add_argument(
+        "--paper-style",
+        action="store_true",
+        help="If set, will omit some of the text prints for paper publication.",
+    )
     return parser.parse_args()
 
 
@@ -165,14 +170,18 @@ if "__main__" == __name__:
 
     for year in track(years_to_load, description="Plotting regions"):
         for region in regions:
-            qcd_extrapolations[year].plot_fit(region, add_text="QCD")
+            qcd_extrapolations[year].plot_fit(
+                region, add_text="QCD", paper_style=args.paper_style
+            )
             plt.savefig(
                 os.path.join(args.dest, args.tag, f"plot_fit_QCD_{region}_{year}.pdf"),
                 bbox_inches="tight",
             )
             plt.close()
 
-            dy_extrapolations[year].plot_fit(region, add_text="DY")
+            dy_extrapolations[year].plot_fit(
+                region, add_text="DY", paper_style=args.paper_style
+            )
             plt.savefig(
                 os.path.join(args.dest, args.tag, f"plot_fit_DY_{region}_{year}.pdf"),
                 bbox_inches="tight",

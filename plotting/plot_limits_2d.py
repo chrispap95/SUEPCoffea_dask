@@ -38,8 +38,13 @@ scan_points = [
 
 suffix = ""
 
-# m_S value at which to evaluate the limit
-mS_target = 125
+# Fallback used only if no available masses can be read from the combine outputs.
+default_mS_targets = [125, 200, 300, 400, 500, 600, 800, 1000]
+decay_modes = ("leptonic", "hadronic")
+decay_mode_labels = {
+    "leptonic": "Leptonic decays",
+    "hadronic": "Hadronic decays",
+}
 
 
 def format_param(value: float) -> str:
@@ -57,21 +62,35 @@ def get_median_mu(input_path, scan_point, mS):
     masses = tree["mh"].array(library="np")
     quantiles = tree["quantileExpected"].array(library="np")
 
-    mask = (masses == mS) & (quantiles == 0.5)
+    mask = np.isclose(masses, mS) & np.isclose(quantiles, 0.5)
     if not np.any(mask):
         return None
     # Signal was injected at scale=0.0001, so divide by 1/0.0001=10000 to get true mu
     return float(limits[mask][0]) * 0.0001
 
 
-def get_best_mu(input_path, m_phi, T, mS, channels=("leptonic", "hadronic")):
-    """Return the minimum (most constraining) median mu across available channels."""
-    mus = []
-    for ch in channels:
-        mu = get_median_mu(input_path, f"mPhi{m_phi}_T{T}_{ch}", mS)
-        if mu is not None:
-            mus.append(mu)
-    return min(mus) if mus else None
+def get_available_mS(input_path, channels=("leptonic", "hadronic")):
+    """Return all mS values with median expected limits in the available ROOT files."""
+    mS_values = set()
+    for m_phi, T in scan_points:
+        for ch in channels:
+            fname = (
+                f"{input_path}/higgsCombine_scale0.0001_"
+                f"mPhi{m_phi}_T{T}_{ch}{suffix}.AsymptoticLimits.root"
+            )
+            if not os.path.exists(fname):
+                continue
+
+            f = uproot.open(fname)
+            tree = f["limit"]
+            masses = tree["mh"].array(library="np")
+            quantiles = tree["quantileExpected"].array(library="np")
+            mS_values.update(float(mS) for mS in masses[np.isclose(quantiles, 0.5)])
+
+    if not mS_values:
+        return default_mS_targets
+
+    return sorted(mS_values)
 
 
 def build_grid(data):
@@ -90,31 +109,48 @@ def build_grid(data):
     return grid, x_values, y_values
 
 
-if __name__ == "__main__":
-    os.makedirs(f"limit_plots_2d/{tag}", exist_ok=True)
+def get_lumi_label():
+    if suffix == "_Run2_13TeV":
+        return r"$118\,fb^{-1}$ ($13\,TeV$)"
+    if suffix == "_Run3_13p6TeV":
+        return r"$62.4\,fb^{-1}$ ($13.6\,TeV$)"
+    return r"$118\,fb^{-1}$ ($13\,TeV$) + $62.4\,fb^{-1}$ ($13.6\,TeV$)"
 
+
+def plot_limits_2d(mS_target, decay_mode, output_dir):
     data = []
     for m_phi, T in scan_points:
-        mu = get_best_mu(input_path, m_phi, T, mS_target)
+        mu = get_median_mu(input_path, f"mPhi{m_phi}_T{T}_{decay_mode}", mS_target)
         if mu is None:
             print(
-                f"No limit found for mPhi={m_phi}, T={T} at mS={mS_target}. Skipping."
+                f"No {decay_mode} limit found for mPhi={m_phi}, T={T} "
+                f"at mS={mS_target}. Skipping."
             )
             continue
         data.append((float(m_phi), float(T), mu))
+
+    if not data:
+        print(
+            f"No {decay_mode} limits found for mS={format_param(mS_target)}. "
+            "Skipping plot."
+        )
+        return False
 
     grid, x_values, y_values = build_grid(data)
     log_grid = np.where(np.isfinite(grid), np.log10(grid), np.nan)
     masked_log_grid = np.ma.masked_invalid(log_grid)
 
-    if suffix == "_Run2_13TeV":
-        lumi_label = r"$118\,fb^{-1}$ ($13\,TeV$)"
-    elif suffix == "_Run3_13p6TeV":
-        lumi_label = r"$62.4\,fb^{-1}$ ($13.6\,TeV$)"
-    else:
-        lumi_label = r"$118\,fb^{-1}$ ($13\,TeV$) + $62.4\,fb^{-1}$ ($13.6\,TeV$)"
+    lumi_label = (
+        get_lumi_label()
+        # + "\n"
+        # + decay_mode_labels[decay_mode]
+        # + "\n"
+        # + r"$m_S = "
+        # + format_param(mS_target)
+        # + r"\,\mathrm{GeV}$"
+    )
 
-    fig, ax = plt.subplots(figsize=(11, 8))
+    fig, ax = plt.subplots(figsize=(13, 9))
 
     # Diverging colormap centered at log10(mu)=0, i.e. mu=1
     finite_vals = masked_log_grid.compressed()
@@ -157,17 +193,19 @@ if __name__ == "__main__":
                     f"{log_mu:.2f}",
                     ha="center",
                     va="center",
-                    fontsize=11,
+                    fontsize=14,
                     fontweight="bold",
                     color=text_color,
                 )
             else:
                 ax.text(
-                    xi, yi, "–", ha="center", va="center", fontsize=11, color="#6b7280"
+                    xi, yi, "–", ha="center", va="center", fontsize=14, color="#6b7280"
                 )
 
     cbar = fig.colorbar(image, ax=ax, pad=0.02)
-    cbar.set_label(r"$\log_{10}(\mu_\mathrm{exp})$", fontsize=18)
+    cbar.set_label(
+        r"95% CL expected upper limit on $\log_{10}(r)$", fontsize=24, labelpad=15
+    )
     cbar.ax.axhline(0, color="k", lw=2, ls="--")
 
     ax.set_xlabel(r"$m_{\phi}$ (GeV)")
@@ -176,12 +214,22 @@ if __name__ == "__main__":
     hep.cms.label(
         llabel="Preliminary",
         data=True,
-        rlabel=lumi_label + f"\n" + r"$m_S = " + str(mS_target) + r"\,\mathrm{GeV}$",
+        rlabel=lumi_label,
         ax=ax,
     )
 
     plt.tight_layout()
-    out = f"limit_plots_2d/{tag}/limits_2d_mS{mS_target}.pdf"
+    out = f"{output_dir}/limits_2d_{decay_mode}_mS{format_param(mS_target)}.pdf"
     plt.savefig(out, bbox_inches="tight")
     plt.close()
     print(f"Saved {out}")
+    return True
+
+
+if __name__ == "__main__":
+    output_dir = f"limit_plots_2d/{tag}"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for decay_mode in decay_modes:
+        for mS_target in get_available_mS(input_path, channels=(decay_mode,)):
+            plot_limits_2d(mS_target, decay_mode, output_dir)
