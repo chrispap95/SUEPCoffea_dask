@@ -44,6 +44,8 @@ vendor/
 # Testing stuff
 test*
 test*/
+!tests/
+!tests/test_event_display.py
 lumi/
 
 # Log & txt files

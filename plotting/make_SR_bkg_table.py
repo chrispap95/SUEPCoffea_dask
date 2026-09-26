@@ -48,6 +48,17 @@ def parse_args():
         action="store_true",
         help="Print the table in LaTeX format",
     )
+    parser.add_argument(
+        "--process-totals",
+        action="store_true",
+        help="Also include per-process totals (e.g., total DY for Run2, total QCD for Run2, etc.)",
+    )
+    parser.add_argument(
+        "--nMuon-cutoff",
+        type=int,
+        default=7,
+        help="The nMuon value to use for for muon counting. Default is ≥7 muons.",
+    )
     return parser.parse_args()
 
 
@@ -123,12 +134,9 @@ def render_latex_table(table, header, args):
             print(" & ".join(row) + r" \\")
         i += 3
         print(r"\hline")
-    print(" & ".join(table[-3]) + r" \\")
-    print(r"\hline")
-    print(" & ".join(table[-2]) + r" \\")
-    print(r"\hline")
-    print(" & ".join(table[-1]) + r" \\")
-    print(r"\hline")
+    for row in table[i:]:
+        print(" & ".join(row) + r" \\")
+        print(r"\hline")
     print(r"\end{tabular}")
 
 
@@ -227,6 +235,32 @@ if "__main__" == __name__:
         plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
     )
 
+    proc_low_temp_tot_run2 = {}
+    proc_high_temp_tot_run2 = {}
+    proc_low_temp_tot_run3 = {}
+    proc_high_temp_tot_run3 = {}
+    proc_low_temp_tot_all = {}
+    proc_high_temp_tot_all = {}
+    for process, _ in mc_processes:
+        proc_low_temp_tot_run2[process] = (
+            plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
+        )
+        proc_high_temp_tot_run2[process] = (
+            plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
+        )
+        proc_low_temp_tot_run3[process] = (
+            plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
+        )
+        proc_high_temp_tot_run3[process] = (
+            plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
+        )
+        proc_low_temp_tot_all[process] = (
+            plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
+        )
+        proc_high_temp_tot_all[process] = (
+            plots[f"{mc_processes[0][0]}_{args.year[0]}"][regions[0]].copy().reset()
+        )
+
     # Calculate total bkg and fill the table
     header = ["process"] + regions_latex if args.latex else ["process"] + regions
     table = []
@@ -259,9 +293,9 @@ if "__main__" == __name__:
             #     values = SR_high_temp.values()[SR_high_temp.values() > 0]
             #     variances = SR_high_temp.variances()[SR_high_temp.values() > 0]
             #     scale = variances[-1] / values[-1]
-            #     poisson_unc = get_poisson_errors(SR_high_temp[7j].value, scale=scale)
+            #     poisson_unc = get_poisson_errors(SR_high_temp[(args.nMuon_cutoff * 1j)::sum].value, scale=scale)
             #     row.append(
-            #         f"${SR_high_temp[7j].value:g}"
+            #         f"${SR_high_temp[(args.nMuon_cutoff * 1j)::sum].value:g}"
             #         + r"^{+"
             #         + f"{poisson_unc[1]:g}"
             #         + "}_{-"
@@ -271,9 +305,9 @@ if "__main__" == __name__:
             #     values = SR_low_temp.values()[SR_low_temp.values() > 0]
             #     variances = SR_low_temp.variances()[SR_low_temp.values() > 0]
             #     scale = variances[-1] / values[-1]
-            #     poisson_unc = get_poisson_errors(SR_low_temp[7j].value, scale=scale)
+            #     poisson_unc = get_poisson_errors(SR_low_temp[(args.nMuon_cutoff * 1j)::sum].value, scale=scale)
             #     row.append(
-            #         f"${SR_low_temp[7j].value:g}"
+            #         f"${SR_low_temp[(args.nMuon_cutoff * 1j)::sum].value:g}"
             #         + r"^{+"
             #         + f"{poisson_unc[1]:g}"
             #         + "}_{-"
@@ -284,48 +318,57 @@ if "__main__" == __name__:
             #     values = SR_high_temp.values()[SR_high_temp.values() > 0]
             #     variances = SR_high_temp.variances()[SR_high_temp.values() > 0]
             #     scale = variances[-1] / values[-1]
-            #     poisson_unc = get_poisson_errors(SR_high_temp[7j].value, scale=scale)
+            #     poisson_unc = get_poisson_errors(SR_high_temp[(args.nMuon_cutoff * 1j)::sum].value, scale=scale)
             #     row.append(
-            #         f"{SR_high_temp[7j].value:g} +{poisson_unc[1]:g} -{poisson_unc[0]:g}"
+            #         f"{SR_high_temp[(args.nMuon_cutoff * 1j)::sum].value:g} +{poisson_unc[1]:g} -{poisson_unc[0]:g}"
             #     )
             #     values = SR_low_temp.values()[SR_low_temp.values() > 0]
             #     variances = SR_low_temp.variances()[SR_low_temp.values() > 0]
             #     scale = variances[-1] / values[-1]
-            #     poisson_unc = get_poisson_errors(SR_low_temp[7j].value, scale=scale)
+            #     poisson_unc = get_poisson_errors(SR_low_temp[(args.nMuon_cutoff * 1j)::sum].value, scale=scale)
             #     row.append(
-            #         f"{SR_low_temp[7j].value:g} +{poisson_unc[1]:g} -{poisson_unc[0]:g}"
+            #         f"{SR_low_temp[(args.nMuon_cutoff * 1j)::sum].value:g} +{poisson_unc[1]:g} -{poisson_unc[0]:g}"
             #     )
             # else:
             row.append(
                 format_entry(
-                    SR_high_temp[7j].value,
-                    np.sqrt(SR_high_temp[7j].variance),
+                    SR_high_temp[(args.nMuon_cutoff * 1j) :: sum].value,
+                    np.sqrt(SR_high_temp[(args.nMuon_cutoff * 1j) :: sum].variance),
                     latex_mode=args.latex,
                 )
             )
             row.append(
                 format_entry(
-                    SR_low_temp[7j].value,
-                    np.sqrt(SR_low_temp[7j].variance),
+                    SR_low_temp[(args.nMuon_cutoff * 1j) :: sum].value,
+                    np.sqrt(SR_low_temp[(args.nMuon_cutoff * 1j) :: sum].variance),
                     latex_mode=args.latex,
                 )
             )
             table.append(row)
 
+            if year.startswith("201"):
+                proc_low_temp_tot_run2[process] += SR_low_temp
+                proc_high_temp_tot_run2[process] += SR_high_temp
+            if year.startswith("202"):
+                proc_low_temp_tot_run3[process] += SR_low_temp
+                proc_high_temp_tot_run3[process] += SR_high_temp
+            proc_low_temp_tot_all[process] += SR_low_temp
+            proc_high_temp_tot_all[process] += SR_high_temp
+
         row = [f"Total bkg {year}"]
-        SR_high_temp = plots[f"total_bkg_{year}"][f"SR_high_temp_tight"][7j]
+        SR_high_temp = plots[f"total_bkg_{year}"][f"SR_high_temp_tight"]
+        SR_low_temp = plots[f"total_bkg_{year}"][f"SR_low_temp_tight"]
         row.append(
             format_entry(
-                SR_high_temp.value,
-                np.sqrt(SR_high_temp.variance),
+                SR_high_temp[(args.nMuon_cutoff * 1j) :: sum].value,
+                np.sqrt(SR_high_temp[(args.nMuon_cutoff * 1j) :: sum].variance),
                 latex_mode=args.latex,
             )
         )
-        SR_low_temp = plots[f"total_bkg_{year}"][f"SR_low_temp_tight"][7j]
         row.append(
             format_entry(
-                SR_low_temp.value,
-                np.sqrt(SR_low_temp.variance),
+                SR_low_temp[(args.nMuon_cutoff * 1j) :: sum].value,
+                np.sqrt(SR_low_temp[(args.nMuon_cutoff * 1j) :: sum].variance),
                 latex_mode=args.latex,
             )
         )
@@ -336,72 +379,158 @@ if "__main__" == __name__:
             table.append(["-----------------"] * len(header))
 
         if year.startswith("201"):
-            if SR_low_temp_tot_run2 is None:
-                SR_low_temp_tot_run2 = SR_low_temp.copy()
-                SR_high_temp_tot_run2 = SR_high_temp.copy()
-            else:
-                SR_low_temp_tot_run2 += SR_low_temp
-                SR_high_temp_tot_run2 += SR_high_temp
+            SR_low_temp_tot_run2 += SR_low_temp
+            SR_high_temp_tot_run2 += SR_high_temp
         if year.startswith("202"):
-            if SR_low_temp_tot_run3 is None:
-                SR_low_temp_tot_run3 = SR_low_temp.copy()
-                SR_high_temp_tot_run3 = SR_high_temp.copy()
-            else:
-                SR_low_temp_tot_run3 += SR_low_temp
-                SR_high_temp_tot_run3 += SR_high_temp
-        if SR_low_temp_tot_all is None:
-            SR_low_temp_tot_all = SR_low_temp.copy()
-            SR_high_temp_tot_all = SR_high_temp.copy()
-        else:
-            SR_low_temp_tot_all += SR_low_temp
-            SR_high_temp_tot_all += SR_high_temp
+            SR_low_temp_tot_run3 += SR_low_temp
+            SR_high_temp_tot_run3 += SR_high_temp
+        SR_low_temp_tot_all += SR_low_temp
+        SR_high_temp_tot_all += SR_high_temp
+
+    if args.process_totals:
+        for process, proc_label in mc_processes:
+            proc_short = proc_label.split(" ")[0]
+            row = [r"\multicolumn{2}{c}{\textbf{Total " + proc_short + r" Run2}}"]
+            row.append(
+                format_entry(
+                    proc_high_temp_tot_run2[process][
+                        (args.nMuon_cutoff * 1j) :: sum
+                    ].value,
+                    np.sqrt(
+                        proc_high_temp_tot_run2[process][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ].variance
+                    ),
+                    latex_mode=args.latex,
+                )
+            )
+            row.append(
+                format_entry(
+                    proc_low_temp_tot_run2[process][
+                        (args.nMuon_cutoff * 1j) :: sum
+                    ].value,
+                    np.sqrt(
+                        proc_low_temp_tot_run2[process][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ].variance
+                    ),
+                    latex_mode=args.latex,
+                )
+            )
+            table.append(row)
 
     row = [r"\multicolumn{2}{c}{\textbf{Total bkg Run2}}"]
     row.append(
         format_entry(
-            SR_high_temp_tot_run2[7j].value,
-            np.sqrt(SR_high_temp_tot_run2[7j].variance),
+            SR_high_temp_tot_run2[(args.nMuon_cutoff * 1j) :: sum].value,
+            np.sqrt(SR_high_temp_tot_run2[(args.nMuon_cutoff * 1j) :: sum].variance),
             latex_mode=args.latex,
         )
     )
     row.append(
         format_entry(
-            SR_low_temp_tot_run2[7j].value,
-            np.sqrt(SR_low_temp_tot_run2[7j].variance),
+            SR_low_temp_tot_run2[(args.nMuon_cutoff * 1j) :: sum].value,
+            np.sqrt(SR_low_temp_tot_run2[(args.nMuon_cutoff * 1j) :: sum].variance),
             latex_mode=args.latex,
         )
     )
     table.append(row)
+
+    if args.process_totals:
+        for process, proc_label in mc_processes:
+            proc_short = proc_label.split(" ")[0]
+            row = [r"\multicolumn{2}{c}{\textbf{Total " + proc_short + r" Run3}}"]
+            row.append(
+                format_entry(
+                    proc_high_temp_tot_run3[process][
+                        (args.nMuon_cutoff * 1j) :: sum
+                    ].value,
+                    np.sqrt(
+                        proc_high_temp_tot_run3[process][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ].variance
+                    ),
+                    latex_mode=args.latex,
+                )
+            )
+            row.append(
+                format_entry(
+                    proc_low_temp_tot_run3[process][
+                        (args.nMuon_cutoff * 1j) :: sum
+                    ].value,
+                    np.sqrt(
+                        proc_low_temp_tot_run3[process][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ].variance
+                    ),
+                    latex_mode=args.latex,
+                )
+            )
+            table.append(row)
 
     row = [r"\multicolumn{2}{c}{\textbf{Total bkg Run3}}"]
     row.append(
         format_entry(
-            SR_high_temp_tot_run3[7j].value,
-            np.sqrt(SR_high_temp_tot_run3[7j].variance),
+            SR_high_temp_tot_run3[(args.nMuon_cutoff * 1j) :: sum].value,
+            np.sqrt(SR_high_temp_tot_run3[(args.nMuon_cutoff * 1j) :: sum].variance),
             latex_mode=args.latex,
         )
     )
     row.append(
         format_entry(
-            SR_low_temp_tot_run3[7j].value,
-            np.sqrt(SR_low_temp_tot_run3[7j].variance),
+            SR_low_temp_tot_run3[(args.nMuon_cutoff * 1j) :: sum].value,
+            np.sqrt(SR_low_temp_tot_run3[(args.nMuon_cutoff * 1j) :: sum].variance),
             latex_mode=args.latex,
         )
     )
     table.append(row)
 
+    if args.process_totals:
+        for process, proc_label in mc_processes:
+            proc_short = proc_label.split(" ")[0]
+            row = [
+                r"\multicolumn{2}{c}{\textbf{Total " + proc_short + r" Run2 + Run3}}"
+            ]
+            row.append(
+                format_entry(
+                    proc_high_temp_tot_all[process][
+                        (args.nMuon_cutoff * 1j) :: sum
+                    ].value,
+                    np.sqrt(
+                        proc_high_temp_tot_all[process][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ].variance
+                    ),
+                    latex_mode=args.latex,
+                )
+            )
+            row.append(
+                format_entry(
+                    proc_low_temp_tot_all[process][
+                        (args.nMuon_cutoff * 1j) :: sum
+                    ].value,
+                    np.sqrt(
+                        proc_low_temp_tot_all[process][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ].variance
+                    ),
+                    latex_mode=args.latex,
+                )
+            )
+            table.append(row)
+
     row = [r"\multicolumn{2}{c}{\textbf{Total bkg Run2 + Run3}}"]
     row.append(
         format_entry(
-            SR_high_temp_tot_all[7j].value,
-            np.sqrt(SR_high_temp_tot_all[7j].variance),
+            SR_high_temp_tot_all[(args.nMuon_cutoff * 1j) :: sum].value,
+            np.sqrt(SR_high_temp_tot_all[(args.nMuon_cutoff * 1j) :: sum].variance),
             latex_mode=args.latex,
         )
     )
     row.append(
         format_entry(
-            SR_low_temp_tot_all[7j].value,
-            np.sqrt(SR_low_temp_tot_all[7j].variance),
+            SR_low_temp_tot_all[(args.nMuon_cutoff * 1j) :: sum].value,
+            np.sqrt(SR_low_temp_tot_all[(args.nMuon_cutoff * 1j) :: sum].variance),
             latex_mode=args.latex,
         )
     )

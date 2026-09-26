@@ -89,3 +89,67 @@ Then, open a browser and go to `localhost:44890` (works only when processing `SR
 ## Plotting
 
 To find out more about plotting and exporting the plots, see the `plotting` directory.
+
+### NanoAOD event displays
+
+`plotting.event_display` makes a compact eta-phi display of the jets, muons,
+electrons, and photons in one NanoAOD event. In a notebook:
+
+```python
+from plotting.event_display import display_event
+
+source = "root://cmseos.fnal.gov//store/path/to/file.root"
+fig, ax, event = display_event(source, entry=42)
+```
+
+The returned `event` keeps the selected arrays for further inspection, for
+example `event["Muon"].pt`. Muons always satisfy the baseline cleaning:
+`mediumId`, $p_T>5$ GeV, $|\eta|<2.4$, and $|d_z|<0.2$ cm. At least three
+cleaned muons are required in every displayed event. Object choices and
+additional transverse-momentum thresholds can be customized. The command-line
+tool silently skips events that fail this cleaned-muon multiplicity requirement:
+
+```python
+fig, ax, event = display_event(
+    source,
+    entry=42,
+    objects=("Jet", "Muon"),
+    min_pt={"Jet": 30, "Muon": 5},
+    annotate=False,
+)
+```
+
+From the command line, the output defaults to `event_<event number>.png`:
+
+```bash
+SOURCE="root://cmseos.fnal.gov//store/path/to/file.root"
+python -m plotting.event_display "$SOURCE" --entry 42 -o event_42.png
+```
+
+An event can instead be selected by its NanoAOD identifiers:
+
+```bash
+python -m plotting.event_display "$SOURCE" \
+    --run 315257 --lumi 12 --event 123456789
+```
+
+The loose and tight validation-region selections from
+`workflows/SUEP_coffea_VR.py` can be applied before plotting:
+
+```bash
+python -m plotting.event_display "$SOURCE" --entry 42 --VRloose
+python -m plotting.event_display "$SOURCE" --entry 57 --VRtight
+```
+
+The equivalent notebook argument is `selection="VRloose"` or
+`selection="VRtight"`. A selected event displays only the muons retained by
+that VR definition; jets, electrons, and photons are unchanged. If the event
+does not pass, the tool reports the failed requirement and does not write a
+plot. These options reproduce the `apply_VR` region cuts without Rochester
+corrections. Dataset-level trigger, trigger-plateau, and golden-JSON filtering
+remain upstream, as in the analysis workflow.
+
+Run `python -m plotting.event_display --help` for object filters, individual
+minimum-pT settings, eta range, jet radius, labels, and interactive display
+options. Remote `root://` input requires the usual XRootD setup and, where
+needed, a valid CMS proxy.

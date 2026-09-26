@@ -34,6 +34,12 @@ def parse_args():
         action="store_true",
         help="Print the table in LaTeX format",
     )
+    parser.add_argument(
+        "--nMuon-cutoff",
+        type=int,
+        default=7,
+        help="The nMuon value to use for for muon counting. Default is ≥7 muons.",
+    )
     return parser.parse_args()
 
 
@@ -116,8 +122,12 @@ if "__main__" == __name__:
                         if sample_year not in plots:
                             continue
                         exists = True
-                        y_high_year = plots[sample_year]["SR_high_temp_tight"][7j::sum]
-                        y_low_year = plots[sample_year]["SR_low_temp_tight"][7j::sum]
+                        y_high_year = plots[sample_year]["SR_high_temp_tight"][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ]
+                        y_low_year = plots[sample_year]["SR_low_temp_tight"][
+                            (args.nMuon_cutoff * 1j) :: sum
+                        ]
                         y_high += y_high_year
                         y_low += y_low_year
 

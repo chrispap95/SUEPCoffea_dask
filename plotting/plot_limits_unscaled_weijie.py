@@ -20,6 +20,17 @@ input_other = "combine_from_weijie"
 mass_vals = np.linspace(100, 1050, 1000)
 masses = np.array([125, 200, 300, 400, 500, 600, 700, 800, 900, 1000])
 
+# VH results
+vh_mass = [125]
+vh_leptonic = {("4.000", "4.000"): [5.306640625], ("8.000", "8.000"): [116.302734375]}
+vh_hadronic = {("4.000", "4.000"): [2.9727783203125], ("8.000", "8.000"): [64.83984375]}
+
+# ATLAS results
+atlas_leptonic_mass = [125, 400, 750]
+atlas_hadronic_mass = [400, 750]
+atlas_leptonic = {("4.000", "4.000"): [0.00277728, 0.000210874, 0.000154099]}
+atlas_hadronic = {("4.000", "4.000"): [0.00204158, 0.000548015]}
+
 green = "#607641"
 yellow = "#F5BB54"
 
@@ -300,6 +311,59 @@ if __name__ == "__main__":
         # )
         # plt.gca().add_artist(legend1)
 
+        # VH limits
+        vh_lim_lep = vh_leptonic[(m_phi, T)]
+        vh_lim_had = vh_hadronic[(m_phi, T)]
+        plt.plot(
+            vh_mass,
+            vh_lim_lep,
+            color="blue",
+            marker="*",
+            ms=16,
+            linestyle="None",
+            label="VH leptonic",
+            zorder=2,
+        )
+        plt.plot(
+            vh_mass,
+            vh_lim_had,
+            color="red",
+            marker="*",
+            ms=16,
+            linestyle="None",
+            label="VH hadronic",
+            zorder=2,
+        )
+
+        # ATLAS limits
+        draw_atlas = False
+        if (m_phi, T) in atlas_leptonic:
+            draw_atlas = True
+            plt.plot(
+                atlas_leptonic_mass,
+                atlas_leptonic[(m_phi, T)],
+                color="blue",
+                marker="v",
+                ms=16,
+                ls=(0, (3, 1, 1, 1, 1, 1)),  # "densely dashdotdotted"
+                lw=3,
+                label="ATLAS leptonic",
+                zorder=2,
+            )
+        if (m_phi, T) in atlas_hadronic:
+            draw_atlas = True
+            plt.plot(
+                atlas_hadronic_mass,
+                atlas_hadronic[(m_phi, T)],
+                color="red",
+                marker="v",
+                ms=16,
+                ls=(0, (3, 1, 1, 1, 1, 1)),  # "densely dashdotdotted"
+                lw=3,
+                label="ATLAS hadronic",
+                zorder=2,
+            )
+
         # Create custom legends
         (plt_theory,) = plt.plot([], [], c="black", ls="-.", lw=3, label="Theory")
         (plt_median_exp,) = plt.plot(
@@ -327,15 +391,38 @@ if __name__ == "__main__":
         (plt_scouting,) = plt.plot(
             [], [], c="black", ls=":", lw=3, label="Scouting (Run2)"
         )
+        (plt_vh,) = plt.plot(
+            [],
+            [],
+            c="black",
+            marker="*",
+            ms=16,
+            label="VH",
+        )
+        if draw_atlas:
+            (plt_atlas,) = plt.plot(
+                [],
+                [],
+                c="black",
+                marker="v",
+                ms=16,
+                ls=(0, (3, 1, 1, 1, 1, 1)),  # "densely dashdotdotted"
+                lw=3,
+                label="ATLAS",
+            )
+        handles = [
+            plt_theory,
+            plt_median_exp,
+            plt_68exp,
+            plt_95exp,
+            plt_offline,
+            plt_scouting,
+            plt_vh,
+        ]
+        if draw_atlas:
+            handles.append(plt_atlas)
         legend1 = plt.gca().legend(
-            handles=[
-                plt_theory,
-                plt_median_exp,
-                plt_68exp,
-                plt_95exp,
-                plt_offline,
-                plt_scouting,
-            ],
+            handles=handles,
             loc="upper right",
             frameon=False,
         )
@@ -367,7 +454,7 @@ if __name__ == "__main__":
         plt.gca().add_artist(legend1)
 
         plt.xlim(100, 1050)
-        plt.ylim(1e-6, 1e3)
+        plt.ylim(1e-7, 1e5)
         plt.yscale("log")
         ax.set_xlabel(r"$m_{S}$ (GeV)")
         ax.set_ylabel(r"signal strength $r$")
@@ -384,8 +471,8 @@ if __name__ == "__main__":
             ax=ax,
         )
         plt.text(
-            900,
-            70,
+            500,
+            2e3,
             "GluGluToSUEP\n"
             + r"$m_{\phi}="
             + f"{float(m_phi):g}"
